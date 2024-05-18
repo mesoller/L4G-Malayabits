@@ -2,7 +2,7 @@
 # import discord
 import asyncio
 import requests
-import distutils.util
+import str2bool
 import os
 from guessit import guessit 
 

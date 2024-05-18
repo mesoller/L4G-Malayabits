@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import traceback
 import json
-import distutils.util
+import str2bool
 import cli_ui
 from unidecode import unidecode
 from urllib.parse import urlparse, quote
@@ -104,7 +104,7 @@ class TTG():
         return type_id
 
     async def get_anon(self, anon):
-        if anon == 0 and bool(distutils.util.strtobool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) == False:
+        if anon == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) == False:
             anon = 'no'
         else:
             anon = 'yes'

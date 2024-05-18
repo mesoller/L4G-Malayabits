@@ -3,7 +3,7 @@
 import os
 import asyncio
 import requests
-import distutils.util
+import str2bool
 import platform
 from pymediainfo import MediaInfo
 
@@ -68,7 +68,7 @@ class ANT():
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
         flags = await self.get_flags(meta)
-        if meta['anon'] == 0 and bool(distutils.util.strtobool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
+        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
             anon = 0
         else:
             anon = 1
