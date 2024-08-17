@@ -476,27 +476,51 @@ class Prep():
     Get and parse mediainfo
     """
     def exportInfo(self, video, isdir, folder_id, base_dir, export_text):
-        if os.path.exists(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt") == False and export_text != False:
-            console.print("[bold yellow]Exporting MediaInfo...")
-            #MediaInfo to text
-            if isdir == False:
-                os.chdir(os.path.dirname(video))
-            media_info = MediaInfo.parse(video, output="STRING", full=False, mediainfo_options={'inform_version' : '1'})
-            with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt", 'w', newline="", encoding='utf-8') as export:
-                export.write(media_info)
-                export.close()
-            with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO_CLEANPATH.txt", 'w', newline="", encoding='utf-8') as export_cleanpath:
-                export_cleanpath.write(media_info.replace(video, os.path.basename(video)))
-                export_cleanpath.close()
-            console.print("[bold green]MediaInfo Exported.")
+        media_info_path = f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt"
+        media_info_clean_path = f"{base_dir}/tmp/{folder_id}/MEDIAINFO_CLEANPATH.txt"
+        media_info_json_path = f"{base_dir}/tmp/{folder_id}/MediaInfo.json"
 
-        if os.path.exists(f"{base_dir}/tmp/{folder_id}/MediaInfo.json.txt") == False:
-            #MediaInfo to JSON
-            media_info = MediaInfo.parse(video, output="JSON", mediainfo_options={'inform_version' : '1'})
-            export = open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'w', encoding='utf-8')
-            export.write(media_info)
-            export.close()
-        with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'r', encoding='utf-8') as f:
+        if not os.path.exists(media_info_path) and export_text:
+            console.print("[bold yellow]Exporting MediaInfo...")
+            
+            # MediaInfo to text
+            media_info = MediaInfo.parse(video, output="STRING", full=False, mediainfo_options={'inform_version': '1'})
+            
+            with open(media_info_path, 'w', newline="", encoding='utf-8') as export:
+                export.write(media_info)
+            
+            with open(media_info_clean_path, 'w', newline="", encoding='utf-8') as export_cleanpath:
+                export_cleanpath.write(media_info.replace(video, os.path.basename(video)))
+            
+            # Read the original content
+            with open(media_info_path, 'r', encoding='utf-8') as infile:
+                original_content = infile.read()
+
+            # Apply transformations similar to `tr` and `sed`
+            processed_content = original_content.replace('\n', '\r')
+            processed_content = processed_content.replace('\r\r', '\n')
+            processed_content = processed_content.replace('\r', '')
+
+            # Write the processed content to the same file
+            with open(media_info_path, 'w', encoding='utf-8') as outfile:
+                outfile.write(processed_content)
+
+            # Calculate and report the number of characters removed
+            original_length = len(original_content)
+            processed_length = len(processed_content)
+            characters_removed = original_length - processed_length
+
+            console.print(f"[bold cyan]{characters_removed} characters were removed during processing.")
+            console.print("[bold green]MediaInfo Exported.")
+        
+        if not os.path.exists(f"{media_info_json_path}.txt"):
+            # MediaInfo to JSON
+            media_info = MediaInfo.parse(video, output="JSON", mediainfo_options={'inform_version': '1'})
+            
+            with open(media_info_json_path, 'w', encoding='utf-8') as export:
+                export.write(media_info)
+        
+        with open(media_info_json_path, 'r', encoding='utf-8') as f:
             mi = json.load(f)
         
         return mi
