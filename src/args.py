@@ -56,6 +56,7 @@ class Args():
         parser.add_argument('-th', '--torrenthash', nargs='*', required=False, help="Torrent Hash to re-use from your client's session directory")
         parser.add_argument('-nfo', '--nfo', action='store_true', required=False, help="Use .nfo in directory for description")
         parser.add_argument('-k', '--keywords', nargs='*', required=False, help="Add comma seperated keywords e.g. 'keyword, keyword2, etc'")
+        parser.add_argument('-kf', '--keep-folder', action='store_true', required=False, help="Keep the containing folder when creating .torrent. Works only when supplying a directory as input.")
         parser.add_argument('-reg', '--region', nargs='*', required=False, help="Region for discs")
         parser.add_argument('-a', '--anon', action='store_true', required=False, help="Upload anonymously")
         parser.add_argument('-st', '--stream', action='store_true', required=False, help="Stream Optimized Upload")
