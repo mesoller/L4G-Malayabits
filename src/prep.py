@@ -477,7 +477,7 @@ class Prep():
     """
     def exportInfo(self, video, isdir, folder_id, base_dir, export_text):
         # Path to the MediaInfo CLI executable
-        mediainfo_cli_path = 'D:\\mediainfo\\MediaInfo.exe'  # Correct path to the MediaInfo CLI executable
+        mediainfo_cli_path = 'path/to/mediainfo/commandline.exe'  # Correct path to the MediaInfo CLI executable
 
         if not os.path.exists(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt") and export_text:
             console.print("[bold yellow]Exporting MediaInfo...")
