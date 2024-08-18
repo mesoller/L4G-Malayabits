@@ -476,53 +476,62 @@ class Prep():
     Get and parse mediainfo
     """
     def exportInfo(self, video, isdir, folder_id, base_dir, export_text):
-        media_info_path = f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt"
-        media_info_clean_path = f"{base_dir}/tmp/{folder_id}/MEDIAINFO_CLEANPATH.txt"
-        media_info_json_path = f"{base_dir}/tmp/{folder_id}/MediaInfo.json"
+        # Path to the MediaInfo CLI executable
+        mediainfo_cli_path = 'D:\\mediainfo\\MediaInfo.exe'  # Correct path to the MediaInfo CLI executable
 
-        if not os.path.exists(media_info_path) and export_text:
+        if not os.path.exists(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt") and export_text:
             console.print("[bold yellow]Exporting MediaInfo...")
             
             # MediaInfo to text
-            media_info = MediaInfo.parse(video, output="STRING", full=False, mediainfo_options={'inform_version': '1'})
+            if not isdir:
+                os.chdir(os.path.dirname(video))
             
-            with open(media_info_path, 'w', newline="", encoding='utf-8') as export:
-                export.write(media_info)
+            # Use MediaInfo CLI to get text output with utf-8 encoding
+            result = subprocess.run(
+                [mediainfo_cli_path, '--Output=TEXT', video],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding='utf-8'
+            )
             
-            with open(media_info_clean_path, 'w', newline="", encoding='utf-8') as export_cleanpath:
-                export_cleanpath.write(media_info.replace(video, os.path.basename(video)))
+            if result.returncode != 0:
+                console.print(f"[bold red]Error: {result.stderr}")
+                return None
+
+            media_info = result.stdout
             
-            # Read the original content
-            with open(media_info_path, 'r', encoding='utf-8') as infile:
-                original_content = infile.read()
+            if media_info:
+                with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt", 'w', newline="", encoding='utf-8') as export:
+                    export.write(media_info)
 
-            # Apply transformations similar to `tr` and `sed`
-            processed_content = original_content.replace('\n', '\r')
-            processed_content = processed_content.replace('\r\r', '\n')
-            processed_content = processed_content.replace('\r', '')
+                # Save the MediaInfo with clean path
+                with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO_CLEANPATH.txt", 'w', newline="", encoding='utf-8') as export_cleanpath:
+                    export_cleanpath.write(media_info.replace(video, os.path.basename(video)))
 
-            # Write the processed content to the same file
-            with open(media_info_path, 'w', encoding='utf-8') as outfile:
-                outfile.write(processed_content)
-
-            # Calculate and report the number of characters removed
-            original_length = len(original_content)
-            processed_length = len(processed_content)
-            characters_removed = original_length - processed_length
-
-            console.print(f"[bold cyan]{characters_removed} characters were removed during processing.")
             console.print("[bold green]MediaInfo Exported.")
-        
-        if not os.path.exists(f"{media_info_json_path}.txt"):
-            # MediaInfo to JSON
-            media_info = MediaInfo.parse(video, output="JSON", mediainfo_options={'inform_version': '1'})
+
+        if not os.path.exists(f"{base_dir}/tmp/{folder_id}/MediaInfo.json"):
+            # MediaInfo to JSON using the CLI
+            result = subprocess.run(
+                [mediainfo_cli_path, '--Output=JSON', video],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding='utf-8'
+            )
             
-            with open(media_info_json_path, 'w', encoding='utf-8') as export:
-                export.write(media_info)
-        
-        with open(media_info_json_path, 'r', encoding='utf-8') as f:
+            if result.returncode != 0:
+                console.print(f"[bold red]Error: {result.stderr}")
+                return None
+            
+            media_info_json = result.stdout
+            
+            if media_info_json:
+                with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'w', encoding='utf-8') as export:
+                    export.write(media_info_json)
+            
+        with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'r', encoding='utf-8') as f:
             mi = json.load(f)
-        
+
         return mi
 
 
