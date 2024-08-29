@@ -17,11 +17,11 @@ import os
 from datetime import datetime
 import asyncio
 import json
-import shutil
 import multiprocessing
 from pathlib import Path
 from glob import glob
 import argparse
+
 
 class Commands(commands.Cog):
     def __init__(self, bot):
