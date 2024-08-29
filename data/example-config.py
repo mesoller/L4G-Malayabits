@@ -36,9 +36,9 @@ config = {
 
     "TRACKERS" : {
         # Which trackers do you want to upload to?
-        # Available tracker: BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL
+        # Available tracker: BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL, HDB
         # Remove the ones not used to save being asked everytime
-        "default_trackers" : "BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL",
+        "default_trackers" : "BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL, HDB",
 
         "BLU" : {
             "useAPI" : False, # Set to True if using BLU
@@ -219,6 +219,13 @@ config = {
             "announce_url" : "https://animelovers.club/announce/customannounceurl",
             # "anon" : False
         },
+        "HDB" : {
+            "useAPI" : True,
+            "username" : "HDB username",
+            "passkey" : "HDB passkey",
+            "announce_url" : "https://hdbits.org/announce/Custom_Announce_URL",
+            "anon" : False,
+            }, 
         "MANUAL" : {
             # Uncomment and replace link with filebrowser (https://github.com/filebrowser/filebrowser) link to the Upload-Assistant directory, this will link to your filebrowser instead of uploading to uguu.se
             # "filebrowser" : "https://domain.tld/filebrowser/files/Upload-Assistant/"

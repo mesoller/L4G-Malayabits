@@ -31,8 +31,7 @@ class COMMON():
             new_torrent.metainfo['comment'] = comment
             new_torrent.metainfo['info']['source'] = source_flag
             Torrent.copy(new_torrent).write(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{tracker}]{meta['clean_name']}.torrent", overwrite=True)
-    
-    
+
     async def unit3d_edit_desc(self, meta, tracker, signature, comparison=False, desc_header=""):
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r', encoding='utf8').read()
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{tracker}]DESCRIPTION.txt", 'w', encoding='utf8') as descfile:
@@ -79,10 +78,7 @@ class COMMON():
                 descfile.write(signature)
             descfile.close()
         return 
-    
 
-    
-    
     async def unit3d_region_ids(self, region):
         region_id = {
             'AFG': 1, 'AIA': 2, 'ALA': 3, 'ALG': 4, 'AND': 5, 'ANG': 6, 'ARG': 7, 'ARM': 8, 'ARU': 9, 
@@ -151,6 +147,7 @@ class COMMON():
         params = {'api_token' : self.config['TRACKERS'][tracker].get('api_key', '')}
         url = f"{torrent_url}{id}"
         response = requests.get(url=url, params=params)
+        console.print(f"[green]Searching {tracker} for: [bold yellow]{filename}[/bold yellow]")
         try:
             response = response.json()
             attributes = response['attributes']
@@ -184,8 +181,6 @@ class COMMON():
                     lineFields = [x for x in lineFields if x != ""]
                     cookies[lineFields[5]] = lineFields[6]
         return cookies
-
-
 
     async def ptgen(self, meta, ptgen_site="", ptgen_retry=3):
         ptgen = ""

@@ -26,7 +26,6 @@ class HDB():
         self.signature = None
         self.banned_groups = [""]
     
-
     async def get_type_category_id(self, meta):
         cat_id = "EXIT"
         # 6 = Audio Track
@@ -512,33 +511,54 @@ class HDB():
             console.print("Failed to get info from HDB ID. Either the site is down or your credentials are invalid")
         return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash
 
-    async def search_filename(self, filelist):
+    async def search_filename(self, search_term, search_file_folder):
         hdb_imdb = hdb_tvdb = hdb_name = hdb_torrenthash = hdb_id = None
         url = "https://hdbits.org/api/torrents"
-        data = {
-            "username" : self.username,
-            "passkey" : self.passkey,
-            "limit" : 100,
-            "file_in_torrent" : os.path.basename(filelist[0])
-        }
+        
+        if search_file_folder == 'folder':  # Handling disc case
+            data = {
+                "username": self.username,
+                "passkey": self.passkey,
+                "limit": 100,
+                "folder_in_torrent": os.path.basename(search_term)  # Using folder name for search
+            }
+            console.print(f"[green]Searching HDB for folder: [bold yellow]{os.path.basename(search_term)}[/bold yellow]")
+        else:  # Handling non-disc case
+            data = {
+                "username": self.username,
+                "passkey": self.passkey,
+                "limit": 100,
+                "file_in_torrent": os.path.basename(search_term)  # Using filename for search
+            }
+            console.print(f"[green]Searching HDB for file: [bold yellow]{os.path.basename(search_term)}[/bold yellow]")
+
         response = requests.get(url, json=data)
-        console.print(f"[green]Searching HDB for: [bold yellow]{os.path.basename(filelist[0])}[/bold yellow]")
+        
         if response.ok:
             try:
-                response = response.json()
-                if response['data'] != []:
-                    for each in response['data']:
-                        if each['numfiles'] == len(filelist):
-                            hdb_imdb = each.get('imdb', {'id' : None}).get('id')
-                            hdb_tvdb = each.get('tvdb', {'id' : None}).get('id')
+                response_json = response.json()
+                # console.print(f"[green]HDB API response: {response_json}[/green]")  # Log the entire response for debugging
+
+                # Check if 'data' key is present
+                if 'data' not in response_json:
+                    console.print(f"[red]Error: 'data' key not found in HDB API response. Full response: {response_json}[/red]")
+                    return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash, hdb_id
+
+                if response_json['data'] != []:
+                    for each in response_json['data']:
+                        if search_file_folder == 'folder' or each['numfiles'] == len(search_term):  # Handle folder or filelist match
+                            hdb_imdb = each.get('imdb', {'id': None}).get('id')
+                            hdb_tvdb = each.get('tvdb', {'id': None}).get('id')
                             hdb_name = each['name']
                             hdb_torrenthash = each['hash']
                             hdb_id = each['id']
                             console.print(f'[bold green]Matched release with HDB ID: [yellow]{hdb_id}[/yellow][/bold green]')
                             return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash, hdb_id
-            except:
+            except Exception as e:
                 console.print_exception()
+                console.print(f"[red]Failed to parse HDB API response. Error: {str(e)}[/red]")
         else:
-            console.print("Failed to get info from HDB ID. Either the site is down or your credentials are invalid")
-        console.print(f'[yellow]Could not find a matching release on HDB')
+            console.print(f"[red]Failed to get info from HDB. Status code: {response.status_code}, Reason: {response.reason}[/red]")
+        
+        console.print(f'[yellow]Could not find a matching release on HDB[/yellow]')
         return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash, hdb_id
