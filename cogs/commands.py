@@ -23,12 +23,9 @@ from pathlib import Path
 from glob import glob
 import argparse
 
-
-
 class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -87,7 +84,6 @@ class Commands(commands.Cog):
         else:
             await ctx.send("Invalid Path")
 
-
     @commands.command()
     async def args(self, ctx):
         f"""
@@ -103,56 +99,6 @@ class Commands(commands.Cog):
             await ctx.send(f"```{help[1991:]}```")
         else:
             await ctx.send(help.format_help())
-        # await ctx.send("""
-        # ```Optional arguments:
-    
-        #     -s, --screens [SCREENS]
-        #                         Number of screenshots
-        #     -c, --category [{movie,tv,fanres}]
-        #                         Category
-        #     -t, --type [{disc,remux,encode,webdl,web-dl,webrip,hdtv}]
-        #                         Type
-        #     -res, --resolution 
-        #             [{2160p,1080p,1080i,720p,576p,576i,480p,480i,8640p,4320p,other}]
-        #                         Resolution
-        #     -tmdb, --tmdb [TMDB]
-        #                         TMDb ID
-        #     -g, --tag [TAG]
-        #                         Group Tag
-        #     -serv, --service [SERVICE]
-        #                         Streaming Service
-        #     -edition, --edition [EDITION]
-        #                         Edition
-        #     -d, --desc [DESC]
-        #                         Custom Description (string)
-        #     -nfo, --nfo           
-        #                         Use .nfo in directory for description
-        #     -k, --keywords [KEYWORDS]
-        #                         Add comma seperated keywords e.g. 'keyword, keyword2, etc'
-        #     -reg, --region [REGION]
-        #                         Region for discs
-        #     -a, --anon          Upload anonymously
-        #     -st, --stream       Stream Optimized Upload
-        #     -debug, --debug     Debug Mode```""")
-
-
-    # @commands.group(invoke_without_command=True)
-    # async def foo(self, ctx):
-        # """
-        # check out my subcommands!
-        # """
-        # await ctx.send('check out my subcommands!')
-    
-    # @foo.command(aliases=['an_alias'])
-    # async def bar(self, ctx):
-    #     """
-    #     I have an alias!, I also belong to command 'foo'
-    #     """
-    #     await ctx.send('foo bar!')
-
-  
-
-    
     
     @commands.command()
     async def edit(self, ctx, uuid=None, *args):
@@ -186,11 +132,6 @@ class Commands(commands.Cog):
         meta = await prep.gather_prep(meta=meta, mode="discord") 
         meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await prep.get_name(meta)
         await self.send_embed_and_upload(ctx, meta)
-
-
-
-
-
 
     @commands.group(invoke_without_command=True)
     async def search(self, ctx, *, args=None):
@@ -249,8 +190,6 @@ class Commands(commands.Cog):
                 await channel.send(f"Search: `{search_terms}`timed out")
             else:
                 await self.upload(ctx, files_total[0], search_args=tuple(args.split(" ")), message_id=message.id)
-
-
 
     @search.command()
     async def dir(self, ctx, *, args=None):
@@ -311,14 +250,7 @@ class Commands(commands.Cog):
                 await self.upload(ctx, path=folders_total[0], search_args=tuple(args.split(" ")), message_id=message.id)
         # await ctx.send(folders_total)
         return
-    
-    
-    
-    
-    
-    
-    
-    
+
     async def send_embed_and_upload(self,ctx,meta):
         prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=config)
         meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await prep.get_name(meta)
@@ -367,7 +299,6 @@ class Commands(commands.Cog):
                     prep.create_random_torrents(meta['base_dir'], meta['uuid'], meta['randomized'], meta['path'])
             else:
                 meta['client'] = 'none'
-
 
         #Format for embed
         if meta['tag'] == "":
@@ -464,17 +395,6 @@ class Commands(commands.Cog):
             await msg.clear_reactions()
             await msg.edit(embed=cancel_embed)
             return
-        # except ManualException:
-        #     msg = await ctx.fetch_message(meta['embed_msg_id'])
-        #     await msg.clear_reactions()
-        #     archive_url = await prep.package(meta)
-        #     if archive_url == False:
-        #         archive_fail_embed = discord.Embed(title="Unable to upload prep files", description=f"The files can be found at `tmp/{meta['title']}.tar`", color=0xff0000)
-        #         await msg.edit(embed=archive_fail_embed)
-        #     else:
-        #         archive_embed = discord.Embed(title="Files can be found at:",description=f"{archive_url} or `tmp/{meta['title']}.tar`", color=0x00ff40)
-        #         await msg.edit(embed=archive_embed)
-        #     return
         else:
             
             #Check which are selected and upload to them
@@ -493,9 +413,6 @@ class Commands(commands.Cog):
             upload_embed = discord.Embed(title=f"Uploading `{meta['name']}` to:", description=upload_embed_description, color=0x00ff40)
             await msg.edit(embed=upload_embed)
             await msg.clear_reactions()
-
-
-            
 
             client = Clients(config=config)
             if "MANUAL" in tracker_list:
@@ -591,8 +508,6 @@ class Commands(commands.Cog):
                     await msg.edit(embed=upload_embed)                    
             return None
     
-    
-    
     async def dupe_embed(self, dupes, meta, emojis, channel):
         if not dupes:
             print("No dupes found")
@@ -650,10 +565,6 @@ class Commands(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Commands(bot))
-
-
-
-
 
 class CancelException(Exception):
     pass
