@@ -24,7 +24,7 @@ class BHD():
         self.tracker = 'BHD'
         self.source_flag = 'BHD'
         self.upload_url = 'https://beyond-hd.me/api/upload/'
-        self.signature = f"\n[center][url=https://beyond-hd.me/forums/topic/toolpython-l4gs-upload-assistant.5456]Created by L4G's Upload Assistant[/url][/center]"
+        self.signature = f"\n[center][url=https://beyond-hd.me/forums/topic/toolpython-l4gs-upload-assistant.5456/post/138087#post-138087]Created by L4G's Upload Assistant[/url][/center]"
         self.banned_groups = ['Sicario', 'TOMMY', 'x0r', 'nikt0', 'FGT', 'd3g', 'MeGusta', 'YIFY', 'tigole', 'TEKNO3D', 'C4K', 'RARBG', '4K4U', 'EASports', 'ReaLHD']
         pass
     
@@ -43,12 +43,12 @@ class BHD():
             anon = 0
         else:
             anon = 1
-            
+
         if meta['bdinfo'] != None:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8')
         else:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO.txt", 'r', encoding='utf-8')
-            
+
         desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r').read()
         torrent_file = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
         files = {
@@ -58,18 +58,18 @@ class BHD():
             open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
             files['file'] = open_torrent.read()
             open_torrent.close()
-        
+
         data = {
-            'name' : bhd_name,
-            'category_id' : cat_id,
-            'type' : type_id,
+            'name': bhd_name,
+            'category_id': cat_id,
+            'type': type_id,
             'source': source_id,
-            'imdb_id' : meta['imdb_id'].replace('tt', ''),    
-            'tmdb_id' : meta['tmdb'],
-            'description' : desc,
-            'anon' : anon,
-            'sd' : meta.get('sd', 0),
-            'live' : draft 
+            'imdb_id': meta['imdb_id'].replace('tt', ''),    
+            'tmdb_id': meta['tmdb'],
+            'description': desc,
+            'anon': anon,
+            'sd': meta.get('sd', 0),
+            'live': draft 
             # 'internal' : 0,
             # 'featured' : 0,
             # 'free' : 0,
@@ -80,7 +80,7 @@ class BHD():
         if self.config['TRACKERS'][self.tracker].get('internal', False) == True:
             if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
                 data['internal'] = 1
-                
+
         if meta.get('tv_pack', 0) == 1:
             data['pack'] = 1
         if meta.get('season', None) == "S00":
@@ -96,7 +96,7 @@ class BHD():
         headers = {
             'User-Agent': f'Upload Assistant/2.1 ({platform.system()} {platform.release()})'
         }
-        
+
         url = self.upload_url + self.config['TRACKERS'][self.tracker]['api_key'].strip()
         if meta['debug'] == False:
             response = requests.post(url=url, files=files, data=data, headers=headers)
@@ -118,12 +118,6 @@ class BHD():
         else:
             console.print(f"[cyan]Request Data:")
             console.print(data)
-        
-        
-
-
-
-
 
     async def get_cat_id(self, category_name):
         category_id = {
@@ -144,7 +138,7 @@ class BHD():
             "NTSC" : "DVD",  "NTSC DVD" : "DVD",
             "PAL" : "DVD", "PAL DVD": "DVD",
         }
-        
+
         source_id = sources.get(source)
         return source_id
 
@@ -184,8 +178,6 @@ class BHD():
                 else:
                     type_id = "Other"
         return type_id
-
-
         
     async def edit_desc(self, meta):
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
@@ -220,8 +212,6 @@ class BHD():
             desc.write(self.signature)
             desc.close()
         return
-   
-
 
     async def search_existing(self, meta):
         dupes = []

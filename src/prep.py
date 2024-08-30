@@ -1967,7 +1967,6 @@ class Prep():
                     distributor_out = each
         return distributor_out
 
-
     def get_video_codec(self, bdinfo):
         codecs = {
             "MPEG-2 Video" : "MPEG-2",
@@ -2018,7 +2017,6 @@ class Prep():
         if video_codec == "MPEG Video":
             video_codec = f"MPEG-{mi['media']['track'][1].get('Format_Version')}"
         return video_encode, video_codec, has_encode_settings, bit_depth
-
 
     def get_edition(self, video, bdinfo, filelist, manual_edition):
         if video.lower().startswith('dc'):
@@ -2226,7 +2224,6 @@ class Prep():
             base_torrent.source = 'L4G'
             base_torrent.private = True
             Torrent.copy(base_torrent).write(f"{base_dir}/tmp/{uuid}/BASE.torrent", overwrite=True)
-
 
     """
     Upload Screenshots
@@ -2498,7 +2495,6 @@ class Prep():
                 name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {source} {audio} {video_encode}"
                 potential_missing = []
 
-
         try:    
             name = ' '.join(name.split())
         except:
@@ -2512,9 +2508,6 @@ class Prep():
         name = name_notag + tag
         clean_name = self.clean_filename(name)
         return name_notag, name, clean_name, potential_missing
-
-
-
 
     async def get_season_episode(self, video, meta):
         if meta['category'] == 'TV':
@@ -2681,16 +2674,6 @@ class Prep():
                         console.print(f"[bold yellow]{meta['title']} does not exist on thexem, guessing {season}")
                         console.print(f"[bold yellow]If [green]{season}[/green] is incorrect, use --season to correct")
                         await asyncio.sleep(3)
-                # try:
-                #     version = parsed['release_version']
-                #     if int(version) == 2:
-                #         meta['repack'] = "REPACK"
-                #     elif int(version) > 2:
-                #         meta['repack'] = f"REPACK{int(version) - 1}"
-                #     # version = f"v{version}"
-                # except Exception:
-                #     # version = ""
-                #     pass
                     
             if meta.get('manual_season', None) == None:
                 meta['season'] = season
@@ -2721,7 +2704,6 @@ class Prep():
                 meta['part'] = f"Part {part}" if part else ""
 
         return meta
-
 
     def get_service(self, video, tag, audio, guess_title):
         service = guessit(video).get('streaming_service', "")
@@ -2771,8 +2753,7 @@ class Prep():
             'W Network': 'WNET', 'WWEN': 'WWEN', 'WWE Network': 'WWEN', 'XBOX': 'XBOX', 'Xbox Video': 'XBOX', 'YHOO': 'YHOO', 'Yahoo': 'YHOO', 
             'YT': 'YT', 'ZDF': 'ZDF', 'iP': 'iP', 'BBC iPlayer': 'iP', 'iQIYI': 'iQIYI', 'iT': 'iT', 'iTunes': 'iT'
             }
-        
-        
+
         video_name = re.sub(r"[.()]", " ", video.replace(tag, '').replace(guess_title, ''))
         if "DTS-HD MA" in audio:
             video_name = video_name.replace("DTS-HD.MA.", "").replace("DTS-HD MA ", "")
@@ -2788,8 +2769,6 @@ class Prep():
         if service_longname == "Amazon Prime":
             service_longname = "Amazon"
         return service, service_longname
-
-
 
     def stream_optimized(self, stream_opt):
         if stream_opt == True:
@@ -2826,15 +2805,13 @@ class Prep():
             async with session.post(url=url, data=data, headers=headers, files=files) as resp:
                 response = await resp.json()
                 return response
-            
-    
+
     def clean_filename(self, name):
         invalid = '<>:"/\|?*'
         for char in invalid:
             name = name.replace(char, '-')
         return name
 
-    
     async def gen_desc(self, meta):
         desclink = meta.get('desclink', None)
         descfile = meta.get('descfile', None)
@@ -2892,7 +2869,7 @@ class Prep():
                 description.write(requests.get(raw).text)
                 description.write("\n")
                 meta['description'] = "CUSTOM"
-                
+
             if descfile != None:
                 if os.path.isfile(descfile) == True:
                     text = open(descfile, 'r').read()
@@ -2904,7 +2881,7 @@ class Prep():
                 meta['description'] = "CUSTOM"
             description.write("\n")
         return meta
-        
+
     async def tag_override(self, meta):
         with open(f"{meta['base_dir']}/data/tags.json", 'r', encoding="utf-8") as f:
             tags = json.load(f)
