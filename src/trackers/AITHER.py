@@ -30,7 +30,7 @@ class AITHER():
                               'QxR', 'Ralphy', 'RARBG', 'RetroPeeps', 'SAMPA', 'Sicario', 'Silence', 'SkipTT', 'SPDVD', 'STUTTERSHIT', 'SWTYBLZ', 'TAoE', 'TGx', 'Tigole', 'TSP', 'TSPxL', 'VXT', 'Weasley[HONE]',
                               'Will1869', 'x0r', 'YIFY']
         pass
-    
+
     async def upload(self, meta):
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
@@ -103,15 +103,13 @@ class AITHER():
             console.print(data)
         open_torrent.close()
 
-
-
     async def edit_name(self, meta):
         aither_name = meta['name']
         has_eng_audio = False
         if meta['is_disc'] != "BDMV":
             with open(f"{meta.get('base_dir')}/tmp/{meta.get('uuid')}/MediaInfo.json", 'r', encoding='utf-8') as f:
                 mi = json.load(f)
-            
+
             for track in mi['media']['track']:
                 if track['@type'] == "Audio":
                     if track.get('Language', 'None').startswith('en'):
@@ -165,10 +163,6 @@ class AITHER():
             '480i': '9'
             }.get(resolution, '10')
         return resolution_id
-
-
-   
-
 
     async def search_existing(self, meta):
         dupes = []

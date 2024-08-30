@@ -56,9 +56,6 @@ except KeyboardInterrupt:
     exit()
 
 
-
-
-
 class Prep():
     """
     Prepare for upload:
@@ -77,15 +74,14 @@ class Prep():
         tracker_key = tracker_name.lower()
         manual_key = f"{tracker_key}_manual"
         found_match = False
-        
+
         console.print(f"[cyan]Attempting to search {tracker_name} with search_term: {search_term}[/cyan]")
-        
+
         if meta.get(tracker_key) is not None:
             meta[manual_key] = meta[tracker_key]
             console.print(f"[cyan]{tracker_name} ID found in meta, reusing existing ID: {meta[tracker_key]}[/cyan]")
             if tracker_name == "BLU":
-                blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, meta[tracker_key])
-                # Check if we got valid data
+                blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist, blu_filename = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, tracker_instance.search_url, id=meta[tracker_key])
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
                     console.print(f"[green]Valid data found on {tracker_name}, setting meta values[/green]")
                     if blu_tmdb not in [None, '0']:
@@ -102,6 +98,8 @@ class Prep():
                         meta['category'] = 'TV' if blu_category.upper() == 'TV SHOW' else blu_category.upper()
                     if meta.get('image_list', []) == []:
                         meta['image_list'] = blu_imagelist
+                    if blu_filename:
+                        meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
                     found_match = True  # Set flag if any relevant data is found
                 else:
                     console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
@@ -114,15 +112,36 @@ class Prep():
                     console.print(f"[yellow]No IMDb ID found on {tracker_name}[/yellow]")
         else:
             console.print(f"[cyan]Searching {tracker_name} using search_term: {search_term}[/cyan]")
+            imdb, tracker_id = None, None  # Initialize variables
             if tracker_name == "PTP":
                 imdb, tracker_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
             elif tracker_name == "HDB":
                 console.print(f"[cyan]HDB search using folder/file: {search_term}[/cyan]")
-                # Pass search_term as a string, not a list
                 imdb, tvdb_id, hdb_name, meta['ext_torrenthash'], tracker_id = await tracker_instance.search_filename(search_term, search_file_folder)
-                
                 meta['tvdb_id'] = str(tvdb_id) if tvdb_id else meta.get('tvdb_id')
                 meta['hdb_name'] = hdb_name
+            elif tracker_name == "BLU":
+                # Attempt to search using the file name if ID is not available
+                blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist, blu_filename = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, tracker_instance.search_url, file_name=search_term)
+                if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
+                    console.print(f"[green]Valid data found on {tracker_name} using file name, setting meta values[/green]")
+                    if blu_tmdb not in [None, '0']:
+                        meta['tmdb_manual'] = blu_tmdb
+                    if blu_imdb not in [None, '0']:
+                        meta['imdb'] = str(blu_imdb)
+                    if blu_tvdb not in [None, '0']:
+                        meta['tvdb_id'] = blu_tvdb
+                    if blu_mal not in [None, '0']:
+                        meta['mal'] = blu_mal
+                    if blu_desc not in [None, '0', '']:
+                        meta['blu_desc'] = blu_desc
+                    if blu_category.upper() in ['MOVIE', 'TV SHOW', 'FANRES']:
+                        meta['category'] = 'TV' if blu_category.upper() == 'TV SHOW' else blu_category.upper()
+                    if meta.get('image_list', []) == []:
+                        meta['image_list'] = blu_imagelist
+                    if blu_filename:
+                        meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
+                    found_match = True
             else:
                 imdb = tracker_id = None
 
@@ -132,7 +151,7 @@ class Prep():
                 found_match = True
             if tracker_id:
                 meta[tracker_key] = tracker_id
-        
+
         return meta, found_match
 
     async def gather_prep(self, meta, mode):
@@ -146,7 +165,7 @@ class Prep():
             meta['uuid'] = folder_id 
         if not os.path.exists(f"{base_dir}/tmp/{meta['uuid']}"):
             Path(f"{base_dir}/tmp/{meta['uuid']}").mkdir(parents=True, exist_ok=True)
-        
+
         if meta['debug']:
             console.print(f"[cyan]ID: {meta['uuid']}")
 
@@ -201,7 +220,7 @@ class Prep():
                 meta['mediainfo'] = mi
             else:
                 mi = meta['mediainfo']
-            
+
             meta['dvd_size'] = await self.get_dvd_size(meta['discs'])
             meta['resolution'] = self.get_resolution(guessit(video), meta['uuid'], base_dir)
             meta['sd'] = self.is_sd(meta['resolution'])
@@ -239,7 +258,7 @@ class Prep():
                 meta['search_year'] = guessit(video)['year']
             except Exception:
                 meta['search_year'] = ""
-            
+
             if not meta.get('edit', False):
                 mi = self.exportInfo(videopath, meta['isdir'], meta['uuid'], base_dir, export_text=True)
                 meta['mediainfo'] = mi
@@ -249,20 +268,20 @@ class Prep():
             if meta.get('resolution', None) is None:
                 meta['resolution'] = self.get_resolution(guessit(video), meta['uuid'], base_dir)
             meta['sd'] = self.is_sd(meta['resolution'])
-                
+
         if " AKA " in filename.replace('.', ' '):
             filename = filename.split('AKA')[0]
         meta['filename'] = filename
 
         meta['bdinfo'] = bdinfo
-        
+
         # Debugging information after population
         console.print(f"Debug: meta['filelist'] after population: {meta.get('filelist', 'Not Set')}")
 
         # Reuse information from trackers with fallback
         if search_term:  # Ensure there's a valid search term
             found_match = False
-            
+
             if str(self.config['TRACKERS'].get('PTP', {}).get('useAPI')).lower() == "true":
                 ptp = PTP(config=self.config)
                 console.print(f"[cyan]Attempting to search PTP with search_term: {search_term}[/cyan]")
