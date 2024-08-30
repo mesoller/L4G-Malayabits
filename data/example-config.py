@@ -41,7 +41,7 @@ config = {
         "default_trackers": "BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL, HDB",
 
         "BLU": {
-            "useAPI": False, # Set to True if using BLU
+            "useAPI": False,  # Set to True if using BLU
             "api_key": "BLU api key",
             "announce_url": "https://blutopia.cc/announce/customannounceurl",
             # "anon" : False
@@ -55,7 +55,7 @@ config = {
         "BHDTV": {
             "api_key": "found under https://www.bit-hdtv.com/my.php",
             "announce_url": "https://trackerr.bit-hdtv.com/announce",
-            #passkey found under https://www.bit-hdtv.com/my.php
+            # passkey found under https://www.bit-hdtv.com/my.php
             "my_announce_url": "https://trackerr.bit-hdtv.com/passkey/announce",
             # "anon" : "False"
         },
@@ -187,7 +187,7 @@ config = {
             # "anon" : False
         },
         "RTF": {
-	    "username": "username",
+            "username": "username",
             "password": "password",
             "api_key": 'get_it_by_running_/api/ login command from https://retroflix.club/api/doc',
             "announce_url": "get from upload page",
@@ -225,7 +225,7 @@ config = {
             "passkey": "HDB passkey",
             "announce_url": "https://hdbits.org/announce/Custom_Announce_URL",
             "anon": False,
-            }, 
+            },
         "MANUAL": {
             # Uncomment and replace link with filebrowser (https://github.com/filebrowser/filebrowser) link to the Upload-Assistant directory, this will link to your filebrowser instead of uploading to uguu.se
             # "filebrowser" : "https://domain.tld/filebrowser/files/Upload-Assistant/"
@@ -262,13 +262,13 @@ config = {
             # "torrent_storage_dir": "path/to/BT_backup folder"
             # "qbit_tag": "tag",
             # "qbit_cat": "category"
-            
+
             # Content Layout for adding .torrents: "Original"(recommended)/"Subfolder"/"NoSubfolder"
             "content_layout": "Original"
-            
+
             # Enable automatic torrent management if listed path(s) are present in the path
-                # If using remote path mapping, use remote path
-                # For using multiple paths, use a list ["path1", "path2"] 
+            # If using remote path mapping, use remote path
+            # For using multiple paths, use a list ["path1", "path2"]
             # "automatic_management_paths" : ""
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path" : "E:\\downloads\\tv",
@@ -296,7 +296,7 @@ config = {
             "deluge_user": "username",
             "deluge_pass": "password",
             # "torrent_storage_dir" : "path/to/session folder",
-            
+
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path" : "/LocalPath",
             # "remote_path" : "/RemotePath"

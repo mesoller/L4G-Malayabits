@@ -3,7 +3,6 @@ import argparse
 import urllib.parse
 import os
 import datetime
-import traceback
 
 from src.console import console
 
@@ -15,9 +14,7 @@ class Args():
     def __init__(self, config):
         self.config = config
         pass
-    
 
-     
     def parse(self, args, meta):
         input = args
         parser = argparse.ArgumentParser()
@@ -81,7 +78,6 @@ class Args():
         parser.add_argument('-ua', '--unattended', action='store_true', required=False, help=argparse.SUPPRESS)
         parser.add_argument('-vs', '--vapoursynth', action='store_true', required=False, help="Use vapoursynth for screens (requires vs install)")
         parser.add_argument('-cleanup', '--cleanup', action='store_true', required=False, help="Clean up tmp directory")
-
         parser.add_argument('-fl', '--freeleech', nargs='*', required=False, help="Freeleech Percentage", default=0, dest="freeleech")
         args, before_args = parser.parse_known_args(input)
         args = vars(args)
@@ -95,8 +91,8 @@ class Args():
                             break
                     else:
                         break
-        
-        if meta.get('tmdb_manual') != None or meta.get('imdb') != None:
+
+        if meta.get('tmdb_manual') is not None or meta.get('imdb') is not None:
             meta['tmdb_manual'] = meta['imdb'] = None
         for key in args:
             value = args.get(key)
@@ -104,7 +100,7 @@ class Args():
                 if isinstance(value, list):
                     value2 = self.list_to_string(value)
                     if key == 'type':
-                        meta[key] = value2.upper().replace('-','')
+                        meta[key] = value2.upper().replace('-', '')
                     elif key == 'tag':
                         meta[key] = f"-{value2}"
                     elif key == 'screens':
@@ -169,7 +165,6 @@ class Args():
                 # parser.print_help()
         return meta, parser, before_args
 
-
     def list_to_string(self, list):
         if len(list) == 1:
             return str(list[0])
@@ -178,7 +173,6 @@ class Args():
         except:
             result = "None"
         return result
-
 
     def parse_tmdb_id(self, id, category):
         id = id.lower().lstrip()
@@ -191,18 +185,3 @@ class Args():
         else:
             id = id
         return category, id
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

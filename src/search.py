@@ -1,7 +1,7 @@
 import platform
-import asyncio
 import os
 from src.console import console
+
 
 class Search():
     """
@@ -10,7 +10,6 @@ class Search():
     def __init__(self, config):
         self.config = config
         pass
-
 
     async def searchFile(self, filename):
         os_info = platform.platform()
@@ -54,6 +53,7 @@ class Search():
             return
         folders_found = False
         words = foldername.split()
+
         async def search_dir(search_dir):
             console.print(f"Searching {search_dir}")
             folders_total_search = []
@@ -70,19 +70,20 @@ class Search():
                             folders_total_search.append(root+'\\'+name)
                         else:
                             folders_total_search.append(root+'/'+name)
-            
+
             return folders_total_search
         config_dir = self.config['DISCORD']['search_dir']
         if isinstance(config_dir, list):
             for each in config_dir:
                 folders = await search_dir(each)
-                
+
                 folders_total = folders_total + folders
         else:
             folders_total = await search_dir(config_dir)
         return folders_total
 
         return folders_total
+
     async def file_search(self, name, name_words):
         check = True
         for word in name_words:

@@ -72,7 +72,6 @@ class BBCODE:
         elif any(x in is_disc for x in ["BDMV", "DVD"]):
             return ""
 
-
         # Convert Quote tags:
         desc = re.sub("\[quote.*?\]", "[code]", desc)
         desc = desc.replace("[/quote]", "[/code]")
@@ -91,7 +90,6 @@ class BBCODE:
         # Remove Staff tags
         desc = re.sub("\[staff[\s\S]*?\[\/staff\]", "", desc)
 
-
         #Remove Movie/Person/User/hr/Indent
         remove_list = [
             '[movie]', '[/movie]',
@@ -103,7 +101,7 @@ class BBCODE:
         ]
         for each in remove_list:
             desc = desc.replace(each, '')
-     
+
        #Catch Stray Images
         comps = re.findall("\[comparison=[\s\S]*?\[\/comparison\]", desc)
         hides = re.findall("\[hide[\s\S]*?\[\/hide\]", desc)
@@ -116,7 +114,6 @@ class BBCODE:
             nocomp = nocomp.replace(comps[i], '')
             desc = desc.replace(comps[i], f"COMPARISON_PLACEHOLDER-{i} ")
             comp_placeholders.append(comps[i])
-
 
         # Remove Images in IMG tags:
         desc = re.sub("\[img\][\s\S]*?\[\/img\]", "", desc, flags=re.IGNORECASE)
@@ -145,7 +142,6 @@ class BBCODE:
         if desc.replace('\n', '') == '':
             return ""
         return desc
-
     
     def clean_unit3d_description(self, desc, site):
         # Unescape html
@@ -175,7 +171,7 @@ class BBCODE:
             nospoil = nospoil.replace(spoilers[i], '')
             desc = desc.replace(spoilers[i], f"SPOILER_PLACEHOLDER-{i} ")
             spoiler_placeholders.append(spoilers[i])
-        
+
         # Get Images from outside spoilers
         imagelist = []
         url_tags = re.findall("\[url=[\s\S]*?\[\/url\]", desc)
@@ -213,7 +209,7 @@ class BBCODE:
 
         # Convert Comparison spoilers to [comparison=]
         desc = self.convert_collapse_to_comparison(desc, "spoiler", spoilers)
-                
+
         # Strip blank lines:
         desc = desc.strip('\n')
         desc = re.sub("\n\n+", "\n\n", desc)
@@ -225,32 +221,16 @@ class BBCODE:
             return "", imagelist
         return desc, imagelist
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def convert_pre_to_code(self, desc):
         desc = desc.replace('[pre]', '[code]')
         desc = desc.replace('[/pre]', '[/code]')
         return desc
     
-
     def convert_hide_to_spoiler(self, desc):
         desc = desc.replace('[hide', '[spoiler')
         desc = desc.replace('[/hide]', '[/spoiler]')
         return desc
-    
+
     def convert_spoiler_to_hide(self, desc):
         desc = desc.replace('[spoiler', '[hide')
         desc = desc.replace('[/spoiler]', '[/hide]')
@@ -259,7 +239,7 @@ class BBCODE:
     def remove_spoiler(self, desc):
         desc = re.sub("\[\/?spoiler[\s\S]*?\]", "", desc, flags=re.IGNORECASE)
         return desc
-    
+
     def convert_spoiler_to_code(self, desc):
         desc = desc.replace('[spoiler', '[code')
         desc = desc.replace('[/spoiler]', '[/code]')
@@ -294,7 +274,6 @@ class BBCODE:
             new_bbcode = f"[spoiler={' vs '.join(comp_sources)}][center]{' | '.join(comp_sources)}[/center]\n{output}[/spoiler]"
             desc = desc.replace(comp, new_bbcode)
         return desc
-
 
     def convert_comparison_to_centered(self, desc, max_width):
         comparisons = re.findall("\[comparison=[\s\S]*?\[\/comparison\]", desc)

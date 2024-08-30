@@ -9,7 +9,6 @@ from src.trackers.COMMON import COMMON
 from src.console import console
 
 
-
 class ACM():
     """
     Edit for Tracker:
@@ -18,12 +17,6 @@ class ACM():
         Set type/category IDs
         Upload
     """
-
-    ###############################################################
-    ########                    EDIT ME                    ########
-    ###############################################################
-
-    # ALSO EDIT CLASS NAME ABOVE
 
     def __init__(self, config):
         self.config = config
@@ -34,7 +27,7 @@ class ACM():
         self.signature = None
         self.banned_groups = [""]
         pass
-    
+
     async def get_cat_id(self, category_name):
         category_id = {
             'MOVIE': '1', 
@@ -179,7 +172,7 @@ class ACM():
                 for lang, subID in sub_lang_map.items():
                     if language in lang and subID not in sub_langs:
                         sub_langs.append(subID)
-        
+
         # if sub_langs == []: 
         #     sub_langs = [44] # No Subtitle
         return sub_langs
@@ -192,10 +185,6 @@ class ACM():
         elif len(subs) > 1:
             return ' [No Eng subs]'
         return f" [{subs[0]} subs only]"
-
-    ###############################################################
-    ######   STOP HERE UNLESS EXTRA MODIFICATION IS NEEDED   ######
-    ###############################################################
 
     async def upload(self, meta):
         common = COMMON(config=self.config)
@@ -264,7 +253,7 @@ class ACM():
         params = {
             'api_token' : self.config['TRACKERS'][self.tracker]['api_key'].strip()
         }
-        
+
         if meta['debug'] == False:
             response = requests.post(url=self.upload_url, files=files, data=data, headers=headers, params=params)
             try:
@@ -276,10 +265,6 @@ class ACM():
             console.print(f"[cyan]Request Data:")
             console.print(data)
         open_torrent.close()
-
-
-   
-
 
     async def search_existing(self, meta):
         dupes = []
@@ -347,8 +332,6 @@ class ACM():
 
         name = name + self.get_subs_tag(subs)
         return name
-
-
 
     async def edit_desc(self, meta):
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
