@@ -3,17 +3,16 @@ import asyncio
 import re
 import os
 from pathlib import Path
-import traceback
 import json
 import glob
 from unidecode import unidecode
 from urllib.parse import urlparse, quote
 from src.trackers.COMMON import COMMON
-from src.bbcode import BBCODE
 from src.exceptions import *
 from src.console import console
-from datetime import datetime, date
+from datetime import datetime
 from torf import Torrent
+
 
 class HDB():
 
@@ -26,7 +25,7 @@ class HDB():
         self.rehost_images = config['TRACKERS']['HDB'].get('img_rehost', False)
         self.signature = None
         self.banned_groups = [""]
-    
+
     async def get_type_category_id(self, meta):
         cat_id = "EXIT"
         # 6 = Audio Track
@@ -47,12 +46,12 @@ class HDB():
 
     async def get_type_codec_id(self, meta):
         codecmap = {
-            "AVC" : 1, "H.264" : 1,
-            "HEVC" : 5, "H.265" : 5,
-            "MPEG-2" : 2,
-            "VC-1" : 3,
-            "XviD" : 4,
-            "VP9" : 6
+            "AVC": 1, "H.264": 1,
+            "HEVC": 5, "H.265": 5,
+            "MPEG-2": 2,
+            "VC-1": 3,
+            "XviD": 4,
+            "VP9": 6
         }
         searchcodec = meta.get('video_codec', meta.get('video_encode'))
         codec_id = codecmap.get(searchcodec, "EXIT")
@@ -66,8 +65,8 @@ class HDB():
         # 4 = Capture
         if meta.get('type', '') == "HDTV":
             medium_id = 4
-            if meta.get('has_encode_settings', False) == True:
-                medium_id = 3  
+            if meta.get('has_encode_settings', False) is True:
+                medium_id = 3
         # 3 = Encode
         if meta.get('type', '') in ("ENCODE", "WEBRIP"):
             medium_id = 3
@@ -81,16 +80,16 @@ class HDB():
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '8640p':'10', 
-            '4320p': '1', 
-            '2160p': '2', 
-            '1440p' : '3',
+            '8640p': '10',
+            '4320p': '1',
+            '2160p': '2',
+            '1440p': '3',
             '1080p': '3',
-            '1080i':'4', 
-            '720p': '5',  
-            '576p': '6', 
+            '1080i': '4',
+            '720p': '5',
+            '576p': '6',
             '576i': '7',
-            '480p': '8', 
+            '480p': '8',
             '480i': '9'
             }.get(resolution, '10')
         return resolution_id
@@ -100,27 +99,27 @@ class HDB():
 
         # Web Services:
         service_dict = {
-            "AMZN" : 28,
-            "NF" : 29,
-            "HULU" : 34,
-            "DSNP" : 33,
-            "HMAX" : 30,
-            "ATVP" : 27,
-            "iT" : 38,
-            "iP" : 56,
-            "STAN" : 32,
-            "PCOK" : 31,
-            "CR" : 72,
-            "PMTP" : 69,
-            "MA" : 77,
-            "SHO" : 76,
-            "BCORE" : 66, "CORE" : 66,
-            "CRKL" : 73,
-            "FUNI" : 74,
-            "HLMK" : 71,
-            "HTSR" : 79,
-            "CRAV" : 80,
-            'MAX' : 88
+            "AMZN": 28,
+            "NF": 29,
+            "HULU": 34,
+            "DSNP": 33,
+            "HMAX": 30,
+            "ATVP": 27,
+            "iT": 38,
+            "iP": 56,
+            "STAN": 32,
+            "PCOK": 31,
+            "CR": 72,
+            "PMTP": 69,
+            "MA": 77,
+            "SHO": 76,
+            "BCORE": 66, "CORE": 66,
+            "CRKL": 73,
+            "FUNI": 74,
+            "HLMK": 71,
+            "HTSR": 79,
+            "CRAV": 80,
+            'MAX': 88
         }
         if meta.get('service') in service_dict.keys():
             tags.append(service_dict.get(meta['service']))
@@ -128,19 +127,18 @@ class HDB():
         # Collections
         # Masters of Cinema, The Criterion Collection, Warner Archive Collection
         distributor_dict = {
-            "WARNER ARCHIVE" : 68, "WARNER ARCHIVE COLLECTION" : 68, "WAC" : 68,
-            "CRITERION" : 18, "CRITERION COLLECTION" : 18, "CC" : 18,
-            "MASTERS OF CINEMA" : 19, "MOC" : 19,
-            "KINO LORBER" : 55, "KINO" : 55,
-            "BFI VIDEO" : 63, "BFI" : 63, "BRITISH FILM INSTITUTE" : 63,
-            "STUDIO CANAL" : 65,
-            "ARROW" : 64            
+            "WARNER ARCHIVE": 68, "WARNER ARCHIVE COLLECTION": 68, "WAC": 68,
+            "CRITERION": 18, "CRITERION COLLECTION": 18, "CC": 18,
+            "MASTERS OF CINEMA": 19, "MOC": 19,
+            "KINO LORBER": 55, "KINO": 55,
+            "BFI VIDEO": 63, "BFI": 63, "BRITISH FILM INSTITUTE": 63,
+            "STUDIO CANAL":65,
+            "ARROW": 64
         }
         if meta.get('distributor') in distributor_dict.keys():
             tags.append(distributor_dict.get(meta['distributor']))
-        
 
-        # 4K Remaster, 
+        # 4K Remaster,
         if "IMAX" in meta.get('edition', ''):
             tags.append(14)
         if "OPEN MATTE" in meta.get('edition', '').upper():
@@ -152,20 +150,20 @@ class HDB():
             tags.append(7)
         if "Atmos" in meta['audio']:
             tags.append(5)
-        if meta.get('silent', False) == True:
-            console.print('[yellow]zxx audio track found, suggesting you tag as silent') #57
+        if meta.get('silent', False) is True:
+            console.print('[yellow]zxx audio track found, suggesting you tag as silent')  # 57
 
         # Video Metadata
-        # HDR10, HDR10+, Dolby Vision, 10-bit, 
+        # HDR10, HDR10+, Dolby Vision, 10-bit,
         if "HDR" in meta.get('hdr', ''):
             if "HDR10+" in meta['hdr']:
-                tags.append(25) #HDR10+
+                tags.append(25)  # HDR10+
             else:
-                tags.append(9) #HDR10
+                tags.append(9)  # HDR10
         if "DV" in meta.get('hdr', ''):
-            tags.append(6) #DV
+            tags.append(6)  # DV
         if "HLG" in meta.get('hdr', ''):
-            tags.append(10) #HLG
+            tags.append(10)  # HLG
 
         return tags
 
@@ -196,7 +194,7 @@ class HDB():
         hdb_name = re.sub(r"[^0-9a-zA-ZÀ-ÿ. :&+'\-\[\]]+", "", hdb_name)
         hdb_name = hdb_name.replace(' .', '.').replace('..', '.')
 
-        return hdb_name 
+        return hdb_name
 
     async def upload(self, meta):
         common = COMMON(config=self.config)
@@ -248,7 +246,7 @@ class HDB():
                 comment="Created by L4G's Upload Assistant",
                 created_by="L4G's Upload Assistant"
             )
-            
+
             # Explicitly set the piece size and update metainfo
             new_torrent.piece_size = 16777216  # 16 MiB in bytes
             new_torrent.metainfo['info']['piece length'] = 16777216  # Ensure 'piece length' is set
@@ -279,7 +277,7 @@ class HDB():
             }
 
             # If internal, set 1
-            if self.config['TRACKERS'][self.tracker].get('internal', False) == True:
+            if self.config['TRACKERS'][self.tracker].get('internal', False) is True:
                 if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
                     data['internal'] = 1
             # If not BDMV fill mediainfo
@@ -324,12 +322,12 @@ class HDB():
         console.print("[yellow]Searching for existing torrents on site...")
         url = "https://hdbits.org/api/torrents"
         data = {
-            'username' : self.username,
-            'passkey' : self.passkey,
-            'category' : await self.get_type_category_id(meta),
-            'codec' : await self.get_type_codec_id(meta),
-            'medium' : await self.get_type_medium_id(meta),
-            'search' : meta['resolution']
+            'username': self.username,
+            'passkey': self.passkey,
+            'category': await self.get_type_category_id(meta),
+            'codec': await self.get_type_codec_id(meta),
+            'medium': await self.get_type_medium_id(meta),
+            'search': meta['resolution']
         }
         if int(meta.get('imdb_id', '0').replace('tt', '0')) != 0:
             data['imdb'] = {'id' : meta['imdb_id']}
@@ -348,21 +346,21 @@ class HDB():
         return dupes
 
     async def validate_credentials(self, meta):
-        vapi =  await self.validate_api()
+        vapi = await self.validate_api()
         vcookie = await self.validate_cookies(meta)
-        if vapi != True:
+        if vapi is not True:
             console.print('[red]Failed to validate API. Please confirm that the site is up and your passkey is valid.')
             return False
-        if vcookie != True:
+        if vcookie is not True:
             console.print('[red]Failed to validate cookies. Please confirm that the site is up and your passkey is valid.')
             return False
         return True
-    
+
     async def validate_api(self):
         url = "https://hdbits.org/api/test"
         data = {
-            'username' : self.username,
-            'passkey' : self.passkey
+            'username': self.username,
+            'passkey': self.passkey
         }
         try:
             r = requests.post(url, data=json.dumps(data)).json()
@@ -371,7 +369,7 @@ class HDB():
             return False
         except:
             return False
-    
+
     async def validate_cookies(self, meta):
         common = COMMON(config=self.config)
         url = "https://hdbits.org"
@@ -397,9 +395,9 @@ class HDB():
         # Get HDB .torrent filename
         api_url = "https://hdbits.org/api/torrents"
         data = {
-            'username' : self.username,
-            'passkey' : self.passkey,
-            'id' : id
+            'username': self.username,
+            'passkey': self.passkey,
+            'id': id
         }
         r = requests.get(url=api_url, data=json.dumps(data))
         filename = r.json()['data'][0]['filename']
@@ -407,8 +405,8 @@ class HDB():
         # Download new .torrent
         download_url = f"https://hdbits.org/download.php/{quote(filename)}"
         params = {
-            'passkey' : self.passkey,
-            'id' : id
+            'passkey': self.passkey,
+            'id': id
         }
 
         r = requests.get(url=download_url, params=params)
@@ -421,7 +419,7 @@ class HDB():
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w') as descfile:
             from src.bbcode import BBCODE
             # Add This line for all web-dls
-            if meta['type'] == 'WEBDL' and meta.get('service_longname', '') != '' and meta.get('description', None) == None:
+            if meta['type'] == 'WEBDL' and meta.get('service_longname', '') != '' and meta.get('description', None) is None:
                 descfile.write(f"[center][quote]This release is sourced from {meta['service_longname']}[/quote][/center]")
             bbcode = BBCODE()
             if meta.get('discs', []) != []:
@@ -448,40 +446,39 @@ class HDB():
             desc = bbcode.convert_comparison_to_centered(desc, 1000)
             desc = re.sub(r"(\[img=\d+)]", "[img]", desc, flags=re.IGNORECASE)
             descfile.write(desc)
-            if self.rehost_images == True:
+            if self.rehost_images is True:
                 console.print("[green]Rehosting Images...")
                 hdbimg_bbcode = await self.hdbimg_upload(meta)
                 descfile.write(f"{hdbimg_bbcode}")
             else:
                 images = meta['image_list']
-                if len(images) > 0: 
+                if len(images) > 0:
                     descfile.write("[center]")
                     for each in range(len(images[:int(meta['screens'])])):
                         img_url = images[each]['img_url']
                         web_url = images[each]['web_url']
                         descfile.write(f"[url={web_url}][img]{img_url}[/img][/url]")
                     descfile.write("[/center]")
-            if self.signature != None:
+            if self.signature is not None:
                 descfile.write(self.signature)
             descfile.close()
 
-    
     async def hdbimg_upload(self, meta):
         images = glob.glob(f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['filename']}-*.png")
         url = "https://img.hdbits.org/upload_api.php"
         data = {
-            'username' : self.username,
-            'passkey' : self.passkey,
-            'galleryoption' : 1,
-            'galleryname' : meta['name'],
-            'thumbsize' : 'w300'
+            'username': self.username,
+            'passkey': self.passkey,
+            'galleryoption': 1,
+            'galleryname': meta['name'],
+            'thumbsize': 'w300'
         }
         files = {}
 
         # Set maximum screenshots to 3 for tv singles and 6 for everthing else
-        hdbimg_screen_count = 3 if meta['category'] == "TV" and meta.get('tv_pack', 0) == 0 else 6 
+        hdbimg_screen_count = 3 if meta['category'] == "TV" and meta.get('tv_pack', 0) == 0 else 6
         if len(images) < hdbimg_screen_count:
-            hdbimg_screen_count = len(images) 
+            hdbimg_screen_count = len(images)
         for i in range(hdbimg_screen_count):
             files[f'images_files[{i}]'] = open(images[i], 'rb')
         r = requests.post(url=url, data=data, files=files)
@@ -492,17 +489,17 @@ class HDB():
         hdb_imdb = hdb_name = hdb_torrenthash = None
         url = "https://hdbits.org/api/torrents"
         data = {
-            "username" : self.username,
-            "passkey" : self.passkey,
-            "id" : hdb_id
+            "username": self.username,
+            "passkey": self.passkey,
+            "id": hdb_id
         }
         response = requests.get(url, json=data)
         if response.ok:
             try:
                 response = response.json()
                 if response['data'] != []:
-                    hdb_imdb = response['data'][0].get('imdb', {'id' : None}).get('id')
-                    hdb_tvdb = response['data'][0].get('tvdb', {'id' : None}).get('id')
+                    hdb_imdb = response['data'][0].get('imdb', {'id': None}).get('id')
+                    hdb_tvdb = response['data'][0].get('tvdb', {'id': None}).get('id')
                     hdb_name = response['data'][0]['name']
                     hdb_torrenthash = response['data'][0]['hash']
 
@@ -515,7 +512,7 @@ class HDB():
     async def search_filename(self, search_term, search_file_folder):
         hdb_imdb = hdb_tvdb = hdb_name = hdb_torrenthash = hdb_id = None
         url = "https://hdbits.org/api/torrents"
-        
+
         if search_file_folder == 'folder':  # Handling disc case
             data = {
                 "username": self.username,
@@ -534,7 +531,7 @@ class HDB():
             console.print(f"[green]Searching HDB for file: [bold yellow]{os.path.basename(search_term)}[/bold yellow]")
 
         response = requests.get(url, json=data)
-        
+
         if response.ok:
             try:
                 response_json = response.json()
@@ -560,6 +557,6 @@ class HDB():
                 console.print(f"[red]Failed to parse HDB API response. Error: {str(e)}[/red]")
         else:
             console.print(f"[red]Failed to get info from HDB. Status code: {response.status_code}, Reason: {response.reason}[/red]")
-        
-        console.print(f'[yellow]Could not find a matching release on HDB[/yellow]')
+
+        console.print('[yellow]Could not find a matching release on HDB[/yellow]')
         return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash, hdb_id

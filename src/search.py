@@ -20,6 +20,7 @@ class Search():
             return
         file_found = False
         words = filename.split()
+
         async def search_file(search_dir):
             files_total_search = []
             console.print(f"Searching {search_dir}")
@@ -30,7 +31,7 @@ class Search():
                         os_info = platform.platform()
                         if await self.file_search(l_name, words):
                             file_found = True
-                            if('Windows' in os_info):
+                            if ('Windows' in os_info):
                                 files_total_search.append(root+'\\'+name)
                             else:
                                 files_total_search.append(root+'/'+name)
@@ -66,7 +67,7 @@ class Search():
 
                     if await self.file_search(l_name, words):
                         folder_found = True
-                        if('Windows' in os_info):
+                        if ('Windows' in os_info):
                             folders_total_search.append(root+'\\'+name)
                         else:
                             folders_total_search.append(root+'/'+name)

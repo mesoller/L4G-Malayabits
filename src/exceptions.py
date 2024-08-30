@@ -8,8 +8,8 @@ class LoginException(Exception):
             # ... pass them to the super constructor
             super().__init__(*args, **kwargs)
         else:  # else, the exception was raised without arguments ...
-                # ... pass the default message to the super constructor
-                super().__init__(default_message, **kwargs)
+            # ... pass the default message to the super constructor
+            super().__init__(default_message, **kwargs)
 
 
 class UploadException(Exception):
@@ -22,8 +22,8 @@ class UploadException(Exception):
             # ... pass them to the super constructor
             super().__init__(*args, **kwargs)
         else:  # else, the exception was raised without arguments ...
-                # ... pass the default message to the super constructor
-                super().__init__(default_message, **kwargs)
+            # ... pass the default message to the super constructor
+            super().__init__(default_message, **kwargs)
 
 
 class XEMNotFound(Exception):

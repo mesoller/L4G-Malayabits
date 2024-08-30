@@ -28,7 +28,7 @@ class DiscParse():
             for file in os.listdir(save_dir):
                 if file == f"BD_SUMMARY_{str(i).zfill(2)}.txt":
                     bdinfo_text = save_dir + "/" + file
-            if bdinfo_text == None or meta_discs == []:
+            if bdinfo_text is None or meta_discs == []:
                 if os.path.exists(f"{save_dir}/BD_FULL_{str(i).zfill(2)}.txt"):
                     bdinfo_text = os.path.abspath(f"{save_dir}/BD_FULL_{str(i).zfill(2)}.txt")
                 else:
@@ -115,7 +115,7 @@ class DiscParse():
             if line.startswith("disc size:"):
                 size = l.split(':', 1)[1]
                 size = size.split('bytes', 1)[0].replace(',', '')
-                size = float(size)/float(1<<30)
+                size = float(size)/float(1 << 30)
                 bdinfo['size'] = size
             if line.startswith("length:"):
                 length = l.split(':', 1)[1]
@@ -125,7 +125,7 @@ class DiscParse():
                 split2 = split1.split('/', 12)
                 while len(split2) != 9:
                     split2.append("")
-                n=0
+                n = 0
                 if "Eye" in split2[2].strip():
                     n = 1
                     three_dim = split2[2].strip()
@@ -203,7 +203,7 @@ class DiscParse():
             except:
                 pass
         return bdinfo
-    
+
     """
     Parse VIDEO_TS and get mediainfos
     """
@@ -230,7 +230,7 @@ class DiscParse():
                 vob_set_duration = vob_set_mi['media']['track'][1]['Duration']
 
                 # If the duration of the new vob set > main set by more than 10% then it's our new main set
-                # This should make it so TV shows pick the first episode 
+                # This should make it so TV shows pick the first episode
                 if (float(vob_set_duration) * 1.00) > (float(main_set_duration) * 1.10) or len(main_set) < 1:
                     main_set = vob_set
                     main_set_duration = vob_set_duration
@@ -243,7 +243,7 @@ class DiscParse():
             each['vob_mi_full'] = MediaInfo.parse(vob, output='STRING', full=False, mediainfo_options={'inform_version': '1'}).replace('\r\n', '\n')
             each['ifo_mi_full'] = MediaInfo.parse(ifo, output='STRING', full=False, mediainfo_options={'inform_version': '1'}).replace('\r\n', '\n')
 
-            size = sum(os.path.getsize(f) for f in os.listdir('.') if os.path.isfile(f))/float(1<<30)
+            size = sum(os.path.getsize(f) for f in os.listdir('.') if os.path.isfile(f))/float(1 << 30)
             if size <= 7.95:
                 dvd_size = "DVD9"
                 if size <= 4.37:

@@ -4,12 +4,12 @@ import asyncio
 import requests
 from difflib import SequenceMatcher
 from str2bool import str2bool
-import urllib
 import os
 import platform
 
 from src.trackers.COMMON import COMMON
 from src.console import console
+
 
 class BHD():
     """
@@ -24,10 +24,10 @@ class BHD():
         self.tracker = 'BHD'
         self.source_flag = 'BHD'
         self.upload_url = 'https://beyond-hd.me/api/upload/'
-        self.signature = f"\n[center][url=https://beyond-hd.me/forums/topic/toolpython-l4gs-upload-assistant.5456/post/138087#post-138087]Created by L4G's Upload Assistant[/url][/center]"
+        self.signature = "\n[center][url=https://beyond-hd.me/forums/topic/toolpython-l4gs-upload-assistant.5456/post/138087#post-138087]Created by L4G's Upload Assistant[/url][/center]"
         self.banned_groups = ['Sicario', 'TOMMY', 'x0r', 'nikt0', 'FGT', 'd3g', 'MeGusta', 'YIFY', 'tigole', 'TEKNO3D', 'C4K', 'RARBG', '4K4U', 'EASports', 'ReaLHD']
         pass
-    
+
     async def upload(self, meta):
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
@@ -39,12 +39,12 @@ class BHD():
         tags = await self.get_tags(meta)
         custom, edition = await self.get_edition(meta, tags)
         bhd_name = await self.edit_name(meta)
-        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) == False:
+        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
             anon = 0
         else:
             anon = 1
 
-        if meta['bdinfo'] != None:
+        if meta['bdinfo'] is not None:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8')
         else:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO.txt", 'r', encoding='utf-8')
@@ -52,7 +52,7 @@ class BHD():
         desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r').read()
         torrent_file = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
         files = {
-            'mediainfo' : mi_dump,
+            'mediainfo': mi_dump,
             }
         if os.path.exists(torrent_file):
             open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
@@ -64,12 +64,12 @@ class BHD():
             'category_id': cat_id,
             'type': type_id,
             'source': source_id,
-            'imdb_id': meta['imdb_id'].replace('tt', ''),    
+            'imdb_id': meta['imdb_id'].replace('tt', ''),
             'tmdb_id': meta['tmdb'],
             'description': desc,
             'anon': anon,
             'sd': meta.get('sd', 0),
-            'live': draft 
+            'live': draft
             # 'internal' : 0,
             # 'featured' : 0,
             # 'free' : 0,
@@ -77,7 +77,7 @@ class BHD():
             # 'sticky' : 0,
         }
         # Internal
-        if self.config['TRACKERS'][self.tracker].get('internal', False) == True:
+        if self.config['TRACKERS'][self.tracker].get('internal', False) is True:
             if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
                 data['internal'] = 1
 
@@ -87,7 +87,7 @@ class BHD():
             data['special'] = 1
         if meta.get('region', "") != "":
             data['region'] = meta['region']
-        if custom == True:
+        if custom is True:
             data['custom_edition'] = edition
         elif edition != "":
             data['edition'] = edition
@@ -98,7 +98,7 @@ class BHD():
         }
 
         url = self.upload_url + self.config['TRACKERS'][self.tracker]['api_key'].strip()
-        if meta['debug'] == False:
+        if meta['debug'] is False:
             response = requests.post(url=url, files=files, data=data, headers=headers)
             try:
                 response = response.json()
@@ -114,29 +114,29 @@ class BHD():
                 console.print(response)
             except:
                 console.print("It may have uploaded, go check")
-                return 
+                return
         else:
-            console.print(f"[cyan]Request Data:")
+            console.print("[cyan]Request Data:")
             console.print(data)
 
     async def get_cat_id(self, category_name):
         category_id = {
-            'MOVIE': '1', 
-            'TV': '2', 
+            'MOVIE': '1',
+            'TV': '2',
             }.get(category_name, '1')
         return category_id
 
     async def get_source(self, source):
         sources = {
-            "Blu-ray" : "Blu-ray",
-            "BluRay" : "Blu-ray",
-            "HDDVD" : "HD-DVD",
-            "HD DVD" : "HD-DVD",
-            "Web" : "WEB",
-            "HDTV" : "HDTV",
-            "UHDTV" : "HDTV",
-            "NTSC" : "DVD",  "NTSC DVD" : "DVD",
-            "PAL" : "DVD", "PAL DVD": "DVD",
+            "Blu-ray": "Blu-ray",
+            "BluRay": "Blu-ray",
+            "HDDVD": "HD-DVD",
+            "HD DVD": "HD-DVD",
+            "Web": "WEB",
+            "HDTV": "HDTV",
+            "UHDTV": "HDTV",
+            "NTSC": "DVD",  "NTSC DVD" : "DVD",
+            "PAL": "DVD", "PAL DVD": "DVD",
         }
 
         source_id = sources.get(source)
@@ -160,7 +160,7 @@ class BHD():
             if "DVD5" in meta['dvd_size']:
                 type_id = "DVD 5"
             elif "DVD9" in meta['dvd_size']:
-                type_id = "DVD 9"    
+                type_id = "DVD 9"
         else:
             if meta['type'] == "REMUX":
                 if meta['source'] == "BluRay":
@@ -178,7 +178,7 @@ class BHD():
                 else:
                     type_id = "Other"
         return type_id
-        
+
     async def edit_desc(self, meta):
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w') as desc:
@@ -202,7 +202,7 @@ class BHD():
                             desc.write("\n")
             desc.write(base.replace("[img]", "[img width=300]"))
             images = meta['image_list']
-            if len(images) > 0: 
+            if len(images) > 0:
                 desc.write("[center]")
                 for each in range(len(images[:int(meta['screens'])])):
                     web_url = images[each]['web_url']
@@ -220,9 +220,9 @@ class BHD():
         if category == 'MOVIE':
             category = "Movies"
         data = {
-            'tmdb_id' : meta['tmdb'],
-            'categories' : category,
-            'types' : await self.get_type(meta),
+            'tmdb_id': meta['tmdb'],
+            'categories': category,
+            'types': await self.get_type(meta),
         }
         # Search all releases if SD
         if meta['sd'] == 1:
@@ -244,16 +244,16 @@ class BHD():
                         dupes.append(result)
             else:
                 console.print(f"[yellow]{response.get('status_message')}")
-                await asyncio.sleep(5) 
+                await asyncio.sleep(5)
         except:
             console.print('[bold red]Unable to search for existing torrents on site. Most likely the site is down.')
             await asyncio.sleep(5)
 
         return dupes
 
-    async def get_live(self, meta): 
+    async def get_live(self, meta):
         draft = self.config['TRACKERS'][self.tracker]['draft_default'].strip()
-        draft = bool(str2bool(str(draft))) #0 for send to draft, 1 for live
+        draft = bool(str2bool(str(draft)))  # 0 for send to draft, 1 for live
         if draft:
             draft_int = 0
         else:
@@ -274,7 +274,7 @@ class BHD():
             elif edition == "":
                 edition = ""
             else:
-                custom = True 
+                custom = True
         return custom, edition
 
     async def get_tags(self, meta):
@@ -291,13 +291,13 @@ class BHD():
             tags.append('EnglishDub')
         if "Open Matte" in meta.get('edition', ""):
             tags.append("OpenMatte")
-        if meta.get('scene', False) == True:
+        if meta.get('scene', False) is True:
             tags.append("Scene")
-        if meta.get('personalrelease', False) == True:
+        if meta.get('personalrelease', False) is True:
             tags.append('Personal')
         if "hybrid" in meta.get('edition', "").lower():
             tags.append('Hybrid')
-        if meta.get('has_commentary', False) == True:
+        if meta.get('has_commentary', False) is True:
             tags.append('Commentary')
         if "DV" in meta.get('hdr', ''):
             tags.append('DV')

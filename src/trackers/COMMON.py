@@ -1,6 +1,5 @@
 from torf import Torrent
 import os
-import traceback
 import requests
 import re
 import json
@@ -75,7 +74,7 @@ class COMMON():
                     descfile.write(f"[url={web_url}][img=350]{raw_url}[/img][/url]")
                 descfile.write("[/center]")
 
-            if signature != None:
+            if signature is not None:
                 descfile.write(signature)
             descfile.close()
         return
@@ -157,7 +156,7 @@ class COMMON():
             url = f"{search_url}?file_name={file_name}"
             console.print(f"[green]Searching {tracker} by file name: [bold yellow]{file_name}[/bold yellow]")
         else:
-            console.print(f"[red]No ID or file name provided for search.[/red]")
+            console.print("[red]No ID or file name provided for search.[/red]")
             return None, None, None, None, None, None, None, None, None
 
         response = requests.get(url=url, params=params)
@@ -215,33 +214,33 @@ class COMMON():
         if ptgen_site != '':
             url = ptgen_site
         params = {}
-        data={}
-        #get douban url 
+        data = {}
+        # get douban url 
         if int(meta.get('imdb_id', '0')) != 0:
             data['search'] = f"tt{meta['imdb_id']}"
             ptgen = requests.get(url, params=data)
-            if ptgen.json()["error"] != None:
+            if ptgen.json()["error"] is not None:
                 for retry in range(ptgen_retry):
                     try:
                         ptgen = requests.get(url, params=params)
-                        if ptgen.json()["error"] == None:
+                        if ptgen.json()["error"] is None:
                             break
                     except requests.exceptions.JSONDecodeError:
                         continue
             try:
-                params['url'] = ptgen.json()['data'][0]['link'] 
+                params['url'] = ptgen.json()['data'][0]['link']
             except Exception:
                 console.print("[red]Unable to get data from ptgen using IMDb")
-                params['url'] = console.input(f"[red]Please enter [yellow]Douban[/yellow] link: ")
+                params['url'] = console.input("[red]Please enter [yellow]Douban[/yellow] link: ")
         else:
             console.print("[red]No IMDb id was found.")
-            params['url'] = console.input(f"[red]Please enter [yellow]Douban[/yellow] link: ")
+            params['url'] = console.input("[red]Please enter [yellow]Douban[/yellow] link: ")
         try:
             ptgen = requests.get(url, params=params)
-            if ptgen.json()["error"] != None:
+            if ptgen.json()["error"] is not None:
                 for retry in range(ptgen_retry):
                     ptgen = requests.get(url, params=params)
-                    if ptgen.json()["error"] == None:
+                    if ptgen.json()["error"] is None:
                         break
             ptgen = ptgen.json()
             meta['ptgen'] = ptgen
@@ -288,7 +287,7 @@ class COMMON():
                 {
                     'search': str(meta.get('tv_pack', 0)),
                     'search_for': '1',
-                    'update': {f"{meta['season']}(?!E\d+)"}
+                    'update': {rf"{meta['season']}(?!E\d+)"}
                 },
                 {
                     'search': meta['episode'],

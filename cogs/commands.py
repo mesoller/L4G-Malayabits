@@ -1,4 +1,3 @@
-from discord.ext.commands.errors import CommandInvokeError
 from src.prep import Prep
 from src.args import Args
 from src.clients import Clients
@@ -247,11 +246,11 @@ class Commands(commands.Cog):
         # await ctx.send(folders_total)
         return
 
-    async def send_embed_and_upload(self,ctx,meta):
+    async def send_embed_and_upload(self, ctx, meta):
         prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=config)
         meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await prep.get_name(meta)
 
-        if meta.get('uploaded_screens', False) == False:
+        if meta.get('uploaded_screens', False) is False:
             if meta.get('embed_msg_id', '0') != '0':
                 message = await ctx.fetch_message(meta['embed_msg_id'])
                 await message.edit(embed=discord.Embed(title="Uploading Screenshots", color=0xffff00))
@@ -261,17 +260,16 @@ class Commands(commands.Cog):
 
             channel = message.channel.id
             return_dict = multiprocessing.Manager().dict()
-            u = multiprocessing.Process(target = prep.upload_screens, args=(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict))
+            u = multiprocessing.Process(target=prep.upload_screens, args=(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict))
             u.start()
-            while u.is_alive() == True:
+            while u.is_alive() is True:
                 await asyncio.sleep(3)
             meta['image_list'] = return_dict['image_list']
             if meta['debug']:
                 print(meta['image_list'])
             meta['uploaded_screens'] = True
 
-        #Create base .torrent
-
+        # Create base .torrent
         if len(glob(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")) == 0:
             if meta.get('embed_msg_id', '0') != '0':
                 message = await ctx.fetch_message(int(meta['embed_msg_id']))
@@ -280,15 +278,15 @@ class Commands(commands.Cog):
                 message = await ctx.send(embed=discord.Embed(title="Creating .torrent", color=0xffff00))
                 meta['embed_msg_id'] = message.id
             channel = message.channel
-            if meta['nohash'] == False:
-                if meta.get('torrenthash', None) != None:
+            if meta['nohash'] is False:
+                if meta.get('torrenthash', None) is not None:
                     reuse_torrent = await client.find_existing_torrent(meta)
-                    if reuse_torrent != None:
+                    if reuse_torrent is not None:
                         prep.create_base_from_existing_torrent(reuse_torrent, meta['base_dir'], meta['uuid'])
 
-                p = multiprocessing.Process(target = prep.create_torrent, args=(meta, Path(meta['path'])))
+                p = multiprocessing.Process(target=prep.create_torrent, args=(meta, Path(meta['path'])))
                 p.start()
-                while p.is_alive() == True:
+                while p.is_alive() is True:
                     await asyncio.sleep(5)
 
                 if int(meta.get('randomized', 0)) >= 1:
@@ -296,7 +294,7 @@ class Commands(commands.Cog):
             else:
                 meta['client'] = 'none'
 
-        #Format for embed
+        # Format for embed
         if meta['tag'] == "":
             tag = ""
         else:
@@ -322,12 +320,12 @@ class Commands(commands.Cog):
             embed.add_field(name=f"POTENTIALLY MISSING INFORMATION:", value="\n".join(missing), inline=False)
         embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/original{meta['poster']}")
         embed.set_footer(text=meta['uuid'])
-        embed.set_author(name="L4G's Upload Assistant", url="https://github.com/L4GSP1KE/Upload-Assistant", icon_url="https://images2.imgbox.com/6e/da/dXfdgNYs_o.png")
-        
+        embed.set_author(name="L4G's Upload Assistant", url="https://github.com/Audionut/Upload-Assistant", icon_url="https://images2.imgbox.com/6e/da/dXfdgNYs_o.png")
+
         message = await ctx.fetch_message(meta['embed_msg_id'])
         await message.edit(embed=embed)
 
-        if meta.get('trackers', None) != None:
+        if meta.get('trackers', None) is not None:
             trackers = meta['trackers']
         else:
             trackers = config['TRACKERS']['default_trackers']
@@ -350,14 +348,14 @@ class Commands(commands.Cog):
                 await asyncio.sleep(0.3)
             if "CBR" in each.replace(' ', ''):
                 await message.add_reaction(config['DISCORD']['discord_emojis']['CBR'])
-                await asyncio.sleep(0.3)                 
+                await asyncio.sleep(0.3)
         await message.add_reaction(config['DISCORD']['discord_emojis']['MANUAL'])
         await asyncio.sleep(0.3)
         await message.add_reaction(config['DISCORD']['discord_emojis']['CANCEL'])
         await asyncio.sleep(0.3)
         await message.add_reaction(config['DISCORD']['discord_emojis']['UPLOAD'])
 
-        #Save meta to json
+        # Save meta to json
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
             json.dump(meta, f, indent=4)
             f.close()
@@ -393,7 +391,7 @@ class Commands(commands.Cog):
             return
         else:
 
-            #Check which are selected and upload to them
+            # Check which are selected and upload to them
             msg = await ctx.fetch_message(message.id)
             tracker_list = list()
             tracker_emojis = config['DISCORD']['discord_emojis']
@@ -434,29 +432,29 @@ class Commands(commands.Cog):
                         await cbr.edit_desc(meta)
                 archive_url = await prep.package(meta)
                 upload_embed_description = upload_embed_description.replace('MANUAL', '~~MANUAL~~')
-                if archive_url == False:
+                if archive_url is False:
                     upload_embed = discord.Embed(title=f"Uploaded `{meta['name']}` to:", description=upload_embed_description, color=0xff0000)
                     upload_embed.add_field(name="Unable to upload prep files", value=f"The files can be found at `tmp/{meta['title']}.tar`")
                     await msg.edit(embed=upload_embed)
                 else:
                     upload_embed = discord.Embed(title=f"Uploaded `{meta['name']}` to:", description=upload_embed_description, color=0x00ff40)
-                    upload_embed.add_field(name="Files can be found at:",value=f"{archive_url} or `tmp/{meta['uuid']}`")
+                    upload_embed.add_field(name="Files can be found at:", value=f"{archive_url} or `tmp/{meta['uuid']}`")
                     await msg.edit(embed=upload_embed)
             if "BLU" in tracker_list:
                 blu = BLU(config=config)
                 dupes = await blu.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await blu.upload(meta)
                     await client.add_to_client(meta, "BLU")
                     upload_embed_description = upload_embed_description.replace('BLU', '~~BLU~~')
                     upload_embed = discord.Embed(title=f"Uploaded `{meta['name']}` to:", description=upload_embed_description, color=0x00ff40)
-                    await msg.edit(embed=upload_embed) 
+                    await msg.edit(embed=upload_embed)
             if "BHD" in tracker_list:
                 bhd = BHD(config=config)
                 dupes = await bhd.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await bhd.upload(meta)
                     await client.add_to_client(meta, "BHD")
                     upload_embed_description = upload_embed_description.replace('BHD', '~~BHD~~')
@@ -466,7 +464,7 @@ class Commands(commands.Cog):
                 aither = AITHER(config=config)
                 dupes = await aither.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await aither.upload(meta)
                     await client.add_to_client(meta, "AITHER")
                     upload_embed_description = upload_embed_description.replace('AITHER', '~~AITHER~~')
@@ -476,7 +474,7 @@ class Commands(commands.Cog):
                 stc = STC(config=config)
                 dupes = await stc.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await stc.upload(meta)
                     await client.add_to_client(meta, "STC")
                     upload_embed_description = upload_embed_description.replace('STC', '~~STC~~')
@@ -486,7 +484,7 @@ class Commands(commands.Cog):
                 lcd = LCD(config=config)
                 dupes = await lcd.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await lcd.upload(meta)
                     await client.add_to_client(meta, "LCD")
                     upload_embed_description = upload_embed_description.replace('LCD', '~~LCD~~')
@@ -496,7 +494,7 @@ class Commands(commands.Cog):
                 cbr = CBR(config=config)
                 dupes = await cbr.search_existing(meta)
                 meta = await self.dupe_embed(dupes, meta, tracker_emojis, channel)
-                if meta['upload'] == True:
+                if meta['upload'] is True:
                     await cbr.upload(meta)
                     await client.add_to_client(meta, "CBR")
                     upload_embed_description = upload_embed_description.replace('CBR', '~~CBR~~')
@@ -562,8 +560,10 @@ class Commands(commands.Cog):
 def setup(bot):
     bot.add_cog(Commands(bot))
 
+
 class CancelException(Exception):
     pass
+
 
 class ManualException(Exception):
     pass

@@ -37,9 +37,9 @@ class Clients():
             default_torrent_client = self.config['DEFAULT']['default_torrent_client']
         else:
             default_torrent_client = meta['client']
-        if meta.get('client', None) is 'none':
+        if meta.get('client', None) == 'none':
             return
-        if default_torrent_client is "none":
+        if default_torrent_client == "none":
             return
         client = self.config['TORRENT_CLIENTS'][default_torrent_client]
         torrent_client = client['torrent_client']
@@ -64,7 +64,7 @@ class Clients():
             default_torrent_client = self.config['DEFAULT']['default_torrent_client']
         else:
             default_torrent_client = meta['client']
-        if meta.get('client', None) is 'none' or default_torrent_client is 'none':
+        if meta.get('client', None) == 'none' or default_torrent_client == 'none':
             return None
         client = self.config['TORRENT_CLIENTS'][default_torrent_client]
         torrent_storage_dir = client.get('torrent_storage_dir', None)
@@ -394,8 +394,10 @@ class Clients():
             resume["files"].append(dict(
                 priority=1,
                 mtime=int(os.path.getmtime(filepath)),
-                completed=(offset+fileinfo["length"]+piece_length-1) // piece_length
-                        - offset // piece_length,
+                completed=(
+                    (offset + fileinfo["length"] + piece_length - 1) // piece_length
+                    - offset // piece_length
+                ),
             ))
             offset += fileinfo["length"]
 

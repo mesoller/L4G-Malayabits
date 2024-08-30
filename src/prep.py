@@ -9,14 +9,11 @@ from src.trackers.COMMON import COMMON
 
 try:
     import traceback
-    import nest_asyncio
     from src.discparse import DiscParse
     import multiprocessing
     import os
-    from os.path import basename
     import re
     import math
-    import sys
     from str2bool import str2bool
     import asyncio
     from guessit import guessit
@@ -32,7 +29,7 @@ try:
     import pyimgbox
     from pymediainfo import MediaInfo
     import tmdbsimple as tmdb
-    from datetime import datetime, date
+    from datetime import datetime
     from difflib import SequenceMatcher
     import torf
     from torf import Torrent
@@ -41,8 +38,6 @@ try:
     import anitopy
     import shutil
     from imdb import Cinemagoer
-    from subprocess import Popen
-    import subprocess
     import itertools
     import cli_ui
     from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn

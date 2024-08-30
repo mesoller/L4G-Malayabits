@@ -48,12 +48,12 @@ class BLU():
         resolution_id = await self.get_res_id(meta['resolution'])
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
-        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) == False:
+        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
             anon = 0
         else:
             anon = 1
 
-        if meta['bdinfo'] != None:
+        if meta['bdinfo'] is not None:
             mi_dump = None
             bd_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8').read()
         else:
@@ -66,7 +66,7 @@ class BLU():
             'name': blu_name,
             'description': desc,
             'mediainfo': mi_dump,
-            'bdinfo': bd_dump, 
+            'bdinfo': bd_dump,
             'category_id': cat_id,
             'type_id': type_id,
             'resolution_id': resolution_id,
@@ -87,7 +87,7 @@ class BLU():
             'sticky': 0,
         }
         # Internal
-        if self.config['TRACKERS'][self.tracker].get('internal', False) == True:
+        if self.config['TRACKERS'][self.tracker].get('internal', False) is True:
             if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
                 data['internal'] = 1
 
@@ -105,7 +105,7 @@ class BLU():
             'api_token': self.config['TRACKERS'][self.tracker]['api_key'].strip()
         }
 
-        if meta['debug'] == False:
+        if meta['debug'] is False:
             response = requests.post(url=self.upload_url, files=files, data=data, headers=headers, params=params)
             try:
                 console.print(response.json())
@@ -141,12 +141,12 @@ class BLU():
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '8640p':'10',
+            '8640p': '10',
             '4320p': '11',
             '2160p': '1',
             '1440p': '2',
             '1080p': '2',
-            '1080i':'3',
+            '1080i': '3',
             '720p': '5',
             '576p': '6',
             '576i': '7',
