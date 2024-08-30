@@ -95,12 +95,11 @@ class Prep():
                 blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist, blu_filename = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, tracker_instance.search_url, id=meta[tracker_key])
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
                     console.print(f"[green]Valid data found on {tracker_name}, setting meta values[/green]")
-                    # Prompt user for selection
                     if await self.prompt_user_for_id_selection(blu_tmdb, blu_imdb, blu_tvdb, blu_filename):
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
-                            meta['imdb'] = str(blu_imdb)
+                            meta['imdb'] = str(blu_imdb).zfill(7)  # Pad IMDb ID with leading zeros
                         if blu_tvdb not in [None, '0']:
                             meta['tvdb_id'] = blu_tvdb
                         if blu_mal not in [None, '0']:
@@ -115,17 +114,20 @@ class Prep():
                             meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
                         found_match = True  # Set flag if any relevant data is found
                     else:
-                        console.print(f"[yellow]User skipped the found ID on {tracker_name}[/yellow]")
+                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        return meta, found_match  # Return immediately to skip the current site
                 else:
                     console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
             else:
                 meta['imdb'], meta['ext_torrenthash'] = await tracker_instance.get_imdb_from_torrent_id(meta[tracker_key])
                 if meta['imdb']:
+                    meta['imdb'] = str(meta['imdb']).zfill(7)  # Pad IMDb ID with leading zeros
                     if await self.prompt_user_for_id_selection(imdb=meta['imdb']):
                         console.print(f"[green]{tracker_name} IMDb ID found: {meta['imdb']}[/green]")
                         found_match = True
                     else:
-                        console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}[/yellow]")
+                        console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.[/yellow]")
+                        return meta, found_match  # Return immediately to skip the current site
                 else:
                     console.print(f"[yellow]No IMDb ID found on {tracker_name}[/yellow]")
         else:
@@ -146,7 +148,7 @@ class Prep():
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
-                            meta['imdb'] = str(blu_imdb)
+                            meta['imdb'] = str(blu_imdb).zfill(7)  # Pad IMDb ID with leading zeros
                         if blu_tvdb not in [None, '0']:
                             meta['tvdb_id'] = blu_tvdb
                         if blu_mal not in [None, '0']:
@@ -160,18 +162,23 @@ class Prep():
                         if blu_filename:
                             meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
                         found_match = True
+                    else:
+                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        return meta, found_match  # Return immediately to skip the current site
                 else:
                     console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
             else:
                 imdb = tracker_id = None
 
             if imdb:
+                imdb = str(imdb).zfill(7)  # Pad IMDb ID with leading zeros
                 if await self.prompt_user_for_id_selection(imdb=imdb):
                     console.print(f"[green]{tracker_name} IMDb ID found: {imdb}[/green]")
-                    meta['imdb'] = str(imdb)
+                    meta['imdb'] = imdb
                     found_match = True
                 else:
-                    console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}[/yellow]")
+                    console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.[/yellow]")
+                    return meta, found_match  # Return immediately to skip the current site
             if tracker_id:
                 meta[tracker_key] = tracker_id
 
@@ -374,7 +381,6 @@ class Prep():
             meta = await self.get_tmdb_from_imdb(meta, filename)
         else:
             meta['tmdb_manual'] = meta.get('tmdb', None)
-
         
         # If no tmdb, use imdb for meta
         if int(meta['tmdb']) == 0:
@@ -490,9 +496,6 @@ class Prep():
         discs = sorted(discs, key=lambda d: d['name'])
         return is_disc, videoloc, bdinfo, discs
 
-
-   
-
     """
     Get video files
 
@@ -516,8 +519,6 @@ class Prep():
             filelist.append(videoloc)
         filelist = sorted(filelist)
         return video, filelist
-
-
 
     """
     Get and parse mediainfo
@@ -1586,13 +1587,6 @@ class Prep():
         if not episodes:
             episodes = 0
         return romaji, mal_id, eng_title, season_year, episodes
-
-
-
-
-
-
-
 
     """
     Mediainfo/Bdinfo > meta
