@@ -553,7 +553,7 @@ class HDB():
                             hdb_name = each['name']
                             hdb_torrenthash = each['hash']
                             hdb_id = each['id']
-                            console.print(f'[bold green]Matched release with HDB ID: [yellow]{hdb_id}[/yellow][/bold green]')
+                            console.print(f'[bold green]Matched release with HDB ID: [yellow]https://hdbits.org/details.php?id={hdb_id}[/yellow][/bold green]')
                             return hdb_imdb, hdb_tvdb, hdb_name, hdb_torrenthash, hdb_id
             except Exception as e:
                 console.print_exception()

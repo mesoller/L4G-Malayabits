@@ -60,7 +60,7 @@ config = {
             # "anon" : "False"
         },
         "PTP": {
-            "useAPI": False, # Set to True if using PTP
+            "useAPI": False,  # Set to True if using PTP
             "add_web_source_to_desc": True,
             "ApiUser": "ptp api user",
             "ApiKey": 'ptp api key',
@@ -147,7 +147,7 @@ config = {
             "api_key": "CBR api key",
             "announce_url": "https://capybarabr.com/announce/customannounceurl",
             # "anon" : False
-        },        
+        },
         "LST": {
             "api_key": "LST api key",
             "announce_url": "https://lst.gg/announce/customannounceurl",
@@ -179,7 +179,7 @@ config = {
             "password": "password",
             "my_announce_url": "https://hdts-announce.ru/announce.php?pid=<PASS_KEY/PID>",
             # "anon" : "False"
-            "announce_url": "https://hdts-announce.ru/announce.php", #DO NOT EDIT THIS LINE
+            "announce_url": "https://hdts-announce.ru/announce.php",  # DO NOT EDIT THIS LINE
         },
         "OE": {
             "api_key": "OE api key",
