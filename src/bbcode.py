@@ -212,7 +212,8 @@ class BBCODE:
                     desc = desc.replace(tag, '')
 
         # Remove bot signatures
-        desc = desc.replace("[img=35]https://blutopia/favicon.ico[/img] [b]Uploaded Using [url=https://github.com/HDInnovations/UNIT3D]UNIT3D[/url] Auto Uploader[/b] [img=35]https://blutopia/favicon.ico[/img]", '')
+        bot_signature_regex = r"\[center\]\s*\[img=\d+\]https:\/\/blutopia\.xyz\/favicon\.ico\[\/img\]\s*\[b\]Uploaded Using \[url=https:\/\/github\.com\/HDInnovations\/UNIT3D\]UNIT3D\[\/url\] Auto Uploader\[\/b\]\s*\[img=\d+\]https:\/\/blutopia\.xyz\/favicon\.ico\[\/img\]\s*\[\/center\]"
+        desc = re.sub(bot_signature_regex, "", desc, flags=re.IGNORECASE)
         desc = re.sub(r"\[center\].*Created by L4G's Upload Assistant.*\[\/center\]", "", desc, flags=re.IGNORECASE)
 
         # Replace spoiler tags

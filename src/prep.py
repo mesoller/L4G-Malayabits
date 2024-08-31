@@ -266,7 +266,7 @@ class Prep():
 
     async def handle_image_list(self, meta, tracker_name):
         if meta.get('image_list'):
-            console.print("[cyan]Found the following images:")
+            console.print(f"[cyan]Found the following images from {tracker_name}:")
             for img in meta['image_list']:
                 console.print(f"[blue]{img}[/blue]")
             keep_images = await self.prompt_user_for_confirmation(f"Do you want to keep the images found on {tracker_name}?")

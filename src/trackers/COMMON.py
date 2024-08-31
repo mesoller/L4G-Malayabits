@@ -178,13 +178,12 @@ class COMMON():
                 imdb = attributes.get('imdb_id')
                 infohash = attributes.get('info_hash')
 
-                console.print(f"[blue]Extracted description: {description}[/blue]")
-
                 # Process the description and imagelist if the description exists
                 if description:
                     bbcode = BBCODE()
                     description, imagelist = bbcode.clean_unit3d_description(description, torrent_url)
                     console.print(f"[green]Successfully grabbed description from {tracker}")
+                    console.print(f"[blue]Extracted description: [yellow]{description}")
 
                     # Allow user to edit or discard the description
                     console.print("[cyan]Do you want to edit or discard the description?[/cyan]")
