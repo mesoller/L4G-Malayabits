@@ -78,7 +78,7 @@ class NBL():
                 console.print("[bold yellow]It may have uploaded, go check")
                 return
         else:
-            console.print(f"[cyan]Request Data:")
+            console.print("[cyan]Request Data:")
             console.print(data)
         open_torrent.close()
 

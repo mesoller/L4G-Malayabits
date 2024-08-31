@@ -1,9 +1,10 @@
 import vapoursynth as vs
-core = vs.core
-from awsmfunc import ScreenGen, DynamicTonemap, FrameInfo, zresize
+from awsmfunc import ScreenGen, DynamicTonemap, zresize
 import random
 import os
 from functools import partial
+
+core = vs.core
 
 
 def CustomFrameInfo(clip, text):

@@ -873,7 +873,7 @@ class Prep():
                 else:
                     loglevel = 'quiet'
                     debug = True
-                with Progress(
+                    with Progress(
                         TextColumn("[bold green]Saving Screens..."),
                         BarColumn(),
                         "[cyan]{task.completed}/{task.total}",
@@ -884,7 +884,7 @@ class Prep():
                         for i in range(num_screens + 1):
                             image = f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png"
                             try:
-                                ss_times = self.valid_ss_time(ss_times, num_screens+1, length)
+                                ss_times = self.valid_ss_time(ss_times, num_screens + 1, length)
                                 (
                                     ffmpeg
                                     .input(file, ss=ss_times[-1], skip_frame=keyframe)
@@ -967,50 +967,50 @@ class Prep():
             looped = 0
             retake = False
             with Progress(
-                    TextColumn("[bold green]Saving Screens..."),
-                    BarColumn(),
-                    "[cyan]{task.completed}/{task.total}",
-                    TimeRemainingColumn()
-                ) as progress:
-                    screen_task = progress.add_task("[green]Saving Screens...", total=num_screens + 1)
-                    ss_times = []
-                    for i in range(num_screens + 1):
-                        if n >= len(main_set):
-                            n = 0
-                        if n >= num_screens:
-                            n -= num_screens
-                        image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i}.png"
-                        if not os.path.exists(image) or retake is not False:
-                            retake = False
-                            loglevel = 'quiet'
-                            debug = True
-                            if bool(meta.get('debug', False)):
-                                loglevel = 'error'
-                                debug = False
+                TextColumn("[bold green]Saving Screens..."),
+                BarColumn(),
+                "[cyan]{task.completed}/{task.total}",
+                TimeRemainingColumn()
+            ) as progress:
+                screen_task = progress.add_task("[green]Saving Screens...", total=num_screens + 1)
+                ss_times = []
+                for i in range(num_screens + 1):
+                    if n >= len(main_set):
+                        n = 0
+                    if n >= num_screens:
+                        n -= num_screens
+                    image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i}.png"
+                    if not os.path.exists(image) or retake is not False:
+                        retake = False
+                        loglevel = 'quiet'
+                        debug = True
+                        if bool(meta.get('debug', False)):
+                            loglevel = 'error'
+                            debug = False
 
-                            def _is_vob_good(n, loops, num_screens):
-                                voblength = 300
-                                vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
-                                vob_mi = json.loads(vob_mi)
+                        def _is_vob_good(n, loops, num_screens):
+                            voblength = 300
+                            vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
+                            vob_mi = json.loads(vob_mi)
+                            try:
+                                voblength = float(vob_mi['media']['track'][1]['Duration'])
+                                return voblength, n
+                            except Exception:
                                 try:
-                                    voblength = float(vob_mi['media']['track'][1]['Duration'])
+                                    voblength = float(vob_mi['media']['track'][2]['Duration'])
                                     return voblength, n
                                 except Exception:
-                                    try:
-                                        voblength = float(vob_mi['media']['track'][2]['Duration'])
+                                    n += 1
+                                    if n >= len(main_set):
+                                        n = 0
+                                    if n >= num_screens:
+                                        n -= num_screens
+                                    if loops < 6:
+                                        loops = loops + 1
+                                        voblength, n = _is_vob_good(n, loops, num_screens)
                                         return voblength, n
-                                    except Exception:
-                                        n += 1
-                                        if n >= len(main_set):
-                                            n = 0
-                                        if n >= num_screens:
-                                            n -= num_screens
-                                        if loops < 6:
-                                            loops = loops + 1
-                                            voblength, n = _is_vob_good(n, loops, num_screens)
-                                            return voblength, n
-                                        else:
-                                            return 300, n
+                                    else:
+                                        return 300, n
                             try:
                                 voblength, n = _is_vob_good(n, 0, num_screens)
                                 img_time = random.randint(round(voblength/5), round(voblength - voblength/5))

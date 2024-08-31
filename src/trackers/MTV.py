@@ -545,7 +545,7 @@ class MTV():
         console.print("[yellow]Searching for existing torrents on site...")
         params = {
             't': 'search',
-            'apikey' : self.config['TRACKERS'][self.tracker]['api_key'].strip(),
+            'apikey': self.config['TRACKERS'][self.tracker]['api_key'].strip(),
             'q': ""
         }
         if meta['imdb_id'] not in ("0", "", None):

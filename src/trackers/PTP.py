@@ -301,7 +301,7 @@ class PTP():
             'api_key': self.config["DEFAULT"]["ptpimg_api"],
             'link-upload': image_url
         }
-        headers = { 'referer': 'https://ptpimg.me/index.php'}
+        headers = {'referer': 'https://ptpimg.me/index.php'}
         url = "https://ptpimg.me/upload.php"
 
         response = requests.post(url, headers=headers, data=payload)
@@ -623,7 +623,7 @@ class PTP():
                     file = meta['filelist'][i]
                     if i == 0:
                         # Add This line for all web-dls
-                        if meta['type'] == 'WEBDL' and meta.get('service_longname', '') is not '' and meta.get('description', None) == None and self.web_source is True:
+                        if meta['type'] == 'WEBDL' and meta.get('service_longname', '') != '' and meta.get('description', None) is None and self.web_source is True:
                             desc.write(f"[quote][align=center]This release is sourced from {meta['service_longname']}[/align][/quote]")
                         mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO.txt", 'r', encoding='utf-8').read()
                     else:
@@ -669,7 +669,7 @@ class PTP():
             if loggedIn is True:
                 AntiCsrfToken = re.search(r'data-AntiCsrfToken="(.*)"', uploadresponse.text).group(1)
             else:
-                passKey = re.match(r"https?://please\.passthepopcorn\.me:?\d*/(.+)/announce",self.announce_url).group(1)
+                passKey = re.match(r"https?://please\.passthepopcorn\.me:?\d*/(.+)/announce", self.announce_url).group(1)
                 data = {
                     "username": self.username,
                     "password": self.password,
@@ -750,7 +750,7 @@ class PTP():
         else:
             data["imdb"] = meta["imdb_id"]
 
-        if groupID is None: # If need to make new group
+        if groupID is None:  # If need to make new group
             url = "https://passthepopcorn.me/upload.php"
             if data["imdb"] == "0":
                 tinfo = await self.get_torrent_info_tmdb(meta)

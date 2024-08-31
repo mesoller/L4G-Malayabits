@@ -313,7 +313,13 @@ class Commands(commands.Cog):
             res = meta['resolution']
         missing = await self.get_missing(meta)
 
-        embed=discord.Embed(title = f"Upload: {meta['title']}", url=f"https://www.themoviedb.org/{meta['category'].lower()}/{meta['tmdb']}", description=meta['overview'], color=0x0080ff, timestamp=datetime.utcnow())
+        embed = discord.Embed(
+            title=f"Upload: {meta['title']}",
+            url=f"https://www.themoviedb.org/{meta['category'].lower()}/{meta['tmdb']}",
+            description=meta['overview'],
+            color=0x0080ff,
+            timestamp=datetime.utcnow()
+        )
         embed.add_field(name="Links", value=f"[TMDB](https://www.themoviedb.org/{meta['category'].lower()}/{meta['tmdb']}){imdb}{tvdb}")
         embed.add_field(name=f"{res} / {meta['type']}{tag}", value=f"```{meta['name']}```", inline=False)
         if missing != []:
