@@ -714,13 +714,13 @@ class Prep():
             try:
                 width = mi['media']['track'][1]['Width']
                 height = mi['media']['track'][1]['Height']
-            except:
+            except Exception:
                 width = 0
                 height = 0
             framerate = mi['media']['track'][1].get('FrameRate', '')
             try:
                 scan = mi['media']['track'][1]['ScanType']
-            except:
+            except Exception:
                 scan = "Progressive"
             if scan == "Progressive":
                 scan = "p"
@@ -777,7 +777,7 @@ class Prep():
         if resolution is None:
             try:
                 resolution = guess['screen_size']
-            except:
+            except Exception:
                 width_map = {
                     '3840p': '2160p',
                     '2560p': '1550p',
@@ -879,39 +879,39 @@ class Prep():
                         "[cyan]{task.completed}/{task.total}",
                         TimeRemainingColumn()
                     ) as progress:
-                    screen_task = progress.add_task("[green]Saving Screens...", total=num_screens + 1)
-                    ss_times = []
-                    for i in range(num_screens + 1):
-                        image = f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png"
-                        try:
-                            ss_times = self.valid_ss_time(ss_times, num_screens+1, length)
-                            (
-                                ffmpeg
-                                .input(file, ss=ss_times[-1], skip_frame=keyframe)
-                                .output(image, vframes=1, pix_fmt="rgb24")
-                                .overwrite_output()
-                                .global_args('-loglevel', loglevel)
-                                .run(quiet=debug)
-                            )
-                        except Exception:
-                            console.print(traceback.format_exc())
+                        screen_task = progress.add_task("[green]Saving Screens...", total=num_screens + 1)
+                        ss_times = []
+                        for i in range(num_screens + 1):
+                            image = f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png"
+                            try:
+                                ss_times = self.valid_ss_time(ss_times, num_screens+1, length)
+                                (
+                                    ffmpeg
+                                    .input(file, ss=ss_times[-1], skip_frame=keyframe)
+                                    .output(image, vframes=1, pix_fmt="rgb24")
+                                    .overwrite_output()
+                                    .global_args('-loglevel', loglevel)
+                                    .run(quiet=debug)
+                                )
+                            except Exception:
+                                console.print(traceback.format_exc())
 
-                        self.optimize_images(image)
-                        if os.path.getsize(Path(image)) <= 31000000 and self.img_host == "imgbb":
-                            i += 1
-                        elif os.path.getsize(Path(image)) <= 10000000 and self.img_host in ["imgbox", 'pixhost']:
-                            i += 1
-                        elif os.path.getsize(Path(image)) <= 75000:
-                            console.print("[bold yellow]Image is incredibly small, retaking")
-                            time.sleep(1)
-                        elif self.img_host == "ptpimg":
-                            i += 1
-                        elif self.img_host == "lensdump":
-                            i += 1
-                        else:
-                            console.print("[red]Image too large for your image host, retaking")
-                            time.sleep(1)
-                        progress.advance(screen_task)
+                            self.optimize_images(image)
+                            if os.path.getsize(Path(image)) <= 31000000 and self.img_host == "imgbb":
+                                i += 1
+                            elif os.path.getsize(Path(image)) <= 10000000 and self.img_host in ["imgbox", 'pixhost']:
+                                i += 1
+                            elif os.path.getsize(Path(image)) <= 75000:
+                                console.print("[bold yellow]Image is incredibly small, retaking")
+                                time.sleep(1)
+                            elif self.img_host == "ptpimg":
+                                i += 1
+                            elif self.img_host == "lensdump":
+                                i += 1
+                            else:
+                                console.print("[red]Image too large for your image host, retaking")
+                                time.sleep(1)
+                            progress.advance(screen_task)
                 # remove smallest image
                 smallest = ""
                 smallestsize = 99 ** 99
@@ -1194,7 +1194,7 @@ class Prep():
                         oxipng.optimize(image, level=6)
                     else:
                         oxipng.optimize(image, level=3)
-                except:
+                except Exception:
                     pass
         return
 
@@ -1319,7 +1319,7 @@ class Prep():
                 meta = await self.get_tmdb_id(guessit(title, {"excludes": ["country", "language"]})['title'], meta['search_year'], meta)
                 if meta['tmdb'] == "0":
                     meta = await self.get_tmdb_id(title, "", meta, meta['category'])
-            except:
+            except Exception:
                 if meta.get('mode', 'discord') == 'cli':
                     console.print("[bold red]Unable to find tmdb entry. Exiting.")
                     exit()
@@ -1441,7 +1441,7 @@ class Prep():
                 keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('keywords')]
             elif tmdb_keywords.get('results') is not None:
                 keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('results')]
-            return(', '.join(keywords))
+            return(', '.join (keywords))
         else:
             return ''
 
@@ -1450,7 +1450,7 @@ class Prep():
             tmdb_genres = tmdb_info.get('genres', [])
             if tmdb_genres is not []:
                 genres = [f"{genre['name'].replace(',', ' ')}" for genre in tmdb_genres]
-            return(', '.join(genres))
+            return(', '.join (genres))
         else:
             return ''
 
@@ -1553,7 +1553,7 @@ class Prep():
             response = requests.post(url, json={'query': query, 'variables': variables})
             json = response.json()
             media = json['data']['Page']['media']
-        except:
+        except Exception:
             console.print('[red]Failed to get anime specific info from anilist. Continuing without it...')
             media = []
         if media not in (None, []):
@@ -1628,10 +1628,10 @@ class Prep():
                 channels = mi['media']['track'][track_num]['Channels']
             try:
                 channel_layout = mi['media']['track'][track_num]['ChannelLayout']
-            except:
+            except Exception:
                 try:
                     channel_layout = mi['media']['track'][track_num]['ChannelLayout_Original']
-                except:
+                except Exception:
                     channel_layout = ""
 
             # Ensure channel_layout is not None or an empty string before iterating
@@ -1789,7 +1789,7 @@ class Prep():
         try:
             tag = guessit(video)['release_group']
             tag = f"-{tag}"
-        except:
+        except Exception:
             tag = ""
         if tag == "-":
             tag = ""
@@ -1801,10 +1801,10 @@ class Prep():
         try:
             try:
                 source = guessit(video)['source']
-            except:
+            except Exception:
                 try:
                     source = guessit(path)['source']
-                except:
+                except Exception:
                     source = "BluRay"
             if meta.get('manual_source', None):
                 source = meta['manual_source']
@@ -1824,14 +1824,14 @@ class Prep():
                             system = track.standard
                     if system not in ("PAL", "NTSC"):
                         raise WeirdSystem
-                except:
+                except Exception:
                     try:
                         other = guessit(video)['other']
                         if "PAL" in other:
                             system = "PAL"
                         elif "NTSC" in other:
                             system = "NTSC"
-                    except:
+                    except Exception:
                         system = ""
                 finally:
                     if system is None:
@@ -1861,7 +1861,7 @@ class Prep():
         try:
             source = guess['Source']
             other = guess['Other']
-        except:
+        except Exception:
             source = ""
             other = ""
         uhd = ""
@@ -1889,7 +1889,7 @@ class Prep():
             try:
                 if bdinfo['video'][1]['hdr_dv'] == "Dolby Vision":
                     dv = "DV"
-            except:
+            except Exception:
                 pass
         else:
             video_track = mi['media']['track'][1]
@@ -1909,13 +1909,13 @@ class Prep():
                         hdr = "HLG"
                     if hdr != "HLG" and "BT.2020 (10-bit)" in transfer_characteristics:
                         hdr = "WCG"
-            except:
+            except Exception:
                 pass
 
             try:
                 if "Dolby Vision" in video_track.get('HDR_Format', '') or "Dolby Vision" in video_track.get('HDR_Format_String', ''):
                     dv = "DV"
-            except:
+            except Exception:
                 pass
 
         hdr = f"{dv} {hdr}".strip()
@@ -2016,7 +2016,7 @@ class Prep():
             if mi['media']['track'][1].get('Encoded_Library_Settings', None):
                 has_encode_settings = True
             bit_depth = mi['media']['track'][1].get('BitDepth', '0')
-        except:
+        except Exception:
             format = bdinfo['video'][0]['codec']
             format_profile = bdinfo['video'][0]['profile']
         if type in ("ENCODE", "WEBRIP"):  # ENCODE or WEBRIP
@@ -2493,7 +2493,7 @@ class Prep():
             elif type == "HDTV":  # HDTV
                 name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {source} {audio} {video_encode}"
                 potential_missing = []
-        elif meta['category'] == "TV":  #T V SPECIFIC
+        elif meta['category'] == "TV":  # TV SPECIFIC
             if type == "DISC":  # Disk
                 if meta['is_disc'] == 'BDMV':
                     name = f"{title} {year} {alt_title} {season}{episode} {three_d} {edition} {repack} {resolution} {region} {uhd} {source} {hdr} {video_codec} {audio}"
@@ -2525,7 +2525,7 @@ class Prep():
 
         try:
             name = ' '.join(name.split())
-        except:
+        except Exception:
             console.print("[bold red]Unable to generate name. Please re-run and correct any of the following args if needed.")
             console.print(f"--category [yellow]{meta['category']}")
             console.print(f"--type [yellow]{meta['type']}")
@@ -2966,7 +2966,7 @@ class Prep():
                         poster = poster[0]
                         generic.write(f"TMDB Poster: {poster.get('raw_url', poster.get('img_url'))}\n")
                         meta['rehosted_poster'] = poster.get('raw_url', poster.get('img_url'))
-                        with open (f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as metafile:
+                        with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as metafile:
                             json.dump(meta, metafile, indent=4)
                             metafile.close()
                     else:

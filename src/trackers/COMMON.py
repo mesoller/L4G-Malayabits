@@ -200,7 +200,7 @@ class COMMON():
         compatible with requests."""
 
         cookies = {}
-        with open (cookiefile, 'r') as fp:
+        with open(cookiefile, 'r') as fp:
             for line in fp:
                 if not line.startswith(("# ", "\n", "#\n")):
                     lineFields = re.split(' |\t', line.strip())
@@ -215,7 +215,7 @@ class COMMON():
             url = ptgen_site
         params = {}
         data = {}
-        # get douban url 
+        # get douban url
         if int(meta.get('imdb_id', '0')) != 0:
             data['search'] = f"tt{meta['imdb_id']}"
             ptgen = requests.get(url, params=data)
@@ -244,7 +244,7 @@ class COMMON():
                         break
             ptgen = ptgen.json()
             meta['ptgen'] = ptgen
-            with open (f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
+            with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
                 json.dump(meta, f, indent=4)
                 f.close()
             ptgen = ptgen['format']

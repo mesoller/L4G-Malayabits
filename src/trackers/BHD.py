@@ -112,7 +112,7 @@ class BHD():
                     elif response['satus_message'].startswith('Invalid name value'):
                         console.print(f"[bold yellow]Submitted Name: {bhd_name}")
                 console.print(response)
-            except:
+            except Exception:
                 console.print("It may have uploaded, go check")
                 return
         else:
@@ -135,7 +135,7 @@ class BHD():
             "Web": "WEB",
             "HDTV": "HDTV",
             "UHDTV": "HDTV",
-            "NTSC": "DVD",  "NTSC DVD" : "DVD",
+            "NTSC": "DVD",  "NTSC DVD": "DVD",
             "PAL": "DVD", "PAL DVD": "DVD",
         }
 
@@ -245,7 +245,7 @@ class BHD():
             else:
                 console.print(f"[yellow]{response.get('status_message')}")
                 await asyncio.sleep(5)
-        except:
+        except Exception:
             console.print('[bold red]Unable to search for existing torrents on site. Most likely the site is down.')
             await asyncio.sleep(5)
 

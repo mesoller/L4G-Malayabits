@@ -39,7 +39,7 @@ class DiscParse():
                             console.print(f"[bold green]Scanning {path}")
                             proc = await asyncio.create_subprocess_exec('mono', f"{base_dir}/bin/BDInfo/BDInfo.exe", '-w', path, save_dir)
                             await proc.wait()
-                        except:
+                        except Exception:
                             console.print('[bold red]mono not found, please install mono')
 
                     elif sys.platform.startswith('win32'):
@@ -135,7 +135,7 @@ class DiscParse():
                     bit_depth = split2[n+6].strip()
                     hdr_dv = split2[n+7].strip()
                     color = split2[n+8].strip()
-                except:
+                except Exception:
                     bit_depth = ""
                     hdr_dv = ""
                     color = ""
@@ -165,7 +165,7 @@ class DiscParse():
                     fuckatmos = ""
                 try:
                     bit_depth = split2[n+5].strip()
-                except:
+                except Exception:
                     bit_depth = ""
                 bdinfo['audio'].append({
                     'language': split2[0].strip(),
@@ -200,7 +200,7 @@ class DiscParse():
                 m2ts['file'] = bd_file
                 m2ts['length'] = bd_length
                 bdinfo['files'].append(m2ts)
-            except:
+            except Exception:
                 pass
         return bdinfo
 

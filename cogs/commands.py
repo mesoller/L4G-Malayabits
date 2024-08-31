@@ -317,7 +317,7 @@ class Commands(commands.Cog):
         embed.add_field(name="Links", value=f"[TMDB](https://www.themoviedb.org/{meta['category'].lower()}/{meta['tmdb']}){imdb}{tvdb}")
         embed.add_field(name=f"{res} / {meta['type']}{tag}", value=f"```{meta['name']}```", inline=False)
         if missing != []:
-            embed.add_field(name=f"POTENTIALLY MISSING INFORMATION:", value="\n".join(missing), inline=False)
+            embed.add_field(name="POTENTIALLY MISSING INFORMATION:", value="\n".join(missing), inline=False)
         embed.set_thumbnail(url=f"https://image.tmdb.org/t/p/original{meta['poster']}")
         embed.set_footer(text=meta['uuid'])
         embed.set_author(name="L4G's Upload Assistant", url="https://github.com/Audionut/Upload-Assistant", icon_url="https://images2.imgbox.com/6e/da/dXfdgNYs_o.png")
@@ -380,7 +380,7 @@ class Commands(commands.Cog):
                 await msg.clear_reactions()
                 await msg.edit(embed=timeout_embed)
                 return
-            except:
+            except Exception:
                 print("timeout after edit")
                 pass
         except CancelException:
@@ -533,7 +533,7 @@ class Commands(commands.Cog):
                 try:
                     await channel.send(f"{meta['uuid']} timed out")
                     meta['upload'] = False
-                except:
+                except Exception:
                     return
             except CancelException:
                 await channel.send(f"{meta['title']} cancelled")
@@ -556,6 +556,7 @@ class Commands(commands.Cog):
                 if meta.get(each, '').replace(' ', '') == "":
                     missing.append(f"--{each}")
         return missing
+
 
 def setup(bot):
     bot.add_cog(Commands(bot))
