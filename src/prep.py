@@ -77,12 +77,6 @@ class Prep():
             console.print(f"IMDb ID: https://www.imdb.com/title/tt{blu_imdb}")
             console.print(f"TVDb ID: {blu_tvdb}")
             console.print(f"Filename: {blu_filename}")
-        
-        if blu_imdb:  # Assuming blu_imagelist would be linked with this function
-            if meta.get('image_list'):
-                console.print("[cyan]Found the following images:")
-                for img in meta['image_list']:
-                    console.print(f"[blue]{img}")
 
         selection = input("Do you want to use this ID? (y/n): ").strip().lower()
         return selection == 'y'
@@ -185,6 +179,7 @@ class Prep():
                 if ptp_desc.strip():
                     meta['description'] = ptp_desc
                     meta['image_list'] = ptp_imagelist
+                    meta['skip_gen_desc'] = True
                     console.print(f"[green]PTP description and images added to metadata.")
 
                     if await self.prompt_user_for_confirmation("Do you want to keep the description from PTP?"):
@@ -192,10 +187,12 @@ class Prep():
                         found_match = True
                     else:
                         console.print(f"[yellow]Description discarded from PTP")
+                        meta['skip_gen_desc'] = True
                         meta['description'] = None
                         return meta, found_match
             else:
                 console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.")
+                meta['skip_gen_desc'] = True
                 return meta, found_match
 
         elif tracker_name == "HDB":
@@ -251,10 +248,12 @@ class Prep():
                                 found_match = True
                             else:
                                 console.print(f"[yellow]Description discarded from PTP")
+                                meta['skip_gen_desc'] = True
                                 meta['description'] = None
                                 return meta, found_match
                 else:
                     console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.")
+                    meta['skip_gen_desc'] = True
                     return meta, found_match
             else:
                 console.print(f"[yellow]No IMDb ID found on {tracker_name}")
@@ -2931,9 +2930,6 @@ class Prep():
         return name
 
     async def gen_desc(self, meta):
-        if meta.get('skip_gen_desc', False):
-            console.print("[cyan]Skipping description generation as PTP description was retained.")
-            return meta
 
         desclink = meta.get('desclink', None)
         descfile = meta.get('descfile', None)
@@ -2953,6 +2949,9 @@ class Prep():
                     desc_source = desc_source[0]
 
                 if meta.get('ptp', None) is not None and str(self.config['TRACKERS'].get('PTP', {}).get('useAPI')).lower() == "true" and desc_source in ['PTP', None]:
+                    if meta.get('skip_gen_desc', False):
+                        console.print("[cyan]Skipping description generation as PTP description was retained.")
+                        return meta
                     ptp = PTP(config=self.config)
                     ptp_desc, imagelist = await ptp.get_ptp_description(meta['ptp'], meta['is_disc'])
                     if ptp_desc.replace('\r\n', '').replace('\n', '').strip() != "":
