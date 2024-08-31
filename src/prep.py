@@ -345,7 +345,7 @@ class Prep():
                     while ds.is_alive() is True:
                         await asyncio.sleep(1)
                 except KeyboardInterrupt:
-                    ds.terminate() 
+                    ds.terminate()
         elif meta['is_disc'] == "DVD":
             if meta.get('edit', False) is False:
                 try:
@@ -373,7 +373,7 @@ class Prep():
         else:
             meta['category'] = meta['category'].upper()
         if meta.get('tmdb', None) is None and meta.get('imdb', None) is None:
-            meta['category'], meta['tmdb'], meta['imdb'] = self.get_tmdb_imdb_from_mediainfo(mi, meta['category'], meta['is_disc'], meta['tmdb'], meta['imdb'])      
+            meta['category'], meta['tmdb'], meta['imdb'] = self.get_tmdb_imdb_from_mediainfo(mi, meta['category'], meta['is_disc'], meta['tmdb'], meta['imdb'])
         if meta.get('tmdb', None) is None and meta.get('imdb', None) is None:
             meta = await self.get_tmdb_id(filename, meta['search_year'], meta, meta['category'], untouched_filename)
         elif meta.get('imdb', None) is not None and meta.get('tmdb_manual', None) is None:
@@ -775,7 +775,7 @@ class Prep():
         if actual_height == 540:
             resolution = "OTHER"
         if resolution is None:
-            try:     
+            try:
                 resolution = guess['screen_size']
             except:
                 width_map = {
@@ -841,7 +841,7 @@ class Prep():
         if num_screens == 0 or len(image_list) >= num_screens:
             return
         # Get longest m2ts
-        length = 0 
+        length = 0
         for each in bdinfo['files']:
             int_length = sum(int(float(x)) * 60 ** i for i, x in enumerate(reversed(each['length'].split(':'))))
             if int_length > length:
@@ -1068,7 +1068,7 @@ class Prep():
     def screenshots(self, path, filename, folder_id, base_dir, meta, num_screens=None):
         if num_screens is None:
             num_screens = self.screens - len(meta.get('image_list', []))
-        if num_screens == 0: 
+        if num_screens == 0:
             # or len(meta.get('image_list', [])) >= num_screens:
             return
         with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", encoding='utf-8') as f:
@@ -1245,10 +1245,10 @@ class Prep():
         info = find.info(external_source="imdb_id")
         if len(info['movie_results']) >= 1:
             meta['category'] = "MOVIE"
-            meta['tmdb'] =  info['movie_results'][0]['id']
+            meta['tmdb'] = info['movie_results'][0]['id']
         elif len(info['tv_results']) >= 1:
             meta['category'] = "TV"
-            meta['tmdb'] =  info['tv_results'][0]['id']
+            meta['tmdb'] = info['tv_results'][0]['id']
         else:
             imdb_info = await self.get_imdb_info(imdb_id.replace('tt', ''), meta)
             title = imdb_info.get("title")
@@ -1438,9 +1438,9 @@ class Prep():
         if tmdb_info is not None:
             tmdb_keywords = tmdb_info.keywords()
             if tmdb_keywords.get('keywords') is not None:
-                keywords=[f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('keywords')]
+                keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('keywords')]
             elif tmdb_keywords.get('results') is not None:
-                keywords=[f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('results')]
+                keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('results')]
             return(', '.join(keywords))
         else:
             return ''
@@ -1449,7 +1449,7 @@ class Prep():
         if tmdb_info is not None:
             tmdb_genres = tmdb_info.get('genres', [])
             if tmdb_genres is not []:
-                genres=[f"{genre['name'].replace(',', ' ')}" for genre in tmdb_genres]
+                genres = [f"{genre['name'].replace(',', ' ')}" for genre in tmdb_genres]
             return(', '.join(genres))
         else:
             return ''
@@ -1575,7 +1575,7 @@ class Prep():
             season_year = result.get('season_year', "")
             episodes = result.get('episodes', 0)
         else:
-            romaji = eng_title = season_year  = ""
+            romaji = eng_title = season_year = ""
             episodes = mal_id = 0
         if mal_id in [None, 0]:
             mal_id = mal
@@ -1927,54 +1927,54 @@ class Prep():
             region = region.upper()
         else:
             regions = {
-            'AFG': 'AFG', 'AIA': 'AIA', 'ALA': 'ALA', 'ALG': 'ALG', 'AND': 'AND', 'ANG': 'ANG', 'ARG': 'ARG',
-            'ARM': 'ARM', 'ARU': 'ARU', 'ASA': 'ASA', 'ATA': 'ATA', 'ATF': 'ATF', 'ATG': 'ATG', 'AUS': 'AUS',
-            'AUT': 'AUT', 'AZE': 'AZE', 'BAH': 'BAH', 'BAN': 'BAN', 'BDI': 'BDI', 'BEL': 'BEL', 'BEN': 'BEN',
-            'BER': 'BER', 'BES': 'BES', 'BFA': 'BFA', 'BHR': 'BHR', 'BHU': 'BHU', 'BIH': 'BIH', 'BLM': 'BLM',
-            'BLR': 'BLR', 'BLZ': 'BLZ', 'BOL': 'BOL', 'BOT': 'BOT', 'BRA': 'BRA', 'BRB': 'BRB', 'BRU': 'BRU',
-            'BVT': 'BVT', 'CAM': 'CAM', 'CAN': 'CAN', 'CAY': 'CAY', 'CCK': 'CCK', 'CEE': 'CEE', 'CGO': 'CGO',
-            'CHA': 'CHA', 'CHI': 'CHI', 'CHN': 'CHN', 'CIV': 'CIV', 'CMR': 'CMR', 'COD': 'COD', 'COK': 'COK',
-            'COL': 'COL', 'COM': 'COM', 'CPV': 'CPV', 'CRC': 'CRC', 'CRO': 'CRO', 'CTA': 'CTA', 'CUB': 'CUB',
-            'CUW': 'CUW', 'CXR': 'CXR', 'CYP': 'CYP', 'DJI': 'DJI', 'DMA': 'DMA', 'DOM': 'DOM', 'ECU': 'ECU',
-            'EGY': 'EGY', 'ENG': 'ENG', 'EQG': 'EQG', 'ERI': 'ERI', 'ESH': 'ESH', 'ESP': 'ESP', 'ETH': 'ETH',
-            'FIJ': 'FIJ', 'FLK': 'FLK', 'FRA': 'FRA', 'FRO': 'FRO', 'FSM': 'FSM', 'GAB': 'GAB', 'GAM': 'GAM',
-            'GBR': 'GBR', 'GEO': 'GEO', 'GER': 'GER', 'GGY': 'GGY', 'GHA': 'GHA', 'GIB': 'GIB', 'GLP': 'GLP',
-            'GNB': 'GNB', 'GRE': 'GRE', 'GRL': 'GRL', 'GRN': 'GRN', 'GUA': 'GUA', 'GUF': 'GUF', 'GUI': 'GUI',
-            'GUM': 'GUM', 'GUY': 'GUY', 'HAI': 'HAI', 'HKG': 'HKG', 'HMD': 'HMD', 'HON': 'HON', 'HUN': 'HUN',
-            'IDN': 'IDN', 'IMN': 'IMN', 'IND': 'IND', 'IOT': 'IOT', 'IRL': 'IRL', 'IRN': 'IRN', 'IRQ': 'IRQ',
-            'ISL': 'ISL', 'ISR': 'ISR', 'ITA': 'ITA', 'JAM': 'JAM', 'JEY': 'JEY', 'JOR': 'JOR', 'JPN': 'JPN',
-            'KAZ': 'KAZ', 'KEN': 'KEN', 'KGZ': 'KGZ', 'KIR': 'KIR', 'KNA': 'KNA', 'KOR': 'KOR', 'KSA': 'KSA',
-            'KUW': 'KUW', 'KVX': 'KVX', 'LAO': 'LAO', 'LBN': 'LBN', 'LBR': 'LBR', 'LBY': 'LBY', 'LCA': 'LCA',
-            'LES': 'LES', 'LIE': 'LIE', 'LKA': 'LKA', 'LUX': 'LUX', 'MAC': 'MAC', 'MAD': 'MAD', 'MAF': 'MAF',
-            'MAR': 'MAR', 'MAS': 'MAS', 'MDA': 'MDA', 'MDV': 'MDV', 'MEX': 'MEX', 'MHL': 'MHL', 'MKD': 'MKD',
-            'MLI': 'MLI', 'MLT': 'MLT', 'MNG': 'MNG', 'MNP': 'MNP', 'MON': 'MON', 'MOZ': 'MOZ', 'MRI': 'MRI',
-            'MSR': 'MSR', 'MTN': 'MTN', 'MTQ': 'MTQ', 'MWI': 'MWI', 'MYA': 'MYA', 'MYT': 'MYT', 'NAM': 'NAM',
-            'NCA': 'NCA', 'NCL': 'NCL', 'NEP': 'NEP', 'NFK': 'NFK', 'NIG': 'NIG', 'NIR': 'NIR', 'NIU': 'NIU',
-            'NLD': 'NLD', 'NOR': 'NOR', 'NRU': 'NRU', 'NZL': 'NZL', 'OMA': 'OMA', 'PAK': 'PAK', 'PAN': 'PAN',
-            'PAR': 'PAR', 'PCN': 'PCN', 'PER': 'PER', 'PHI': 'PHI', 'PLE': 'PLE', 'PLW': 'PLW', 'PNG': 'PNG',
-            'POL': 'POL', 'POR': 'POR', 'PRK': 'PRK', 'PUR': 'PUR', 'QAT': 'QAT', 'REU': 'REU', 'ROU': 'ROU',
-            'RSA': 'RSA', 'RUS': 'RUS', 'RWA': 'RWA', 'SAM': 'SAM', 'SCO': 'SCO', 'SDN': 'SDN', 'SEN': 'SEN',
-            'SEY': 'SEY', 'SGS': 'SGS', 'SHN': 'SHN', 'SIN': 'SIN', 'SJM': 'SJM', 'SLE': 'SLE', 'SLV': 'SLV',
-            'SMR': 'SMR', 'SOL': 'SOL', 'SOM': 'SOM', 'SPM': 'SPM', 'SRB': 'SRB', 'SSD': 'SSD', 'STP': 'STP',
-            'SUI': 'SUI', 'SUR': 'SUR', 'SWZ': 'SWZ', 'SXM': 'SXM', 'SYR': 'SYR', 'TAH': 'TAH', 'TAN': 'TAN',
-            'TCA': 'TCA', 'TGA': 'TGA', 'THA': 'THA', 'TJK': 'TJK', 'TKL': 'TKL', 'TKM': 'TKM', 'TLS': 'TLS',
-            'TOG': 'TOG', 'TRI': 'TRI', 'TUN': 'TUN', 'TUR': 'TUR', 'TUV': 'TUV', 'TWN': 'TWN', 'UAE': 'UAE',
-            'UGA': 'UGA', 'UKR': 'UKR', 'UMI': 'UMI', 'URU': 'URU', 'USA': 'USA', 'UZB': 'UZB', 'VAN': 'VAN',
-            'VAT': 'VAT', 'VEN': 'VEN', 'VGB': 'VGB', 'VIE': 'VIE', 'VIN': 'VIN', 'VIR': 'VIR', 'WAL': 'WAL',
-            'WLF': 'WLF', 'YEM': 'YEM', 'ZAM': 'ZAM', 'ZIM': 'ZIM', "EUR" : "EUR"
+                'AFG': 'AFG', 'AIA': 'AIA', 'ALA': 'ALA', 'ALG': 'ALG', 'AND': 'AND', 'ANG': 'ANG', 'ARG': 'ARG',
+                'ARM': 'ARM', 'ARU': 'ARU', 'ASA': 'ASA', 'ATA': 'ATA', 'ATF': 'ATF', 'ATG': 'ATG', 'AUS': 'AUS',
+                'AUT': 'AUT', 'AZE': 'AZE', 'BAH': 'BAH', 'BAN': 'BAN', 'BDI': 'BDI', 'BEL': 'BEL', 'BEN': 'BEN',
+                'BER': 'BER', 'BES': 'BES', 'BFA': 'BFA', 'BHR': 'BHR', 'BHU': 'BHU', 'BIH': 'BIH', 'BLM': 'BLM',
+                'BLR': 'BLR', 'BLZ': 'BLZ', 'BOL': 'BOL', 'BOT': 'BOT', 'BRA': 'BRA', 'BRB': 'BRB', 'BRU': 'BRU',
+                'BVT': 'BVT', 'CAM': 'CAM', 'CAN': 'CAN', 'CAY': 'CAY', 'CCK': 'CCK', 'CEE': 'CEE', 'CGO': 'CGO',
+                'CHA': 'CHA', 'CHI': 'CHI', 'CHN': 'CHN', 'CIV': 'CIV', 'CMR': 'CMR', 'COD': 'COD', 'COK': 'COK',
+                'COL': 'COL', 'COM': 'COM', 'CPV': 'CPV', 'CRC': 'CRC', 'CRO': 'CRO', 'CTA': 'CTA', 'CUB': 'CUB',
+                'CUW': 'CUW', 'CXR': 'CXR', 'CYP': 'CYP', 'DJI': 'DJI', 'DMA': 'DMA', 'DOM': 'DOM', 'ECU': 'ECU',
+                'EGY': 'EGY', 'ENG': 'ENG', 'EQG': 'EQG', 'ERI': 'ERI', 'ESH': 'ESH', 'ESP': 'ESP', 'ETH': 'ETH',
+                'FIJ': 'FIJ', 'FLK': 'FLK', 'FRA': 'FRA', 'FRO': 'FRO', 'FSM': 'FSM', 'GAB': 'GAB', 'GAM': 'GAM',
+                'GBR': 'GBR', 'GEO': 'GEO', 'GER': 'GER', 'GGY': 'GGY', 'GHA': 'GHA', 'GIB': 'GIB', 'GLP': 'GLP',
+                'GNB': 'GNB', 'GRE': 'GRE', 'GRL': 'GRL', 'GRN': 'GRN', 'GUA': 'GUA', 'GUF': 'GUF', 'GUI': 'GUI',
+                'GUM': 'GUM', 'GUY': 'GUY', 'HAI': 'HAI', 'HKG': 'HKG', 'HMD': 'HMD', 'HON': 'HON', 'HUN': 'HUN',
+                'IDN': 'IDN', 'IMN': 'IMN', 'IND': 'IND', 'IOT': 'IOT', 'IRL': 'IRL', 'IRN': 'IRN', 'IRQ': 'IRQ',
+                'ISL': 'ISL', 'ISR': 'ISR', 'ITA': 'ITA', 'JAM': 'JAM', 'JEY': 'JEY', 'JOR': 'JOR', 'JPN': 'JPN',
+                'KAZ': 'KAZ', 'KEN': 'KEN', 'KGZ': 'KGZ', 'KIR': 'KIR', 'KNA': 'KNA', 'KOR': 'KOR', 'KSA': 'KSA',
+                'KUW': 'KUW', 'KVX': 'KVX', 'LAO': 'LAO', 'LBN': 'LBN', 'LBR': 'LBR', 'LBY': 'LBY', 'LCA': 'LCA',
+                'LES': 'LES', 'LIE': 'LIE', 'LKA': 'LKA', 'LUX': 'LUX', 'MAC': 'MAC', 'MAD': 'MAD', 'MAF': 'MAF',
+                'MAR': 'MAR', 'MAS': 'MAS', 'MDA': 'MDA', 'MDV': 'MDV', 'MEX': 'MEX', 'MHL': 'MHL', 'MKD': 'MKD',
+                'MLI': 'MLI', 'MLT': 'MLT', 'MNG': 'MNG', 'MNP': 'MNP', 'MON': 'MON', 'MOZ': 'MOZ', 'MRI': 'MRI',
+                'MSR': 'MSR', 'MTN': 'MTN', 'MTQ': 'MTQ', 'MWI': 'MWI', 'MYA': 'MYA', 'MYT': 'MYT', 'NAM': 'NAM',
+                'NCA': 'NCA', 'NCL': 'NCL', 'NEP': 'NEP', 'NFK': 'NFK', 'NIG': 'NIG', 'NIR': 'NIR', 'NIU': 'NIU',
+                'NLD': 'NLD', 'NOR': 'NOR', 'NRU': 'NRU', 'NZL': 'NZL', 'OMA': 'OMA', 'PAK': 'PAK', 'PAN': 'PAN',
+                'PAR': 'PAR', 'PCN': 'PCN', 'PER': 'PER', 'PHI': 'PHI', 'PLE': 'PLE', 'PLW': 'PLW', 'PNG': 'PNG',
+                'POL': 'POL', 'POR': 'POR', 'PRK': 'PRK', 'PUR': 'PUR', 'QAT': 'QAT', 'REU': 'REU', 'ROU': 'ROU',
+                'RSA': 'RSA', 'RUS': 'RUS', 'RWA': 'RWA', 'SAM': 'SAM', 'SCO': 'SCO', 'SDN': 'SDN', 'SEN': 'SEN',
+                'SEY': 'SEY', 'SGS': 'SGS', 'SHN': 'SHN', 'SIN': 'SIN', 'SJM': 'SJM', 'SLE': 'SLE', 'SLV': 'SLV',
+                'SMR': 'SMR', 'SOL': 'SOL', 'SOM': 'SOM', 'SPM': 'SPM', 'SRB': 'SRB', 'SSD': 'SSD', 'STP': 'STP',
+                'SUI': 'SUI', 'SUR': 'SUR', 'SWZ': 'SWZ', 'SXM': 'SXM', 'SYR': 'SYR', 'TAH': 'TAH', 'TAN': 'TAN',
+                'TCA': 'TCA', 'TGA': 'TGA', 'THA': 'THA', 'TJK': 'TJK', 'TKL': 'TKL', 'TKM': 'TKM', 'TLS': 'TLS',
+                'TOG': 'TOG', 'TRI': 'TRI', 'TUN': 'TUN', 'TUR': 'TUR', 'TUV': 'TUV', 'TWN': 'TWN', 'UAE': 'UAE',
+                'UGA': 'UGA', 'UKR': 'UKR', 'UMI': 'UMI', 'URU': 'URU', 'USA': 'USA', 'UZB': 'UZB', 'VAN': 'VAN',
+                'VAT': 'VAT', 'VEN': 'VEN', 'VGB': 'VGB', 'VIE': 'VIE', 'VIN': 'VIN', 'VIR': 'VIR', 'WAL': 'WAL',
+                'WLF': 'WLF', 'YEM': 'YEM', 'ZAM': 'ZAM', 'ZIM': 'ZIM', "EUR": "EUR"
             }
             for key, value in regions.items():
                 if f" {key} " in label:
                     region = value
-                    
+
         if region is None:
             region = ""
         return region
 
     def get_distributor(self, distributor_in):
         distributor_list = [
-            '01 DISTRIBUTION', '100 DESTINATIONS TRAVEL FILM', '101 FILMS', '1FILMS', '2 ENTERTAIN VIDEO', '20TH CENTURY FOX', '2L', '3D CONTENT HUB', '3D MEDIA', '3L FILM', '4DIGITAL', '4DVD', '4K ULTRA HD MOVIES', '4K UHD', '8-FILMS', '84 ENTERTAINMENT', '88 FILMS', '@ANIME', 'ANIME', 'A CONTRACORRIENTE', 'A CONTRACORRIENTE FILMS', 'A&E HOME VIDEO', 'A&E', 'A&M RECORDS', 'A+E NETWORKS', 'A+R', 'A-FILM', 'AAA', 'AB VIDÉO', 'AB VIDEO', 'ABC - (AUSTRALIAN BROADCASTING CORPORATION)', 'ABC', 'ABKCO', 'ABSOLUT MEDIEN', 'ABSOLUTE', 'ACCENT FILM ENTERTAINMENT', 'ACCENTUS', 'ACORN MEDIA', 'AD VITAM', 'ADA', 'ADITYA VIDEOS', 'ADSO FILMS', 'AFM RECORDS', 'AGFA', 'AIX RECORDS', 
-            'ALAMODE FILM', 'ALBA RECORDS', 'ALBANY RECORDS', 'ALBATROS', 'ALCHEMY', 'ALIVE', 'ALL ANIME', 'ALL INTERACTIVE ENTERTAINMENT', 'ALLEGRO', 'ALLIANCE', 'ALPHA MUSIC', 'ALTERDYSTRYBUCJA', 'ALTERED INNOCENCE', 'ALTITUDE FILM DISTRIBUTION', 'ALUCARD RECORDS', 'AMAZING D.C.', 'AMAZING DC', 'AMMO CONTENT', 'AMUSE SOFT ENTERTAINMENT', 'ANCONNECT', 'ANEC', 'ANIMATSU', 'ANIME HOUSE', 'ANIME LTD', 'ANIME WORKS', 'ANIMEIGO', 'ANIPLEX', 'ANOLIS ENTERTAINMENT', 'ANOTHER WORLD ENTERTAINMENT', 'AP INTERNATIONAL', 'APPLE', 'ARA MEDIA', 'ARBELOS', 'ARC ENTERTAINMENT', 'ARP SÉLECTION', 'ARP SELECTION', 'ARROW', 'ART SERVICE', 'ART VISION', 'ARTE ÉDITIONS', 'ARTE EDITIONS', 'ARTE VIDÉO', 
+            '01 DISTRIBUTION', '100 DESTINATIONS TRAVEL FILM', '101 FILMS', '1FILMS', '2 ENTERTAIN VIDEO', '20TH CENTURY FOX', '2L', '3D CONTENT HUB', '3D MEDIA', '3L FILM', '4DIGITAL', '4DVD', '4K ULTRA HD MOVIES', '4K UHD', '8-FILMS', '84 ENTERTAINMENT', '88 FILMS', '@ANIME', 'ANIME', 'A CONTRACORRIENTE', 'A CONTRACORRIENTE FILMS', 'A&E HOME VIDEO', 'A&E', 'A&M RECORDS', 'A+E NETWORKS', 'A+R', 'A-FILM', 'AAA', 'AB VIDÉO', 'AB VIDEO', 'ABC - (AUSTRALIAN BROADCASTING CORPORATION)', 'ABC', 'ABKCO', 'ABSOLUT MEDIEN', 'ABSOLUTE', 'ACCENT FILM ENTERTAINMENT', 'ACCENTUS', 'ACORN MEDIA', 'AD VITAM', 'ADA', 'ADITYA VIDEOS', 'ADSO FILMS', 'AFM RECORDS', 'AGFA', 'AIX RECORDS',
+            'ALAMODE FILM', 'ALBA RECORDS', 'ALBANY RECORDS', 'ALBATROS', 'ALCHEMY', 'ALIVE', 'ALL ANIME', 'ALL INTERACTIVE ENTERTAINMENT', 'ALLEGRO', 'ALLIANCE', 'ALPHA MUSIC', 'ALTERDYSTRYBUCJA', 'ALTERED INNOCENCE', 'ALTITUDE FILM DISTRIBUTION', 'ALUCARD RECORDS', 'AMAZING D.C.', 'AMAZING DC', 'AMMO CONTENT', 'AMUSE SOFT ENTERTAINMENT', 'ANCONNECT', 'ANEC', 'ANIMATSU', 'ANIME HOUSE', 'ANIME LTD', 'ANIME WORKS', 'ANIMEIGO', 'ANIPLEX', 'ANOLIS ENTERTAINMENT', 'ANOTHER WORLD ENTERTAINMENT', 'AP INTERNATIONAL', 'APPLE', 'ARA MEDIA', 'ARBELOS', 'ARC ENTERTAINMENT', 'ARP SÉLECTION', 'ARP SELECTION', 'ARROW', 'ART SERVICE', 'ART VISION', 'ARTE ÉDITIONS', 'ARTE EDITIONS', 'ARTE VIDÉO',
             'ARTE VIDEO', 'ARTHAUS MUSIK', 'ARTIFICIAL EYE', 'ARTSPLOITATION FILMS', 'ARTUS FILMS', 'ASCOT ELITE HOME ENTERTAINMENT', 'ASIA VIDEO', 'ASMIK ACE', 'ASTRO RECORDS & FILMWORKS', 'ASYLUM', 'ATLANTIC FILM', 'ATLANTIC RECORDS', 'ATLAS FILM', 'AUDIO VISUAL ENTERTAINMENT', 'AURO-3D CREATIVE LABEL', 'AURUM', 'AV VISIONEN', 'AV-JET', 'AVALON', 'AVENTI', 'AVEX TRAX', 'AXIOM', 'AXIS RECORDS', 'AYNGARAN', 'BAC FILMS', 'BACH FILMS', 'BANDAI VISUAL', 'BARCLAY', 'BBC', 'BRITISH BROADCASTING CORPORATION', 'BBI FILMS', 'BBI', 'BCI HOME ENTERTAINMENT', 'BEGGARS BANQUET', 'BEL AIR CLASSIQUES', 'BELGA FILMS', 'BELVEDERE', 'BENELUX FILM DISTRIBUTORS', 'BENNETT-WATT MEDIA', 'BERLIN CLASSICS', 'BERLINER PHILHARMONIKER RECORDINGS', 'BEST ENTERTAINMENT', 'BEYOND HOME ENTERTAINMENT', 'BFI VIDEO', 'BFI', 'BRITISH FILM INSTITUTE', 'BFS ENTERTAINMENT', 'BFS', 'BHAVANI', 'BIBER RECORDS', 'BIG HOME VIDEO', 'BILDSTÖRUNG',
             'BILDSTORUNG', 'BILL ZEBUB', 'BIRNENBLATT', 'BIT WEL', 'BLACK BOX', 'BLACK HILL PICTURES', 'BLACK HILL', 'BLACK HOLE RECORDINGS', 'BLACK HOLE', 'BLAQOUT', 'BLAUFIELD MUSIC', 'BLAUFIELD', 'BLOCKBUSTER ENTERTAINMENT', 'BLOCKBUSTER', 'BLU PHASE MEDIA', 'BLU-RAY ONLY', 'BLU-RAY', 'BLURAY ONLY', 'BLURAY', 'BLUE GENTIAN RECORDS', 'BLUE KINO', 'BLUE UNDERGROUND', 'BMG/ARISTA', 'BMG', 'BMGARISTA', 'BMG ARISTA', 'ARISTA', 'ARISTA/BMG', 'ARISTABMG', 'ARISTA BMG', 'BONTON FILM', 'BONTON', 'BOOMERANG PICTURES', 'BOOMERANG', 'BQHL ÉDITIONS', 'BQHL EDITIONS', 'BQHL', 'BREAKING GLASS', 'BRIDGESTONE', 'BRINK', 'BROAD GREEN PICTURES', 'BROAD GREEN', 'BUSCH MEDIA GROUP', 'BUSCH', 'C MAJOR', 'C.B.S.', 'CAICHANG', 'CALIFÓRNIA FILMES', 'CALIFORNIA FILMES', 'CALIFORNIA', 'CAMEO', 'CAMERA OBSCURA', 'CAMERATA', 'CAMP MOTION PICTURES', 'CAMP MOTION', 'CAPELIGHT PICTURES', 'CAPELIGHT', 'CAPITOL', 'CAPITOL RECORDS', 'CAPRICCI', 'CARGO RECORDS', 'CARLOTTA FILMS', 'CARLOTTA', 'CARLOTA', 'CARMEN FILM', 'CASCADE', 'CATCHPLAY', 'CAULDRON FILMS', 'CAULDRON', 'CBS TELEVISION STUDIOS', 'CBS', 'CCTV', 'CCV ENTERTAINMENT', 'CCV', 'CD BABY', 'CD LAND', 'CECCHI GORI', 'CENTURY MEDIA', 'CHUAN XUN SHI DAI MULTIMEDIA', 'CINE-ASIA', 'CINÉART', 'CINEART', 'CINEDIGM', 'CINEFIL IMAGICA', 'CINEMA EPOCH', 'CINEMA GUILD', 'CINEMA LIBRE STUDIOS', 'CINEMA MONDO', 'CINEMATIC VISION', 'CINEPLOIT RECORDS', 'CINESTRANGE EXTREME', 'CITEL VIDEO', 'CITEL', 'CJ ENTERTAINMENT', 'CJ', 'CLASSIC MEDIA', 'CLASSICFLIX', 'CLASSICLINE', 'CLAUDIO RECORDS', 'CLEAR VISION', 'CLEOPATRA', 'CLOSE UP', 'CMS MEDIA LIMITED', 'CMV LASERVISION', 'CN ENTERTAINMENT', 'CODE RED', 'COHEN MEDIA GROUP', 'COHEN', 'COIN DE MIRE CINÉMA', 'COIN DE MIRE CINEMA', 'COLOSSEO FILM', 'COLUMBIA', 'COLUMBIA PICTURES', 'COLUMBIA/TRI-STAR', 'TRI-STAR', 'COMMERCIAL MARKETING', 'CONCORD MUSIC GROUP', 'CONCORDE VIDEO', 'CONDOR', 'CONSTANTIN FILM', 'CONSTANTIN', 'CONSTANTINO FILMES', 'CONSTANTINO', 'CONSTRUCTIVE MEDIA SERVICE', 'CONSTRUCTIVE', 'CONTENT ZONE', 'CONTENTS GATE', 'COQUEIRO VERDE', 'CORNERSTONE MEDIA', 'CORNERSTONE', 'CP DIGITAL', 'CREST MOVIES', 'CRITERION', 'CRITERION COLLECTION', 'CC', 'CRYSTAL CLASSICS', 'CULT EPICS', 'CULT FILMS', 'CULT VIDEO', 'CURZON FILM WORLD', 'D FILMS', "D'AILLY COMPANY", 'DAILLY COMPANY', 'D AILLY COMPANY', "D'AILLY", 'DAILLY', 'D AILLY', 'DA CAPO', 'DA MUSIC', "DALL'ANGELO PICTURES", 'DALLANGELO PICTURES', "DALL'ANGELO", 'DALL ANGELO PICTURES', 'DALL ANGELO', 'DAREDO', 'DARK FORCE ENTERTAINMENT', 'DARK FORCE', 'DARK SIDE RELEASING', 'DARK SIDE', 'DAZZLER MEDIA', 'DAZZLER', 'DCM PICTURES', 'DCM', 'DEAPLANETA', 'DECCA', 'DEEPJOY', 'DEFIANT SCREEN ENTERTAINMENT', 'DEFIANT SCREEN', 'DEFIANT', 'DELOS', 'DELPHIAN RECORDS', 'DELPHIAN', 'DELTA MUSIC & ENTERTAINMENT', 'DELTA MUSIC AND ENTERTAINMENT', 'DELTA MUSIC ENTERTAINMENT', 'DELTA MUSIC', 'DELTAMAC CO. LTD.', 'DELTAMAC CO LTD', 'DELTAMAC CO', 'DELTAMAC', 'DEMAND MEDIA', 'DEMAND', 'DEP', 'DEUTSCHE GRAMMOPHON', 'DFW', 'DGM', 'DIAPHANA', 'DIGIDREAMS STUDIOS', 'DIGIDREAMS', 'DIGITAL ENVIRONMENTS', 'DIGITAL', 'DISCOTEK MEDIA', 'DISCOVERY CHANNEL', 'DISCOVERY', 'DISK KINO', 'DISNEY / BUENA VISTA', 'DISNEY', 'BUENA VISTA', 'DISNEY BUENA VISTA', 'DISTRIBUTION SELECT', 'DIVISA', 'DNC ENTERTAINMENT', 'DNC', 'DOGWOOF', 'DOLMEN HOME VIDEO', 'DOLMEN', 'DONAU FILM', 'DONAU', 'DORADO FILMS', 'DORADO', 'DRAFTHOUSE FILMS', 'DRAFTHOUSE', 'DRAGON FILM ENTERTAINMENT', 'DRAGON ENTERTAINMENT', 'DRAGON FILM', 'DRAGON', 'DREAMWORKS', 'DRIVE ON RECORDS', 'DRIVE ON', 'DRIVE-ON', 'DRIVEON', 'DS MEDIA', 'DTP ENTERTAINMENT AG', 'DTP ENTERTAINMENT', 'DTP AG', 'DTP', 'DTS ENTERTAINMENT', 'DTS', 'DUKE MARKETING', 'DUKE VIDEO DISTRIBUTION', 'DUKE', 'DUTCH FILMWORKS', 'DUTCH', 'DVD INTERNATIONAL', 'DVD', 'DYBEX', 'DYNAMIC', 'DYNIT', 'E1 ENTERTAINMENT', 'E1', 'EAGLE ENTERTAINMENT', 'EAGLE HOME ENTERTAINMENT PVT.LTD.', 'EAGLE HOME ENTERTAINMENT PVTLTD', 'EAGLE HOME ENTERTAINMENT PVT LTD', 'EAGLE HOME ENTERTAINMENT', 'EAGLE PICTURES', 'EAGLE ROCK ENTERTAINMENT', 'EAGLE ROCK', 'EAGLE VISION MEDIA', 'EAGLE VISION', 'EARMUSIC', 'EARTH ENTERTAINMENT', 'EARTH', 'ECHO BRIDGE ENTERTAINMENT', 'ECHO BRIDGE', 'EDEL GERMANY GMBH', 'EDEL GERMANY', 'EDEL RECORDS', 'EDITION TONFILM', 'EDITIONS MONTPARNASSE', 'EDKO FILMS LTD.', 'EDKO FILMS LTD', 'EDKO FILMS',
             'EDKO', "EIN'S M&M CO", 'EINS M&M CO', "EIN'S M&M", 'EINS M&M', 'ELEA-MEDIA', 'ELEA MEDIA', 'ELEA', 'ELECTRIC PICTURE', 'ELECTRIC', 'ELEPHANT FILMS', 'ELEPHANT', 'ELEVATION', 'EMI', 'EMON', 'EMS', 'EMYLIA', 'ENE MEDIA', 'ENE', 'ENTERTAINMENT IN VIDEO', 'ENTERTAINMENT IN', 'ENTERTAINMENT ONE', 'ENTERTAINMENT ONE FILMS CANADA INC.', 'ENTERTAINMENT ONE FILMS CANADA INC', 'ENTERTAINMENT ONE FILMS CANADA', 'ENTERTAINMENT ONE CANADA INC', 'ENTERTAINMENT ONE CANADA', 'ENTERTAINMENTONE', 'EONE', 'EOS', 'EPIC PICTURES', 'EPIC', 'EPIC RECORDS', 'ERATO', 'EROS', 'ESC EDITIONS', 'ESCAPI MEDIA BV', 'ESOTERIC RECORDINGS', 'ESPN FILMS', 'EUREKA ENTERTAINMENT', 'EUREKA', 'EURO PICTURES', 'EURO VIDEO', 'EUROARTS', 'EUROPA FILMES', 'EUROPA', 'EUROPACORP', 'EUROZOOM', 'EXCEL', 'EXPLOSIVE MEDIA', 'EXPLOSIVE', 'EXTRALUCID FILMS', 'EXTRALUCID', 'EYE SEE MOVIES', 'EYE SEE', 'EYK MEDIA', 'EYK', 'FABULOUS FILMS', 'FABULOUS', 'FACTORIS FILMS', 'FACTORIS', 'FARAO RECORDS', 'FARBFILM HOME ENTERTAINMENT', 'FARBFILM ENTERTAINMENT', 'FARBFILM HOME', 'FARBFILM', 'FEELGOOD ENTERTAINMENT', 'FEELGOOD', 'FERNSEHJUWELEN', 'FILM CHEST', 'FILM MEDIA', 'FILM MOVEMENT', 'FILM4', 'FILMART', 'FILMAURO', 'FILMAX', 'FILMCONFECT HOME ENTERTAINMENT', 'FILMCONFECT ENTERTAINMENT', 'FILMCONFECT HOME', 'FILMCONFECT', 'FILMEDIA', 'FILMJUWELEN', 'FILMOTEKA NARODAWA', 'FILMRISE', 'FINAL CUT ENTERTAINMENT', 'FINAL CUT', 'FIREHOUSE 12 RECORDS', 'FIREHOUSE 12', 'FIRST INTERNATIONAL PRODUCTION', 'FIRST INTERNATIONAL', 'FIRST LOOK STUDIOS', 'FIRST LOOK', 'FLAGMAN TRADE', 'FLASHSTAR FILMES', 'FLASHSTAR', 'FLICKER ALLEY', 'FNC ADD CULTURE', 'FOCUS FILMES', 'FOCUS', 'FOKUS MEDIA', 'FOKUSA', 'FOX PATHE EUROPA', 'FOX PATHE', 'FOX EUROPA', 'FOX/MGM', 'FOX MGM', 'MGM', 'MGM/FOX', 'FOX', 'FPE', 'FRANCE TÉLÉVISIONS DISTRIBUTION', 'FRANCE TELEVISIONS DISTRIBUTION', 'FRANCE TELEVISIONS', 'FRANCE', 'FREE DOLPHIN ENTERTAINMENT', 'FREE DOLPHIN', 'FREESTYLE DIGITAL MEDIA', 'FREESTYLE DIGITAL', 'FREESTYLE', 'FREMANTLE HOME ENTERTAINMENT', 'FREMANTLE ENTERTAINMENT', 'FREMANTLE HOME', 'FREMANTL', 'FRENETIC FILMS', 'FRENETIC', 'FRONTIER WORKS', 'FRONTIER', 'FRONTIERS MUSIC', 'FRONTIERS RECORDS', 'FS FILM OY', 'FS FILM', 'FULL MOON FEATURES', 'FULL MOON', 'FUN CITY EDITIONS', 'FUN CITY',
@@ -2416,7 +2416,7 @@ class Prep():
 
     async def get_name(self, meta):
         type = meta.get('type', "")
-        title = meta.get('title',"")
+        title = meta.get('title', "")
         alt_title = meta.get('aka', "")
         year = meta.get('year', "")
         resolution = meta.get('resolution', "")
@@ -2434,7 +2434,7 @@ class Prep():
         uhd = meta.get('uhd', "")
         hdr = meta.get('hdr', "")
         episode_title = meta.get('episode_title', '')
-        if meta.get('is_disc', "") == "BDMV": #Disk
+        if meta.get('is_disc', "") == "BDMV":  # Disk
             video_codec = meta.get('video_codec', "")
             region = meta.get('region', "")
         elif meta.get('is_disc', "") == "DVD":
@@ -2450,11 +2450,11 @@ class Prep():
                 year = meta['year']
             else:
                 year = ""
-        if meta.get('no_season', False) == True:
+        if meta.get('no_season', False) is True:
             season = ''
-        if meta.get('no_year', False) == True:
+        if meta.get('no_year', False) is True:
             year = ''
-        if meta.get('no_aka', False) == True:
+        if meta.get('no_aka', False) is True:
             alt_title = ''
         if meta['debug']:
             console.log("[cyan]get_name cat/type")
@@ -2463,38 +2463,38 @@ class Prep():
             console.log("[cyan]get_name meta:")
             console.log(meta)
 
-        #YAY NAMING FUN
-        if meta['category'] == "MOVIE": #MOVIE SPECIFIC
-            if type == "DISC": #Disk
+        # YAY NAMING FUN
+        if meta['category'] == "MOVIE":  # MOVIE SPECIFIC
+            if type == "DISC":  # Disk
                 if meta['is_disc'] == 'BDMV':
                     name = f"{title} {alt_title} {year} {three_d} {edition} {repack} {resolution} {region} {uhd} {source} {hdr} {video_codec} {audio}"
                     potential_missing = ['edition', 'region', 'distributor']
-                elif meta['is_disc'] == 'DVD': 
+                elif meta['is_disc'] == 'DVD':
                     name = f"{title} {alt_title} {year} {edition} {repack} {source} {dvd_size} {audio}"
                     potential_missing = ['edition', 'distributor']
                 elif meta['is_disc'] == 'HDDVD':
                     name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {source} {video_codec} {audio}"
                     potential_missing = ['edition', 'region', 'distributor']
-            elif type == "REMUX" and source in ("BluRay", "HDDVD"): #BluRay/HDDVD Remux
-                name = f"{title} {alt_title} {year} {three_d} {edition} {repack} {resolution} {uhd} {source} REMUX {hdr} {video_codec} {audio}" 
+            elif type == "REMUX" and source in ("BluRay", "HDDVD"):  # BluRay/HDDVD Remux
+                name = f"{title} {alt_title} {year} {three_d} {edition} {repack} {resolution} {uhd} {source} REMUX {hdr} {video_codec} {audio}"
                 potential_missing = ['edition', 'description']
-            elif type == "REMUX" and source in ("PAL DVD", "NTSC DVD", "DVD"): #DVD Remux
-                name = f"{title} {alt_title} {year} {edition} {repack} {source} REMUX  {audio}" 
+            elif type == "REMUX" and source in ("PAL DVD", "NTSC DVD", "DVD"):  # DVD Remux
+                name = f"{title} {alt_title} {year} {edition} {repack} {source} REMUX  {audio}"
                 potential_missing = ['edition', 'description']
-            elif type == "ENCODE": #Encode
-                name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {uhd} {source} {audio} {hdr} {video_encode}"  
+            elif type == "ENCODE":  # Encode
+                name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {uhd} {source} {audio} {hdr} {video_encode}"
                 potential_missing = ['edition', 'description']
-            elif type == "WEBDL": #WEB-DL
+            elif type == "WEBDL":  # WEB-DL
                 name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {uhd} {service} WEB-DL {audio} {hdr} {video_encode}"
                 potential_missing = ['edition', 'service']
-            elif type == "WEBRIP": #WEBRip
+            elif type == "WEBRIP":  # WEBRip
                 name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {uhd} {service} WEBRip {audio} {hdr} {video_encode}"
                 potential_missing = ['edition', 'service']
-            elif type == "HDTV": #HDTV
+            elif type == "HDTV":  # HDTV
                 name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {source} {audio} {video_encode}"
                 potential_missing = []
-        elif meta['category'] == "TV": #TV SPECIFIC
-            if type == "DISC": #Disk
+        elif meta['category'] == "TV":  #T V SPECIFIC
+            if type == "DISC":  # Disk
                 if meta['is_disc'] == 'BDMV':
                     name = f"{title} {year} {alt_title} {season}{episode} {three_d} {edition} {repack} {resolution} {region} {uhd} {source} {hdr} {video_codec} {audio}"
                     potential_missing = ['edition', 'region', 'distributor']
@@ -2504,26 +2504,26 @@ class Prep():
                 elif meta['is_disc'] == 'HDDVD':
                     name = f"{title} {alt_title} {year} {edition} {repack} {resolution} {source} {video_codec} {audio}"
                     potential_missing = ['edition', 'region', 'distributor']
-            elif type == "REMUX" and source in ("BluRay", "HDDVD"): #BluRay Remux
-                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {three_d} {edition} {repack} {resolution} {uhd} {source} REMUX {hdr} {video_codec} {audio}" #SOURCE
+            elif type == "REMUX" and source in ("BluRay", "HDDVD"):  # BluRay Remux
+                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {three_d} {edition} {repack} {resolution} {uhd} {source} REMUX {hdr} {video_codec} {audio}"  # SOURCE
                 potential_missing = ['edition', 'description']
-            elif type == "REMUX" and source in ("PAL DVD", "NTSC DVD"): #DVD Remux
-                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {source} REMUX {audio}" #SOURCE
+            elif type == "REMUX" and source in ("PAL DVD", "NTSC DVD"):  # DVD Remux
+                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {source} REMUX {audio}"  # SOURCE
                 potential_missing = ['edition', 'description']
-            elif type == "ENCODE": #Encode
-                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {uhd} {source} {audio} {hdr} {video_encode}" #SOURCE
+            elif type == "ENCODE":  # Encode
+                name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {uhd} {source} {audio} {hdr} {video_encode}"  # SOURCE
                 potential_missing = ['edition', 'description']
-            elif type == "WEBDL": #WEB-DL
+            elif type == "WEBDL":  # WEB-DL
                 name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {uhd} {service} WEB-DL {audio} {hdr} {video_encode}"
                 potential_missing = ['edition', 'service']
-            elif type == "WEBRIP": #WEBRip
+            elif type == "WEBRIP":  # WEBRip
                 name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {uhd} {service} WEBRip {audio} {hdr} {video_encode}"
                 potential_missing = ['edition', 'service']
-            elif type == "HDTV": #HDTV
+            elif type == "HDTV":  # HDTV
                 name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {part} {edition} {repack} {resolution} {source} {audio} {video_encode}"
                 potential_missing = []
 
-        try:    
+        try:
             name = ' '.join(name.split())
         except:
             console.print("[bold red]Unable to generate name. Please re-run and correct any of the following args if needed.")
@@ -2542,7 +2542,7 @@ class Prep():
             filelist = meta['filelist']
             meta['tv_pack'] = 0
             is_daily = False
-            if meta['anime'] == False:
+            if meta['anime'] is False:
                 try:
                     if meta.get('manual_date'):
                         raise ManualDateException
@@ -2552,13 +2552,13 @@ class Prep():
                         guess_year = ""
                     if guessit(video)["season"] == guess_year:
                         if f"s{guessit(video)['season']}" in video.lower():
-                            season_int =  str(guessit(video)["season"])
+                            season_int = str(guessit(video)["season"])
                             season = "S" + season_int.zfill(2)
                         else:
                             season_int = "1"
                             season = "S01"
                     else:
-                        season_int =  str(guessit(video)["season"])
+                        season_int = str(guessit(video)["season"])
                         season = "S" + season_int.zfill(2)
 
                 except Exception:
@@ -2575,11 +2575,11 @@ class Prep():
                         season_int = "1"
                         season = "S01"
                 try:
-                    if is_daily != True:
+                    if is_daily is not True:
                         episodes = ""
                         if len(filelist) == 1:
                             episodes = guessit(video)['episode']
-                            if type(episodes) == list:
+                            if isinstance(episodes, list):
                                 episode = ""
                                 for item in guessit(video)["episode"]:
                                     ep = (str(item).zfill(2))
@@ -2597,7 +2597,7 @@ class Prep():
                     episode_int = "0"
                     meta['tv_pack'] = 1
             else:
-                #If Anime
+                # If Anime
                 parsed = anitopy.parse(Path(video).name)
                 romaji, mal_id, eng_title, seasonYear, anilist_episodes = self.get_romaji(parsed['anime_title'], meta.get('mal', None))
                 if mal_id:
@@ -2702,29 +2702,28 @@ class Prep():
                         console.print(f"[bold yellow]{meta['title']} does not exist on thexem, guessing {season}")
                         console.print(f"[bold yellow]If [green]{season}[/green] is incorrect, use --season to correct")
                         await asyncio.sleep(3)
-                    
-            if meta.get('manual_season', None) == None:
+
+            if meta.get('manual_season', None) is None:
                 meta['season'] = season
             else:
                 season_int = meta['manual_season'].lower().replace('s', '')
                 meta['season'] = f"S{meta['manual_season'].lower().replace('s', '').zfill(2)}"
-            if meta.get('manual_episode', None) == None:
+            if meta.get('manual_episode', None) is None:
                 meta['episode'] = episode
             else:
                 episode_int = meta['manual_episode'].lower().replace('e', '')
                 meta['episode'] = f"E{meta['manual_episode'].lower().replace('e', '').zfill(2)}"
                 meta['tv_pack'] = 0
-            
+
             # if " COMPLETE " in Path(video).name.replace('.', ' '):
             #     meta['season'] = "COMPLETE"
             meta['season_int'] = season_int
             meta['episode_int'] = episode_int
 
-            
-            meta['episode_title_storage'] = guessit(video,{"excludes" : "part"}).get('episode_title', '')
+            meta['episode_title_storage'] = guessit(video, {"excludes": "part"}).get('episode_title', '')
             if meta['season'] == "S00" or meta['episode'] == "E00":
                 meta['episode_title'] = meta['episode_title_storage']
-            
+
             # Guess the part of the episode (if available)
             meta['part'] = ""
             if meta['tv_pack'] == 1:
@@ -2746,7 +2745,7 @@ class Prep():
             'Comedians in Cars Getting Coffee': 'CCGC', 'CHGD': 'CHGD', 'CHRGD': 'CHGD', 'CMAX': 'CMAX', 'Cinemax': 'CMAX',
             'CMOR': 'CMOR', 'CMT': 'CMT', 'Country Music Television': 'CMT', 'CN': 'CN', 'Cartoon Network': 'CN', 'CNBC': 'CNBC',
             'CNLP': 'CNLP', 'Canal+': 'CNLP', 'COOK': 'COOK', 'CORE': 'CORE', 'CR': 'CR', 'Crunchy Roll': 'CR', 'Crave': 'CRAV',
-            'CRIT': 'CRIT', 'Criterion' : 'CRIT', 'CRKL': 'CRKL', 'Crackle': 'CRKL', 'CSPN': 'CSPN', 'CSpan': 'CSPN', 'CTV': 'CTV', 'CUR': 'CUR',
+            'CRIT': 'CRIT', 'Criterion': 'CRIT', 'CRKL': 'CRKL', 'Crackle': 'CRKL', 'CSPN': 'CSPN', 'CSpan': 'CSPN', 'CTV': 'CTV', 'CUR': 'CUR',
             'CuriosityStream': 'CUR', 'CW': 'CW', 'The CW': 'CW', 'CWS': 'CWS', 'CWSeed': 'CWS', 'DAZN': 'DAZN', 'DCU': 'DCU',
             'DC Universe': 'DCU', 'DDY': 'DDY', 'Digiturk Diledigin Yerde': 'DDY', 'DEST': 'DEST', 'DramaFever': 'DF', 'DHF': 'DHF',
             'Deadhouse Films': 'DHF', 'DISC': 'DISC', 'Discovery': 'DISC', 'DIY': 'DIY', 'DIY Network': 'DIY', 'DOCC': 'DOCC',
@@ -2755,23 +2754,23 @@ class Prep():
             'EPIX': 'EPIX', 'ePix': 'EPIX', 'ESPN': 'ESPN', 'ESQ': 'ESQ', 'Esquire': 'ESQ', 'ETTV': 'ETTV', 'El Trece': 'ETTV',
             'ETV': 'ETV', 'E!': 'ETV', 'FAM': 'FAM', 'Fandor': 'FANDOR', 'Facebook Watch': 'FBWatch', 'FJR': 'FJR',
             'Family Jr': 'FJR', 'FOOD': 'FOOD', 'Food Network': 'FOOD', 'FOX': 'FOX', 'Fox': 'FOX', 'Fox Premium': 'FOXP',
-            'UFC Fight Pass': 'FP', 'FPT': 'FPT', 'FREE': 'FREE', 'Freeform': 'FREE', 'FTV': 'FTV', 'FUNI': 'FUNI', 'FUNi' : 'FUNI',
+            'UFC Fight Pass': 'FP', 'FPT': 'FPT', 'FREE': 'FREE', 'Freeform': 'FREE', 'FTV': 'FTV', 'FUNI': 'FUNI', 'FUNi': 'FUNI',
             'Foxtel': 'FXTL', 'FYI': 'FYI', 'FYI Network': 'FYI', 'GC': 'GC', 'NHL GameCenter': 'GC', 'GLBL': 'GLBL',
             'Global': 'GLBL', 'GLOB': 'GLOB', 'GloboSat Play': 'GLOB', 'GO90': 'GO90', 'GagaOOLala': 'Gaga', 'HBO': 'HBO',
             'HBO Go': 'HBO', 'HGTV': 'HGTV', 'HIDI': 'HIDI', 'HIST': 'HIST', 'History': 'HIST', 'HLMK': 'HLMK', 'Hallmark': 'HLMK',
-            'HMAX': 'HMAX', 'HBO Max': 'HMAX', 'HS': 'HTSR', 'HTSR' : 'HTSR', 'HSTR': 'Hotstar', 'HULU': 'HULU', 'Hulu': 'HULU', 'hoichoi': 'HoiChoi', 'ID': 'ID',
+            'HMAX': 'HMAX', 'HBO Max': 'HMAX', 'HS': 'HTSR', 'HTSR': 'HTSR', 'HSTR': 'Hotstar', 'HULU': 'HULU', 'Hulu': 'HULU', 'hoichoi': 'HoiChoi', 'ID': 'ID',
             'Investigation Discovery': 'ID', 'IFC': 'IFC', 'iflix': 'IFX', 'National Audiovisual Institute': 'INA', 'ITV': 'ITV',
-            'KAYO': 'KAYO', 'KNOW': 'KNOW', 'Knowledge Network': 'KNOW', 'KNPY': 'KNPY', 'Kanopy' : 'KNPY', 'LIFE': 'LIFE', 'Lifetime': 'LIFE', 'LN': 'LN',
-            'MA' : 'MA', 'Movies Anywhere' : 'MA', 'MAX' : 'MAX', 'MBC': 'MBC', 'MNBC': 'MNBC', 'MSNBC': 'MNBC', 'MTOD': 'MTOD', 'Motor Trend OnDemand': 'MTOD', 'MTV': 'MTV', 'MUBI': 'MUBI',
+            'KAYO': 'KAYO', 'KNOW': 'KNOW', 'Knowledge Network': 'KNOW', 'KNPY': 'KNPY', 'Kanopy': 'KNPY', 'LIFE': 'LIFE', 'Lifetime': 'LIFE', 'LN': 'LN',
+            'MA': 'MA', 'Movies Anywhere': 'MA', 'MAX': 'MAX', 'MBC': 'MBC', 'MNBC': 'MNBC', 'MSNBC': 'MNBC', 'MTOD': 'MTOD', 'Motor Trend OnDemand': 'MTOD', 'MTV': 'MTV', 'MUBI': 'MUBI',
             'NATG': 'NATG', 'National Geographic': 'NATG', 'NBA': 'NBA', 'NBA TV': 'NBA', 'NBC': 'NBC', 'NF': 'NF', 'Netflix': 'NF',
             'National Film Board': 'NFB', 'NFL': 'NFL', 'NFLN': 'NFLN', 'NFL Now': 'NFLN', 'NICK': 'NICK', 'Nickelodeon': 'NICK', 'NRK': 'NRK',
             'Norsk Rikskringkasting': 'NRK', 'OnDemandKorea': 'ODK', 'Opto': 'OPTO', 'Oprah Winfrey Network': 'OWN', 'PA': 'PA', 'PBS': 'PBS',
             'PBSK': 'PBSK', 'PBS Kids': 'PBSK', 'PCOK': 'PCOK', 'Peacock': 'PCOK', 'PLAY': 'PLAY', 'PLUZ': 'PLUZ', 'Pluzz': 'PLUZ', 'PMNP': 'PMNP',
-            'PMNT': 'PMNT', 'PMTP' : 'PMTP', 'POGO': 'POGO', 'PokerGO': 'POGO', 'PSN': 'PSN', 'Playstation Network': 'PSN', 'PUHU': 'PUHU', 'QIBI': 'QIBI',
+            'PMNT': 'PMNT', 'PMTP': 'PMTP', 'POGO': 'POGO', 'PokerGO': 'POGO', 'PSN': 'PSN', 'Playstation Network': 'PSN', 'PUHU': 'PUHU', 'QIBI': 'QIBI',
             'RED': 'RED', 'YouTube Red': 'RED', 'RKTN': 'RKTN', 'Rakuten TV': 'RKTN', 'The Roku Channel': 'ROKU', 'RSTR': 'RSTR', 'RTE': 'RTE',
-            'RTE One': 'RTE', 'RUUTU': 'RUUTU', 'SBS': 'SBS', 'Science Channel': 'SCI', 'SESO': 'SESO', 'SeeSo': 'SESO', 'SHMI': 'SHMI', 'Shomi': 'SHMI', 'SKST' : 'SKST', 'SkyShowtime': 'SKST',
+            'RTE One': 'RTE', 'RUUTU': 'RUUTU', 'SBS': 'SBS', 'Science Channel': 'SCI', 'SESO': 'SESO', 'SeeSo': 'SESO', 'SHMI': 'SHMI', 'Shomi': 'SHMI', 'SKST': 'SKST', 'SkyShowtime': 'SKST',
             'SHO': 'SHO', 'Showtime': 'SHO', 'SNET': 'SNET', 'Sportsnet': 'SNET', 'Sony': 'SONY', 'SPIK': 'SPIK', 'Spike': 'SPIK', 'Spike TV': 'SPKE',
-            'SPRT': 'SPRT', 'Sprout': 'SPRT', 'STAN': 'STAN', 'Stan': 'STAN', 'STARZ': 'STARZ', 'STRP': 'STRP', 'Star+' : 'STRP', 'STZ': 'STZ', 'Starz': 'STZ', 'SVT': 'SVT',
+            'SPRT': 'SPRT', 'Sprout': 'SPRT', 'STAN': 'STAN', 'Stan': 'STAN', 'STARZ': 'STARZ', 'STRP': 'STRP', 'Star+': 'STRP', 'STZ': 'STZ', 'Starz': 'STZ', 'SVT': 'SVT',
             'Sveriges Television': 'SVT', 'SWER': 'SWER', 'SwearNet': 'SWER', 'SYFY': 'SYFY', 'Syfy': 'SYFY', 'TBS': 'TBS', 'TEN': 'TEN',
             'TFOU': 'TFOU', 'TFou': 'TFOU', 'TIMV': 'TIMV', 'TLC': 'TLC', 'TOU': 'TOU', 'TRVL': 'TRVL', 'TUBI': 'TUBI', 'TubiTV': 'TUBI',
             'TV3': 'TV3', 'TV3 Ireland': 'TV3', 'TV4': 'TV4', 'TV4 Sweeden': 'TV4', 'TVING': 'TVING', 'TVL': 'TVL', 'TV Land': 'TVL',
@@ -2786,7 +2785,7 @@ class Prep():
         if "DTS-HD MA" in audio:
             video_name = video_name.replace("DTS-HD.MA.", "").replace("DTS-HD MA ", "")
         for key, value in services.items():
-            if (' ' + key + ' ') in video_name and key not in guessit(video, {"excludes" : ["country", "language"]}).get('title', ''):
+            if (' ' + key + ' ') in video_name and key not in guessit(video, {"excludes": ["country", "language"]}).get('title', ''):
                 service = value
             elif key == service:
                 service = value
@@ -2799,7 +2798,7 @@ class Prep():
         return service, service_longname
 
     def stream_optimized(self, stream_opt):
-        if stream_opt == True:
+        if stream_opt is True:
             stream = 1
         else:
             stream = 0
@@ -2810,22 +2809,22 @@ class Prep():
         if anon.lower() == "true":
             console.print("[bold red]Global ANON has been removed in favor of per-tracker settings. Please update your config accordingly.")
             time.sleep(10)
-        if anon_in == True:
+        if anon_in is True:
             anon_out = 1
         else:
             anon_out = 0
         return anon_out
 
     async def upload_image(self, session, url, data, headers, files):
-        if headers == None and files == None:
+        if headers is None and files is None:
             async with session.post(url=url, data=data) as resp:
                 response = await resp.json()
                 return response
-        elif headers == None and files != None:
+        elif headers is None and files is not None:
             async with session.post(url=url, data=data, files=files) as resp:
                 response = await resp.json()
                 return response
-        elif headers != None and files == None:
+        elif headers is not None and files is None:
             async with session.post(url=url, data=data, headers=headers) as resp:
                 response = await resp.json()
                 return response
@@ -2835,7 +2834,7 @@ class Prep():
                 return response
 
     def clean_filename(self, name):
-        invalid = '<>:"/\|?*'
+        invalid = '<>:"/\\|?*'
         for char in invalid:
             name = name.replace(char, '-')
         return name
@@ -2848,16 +2847,16 @@ class Prep():
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'w', newline="", encoding='utf8') as description:
             description.seek(0)
             if (desclink, descfile, meta['desc']) == (None, None, None):
-                if meta.get('ptp_manual') != None:
+                if meta.get('ptp_manual') is not None:
                     desc_source.append('PTP')
-                if meta.get('blu_manual') != None:
+                if meta.get('blu_manual') is not None:
                     desc_source.append('BLU')
                 if len(desc_source) != 1:
                     desc_source = None
                 else:
                     desc_source = desc_source[0]
 
-                if meta.get('ptp', None) != None and str(self.config['TRACKERS'].get('PTP', {}).get('useAPI')).lower() == "true" and desc_source in ['PTP', None]:
+                if meta.get('ptp', None) is not None and str(self.config['TRACKERS'].get('PTP', {}).get('useAPI')).lower() == "true" and desc_source in ['PTP', None]:
                     ptp = PTP(config=self.config)
                     ptp_desc = await ptp.get_ptp_description(meta['ptp'], meta['is_disc'])
                     if ptp_desc.replace('\r\n', '').replace('\n', '').strip() != "":
@@ -2870,7 +2869,7 @@ class Prep():
                         description.write(meta['blu_desc'])
                         meta['description'] = 'BLU'
 
-            if meta.get('desc_template', None) != None:
+            if meta.get('desc_template', None) is not None:
                 from jinja2 import Template
                 with open(f"{meta['base_dir']}/data/templates/{meta['desc_template']}.txt", 'r') as f:
                     desc_templater = Template(f.read())
@@ -2879,14 +2878,14 @@ class Prep():
                         description.write(template_desc)
                         description.write("\n")
 
-            if meta['nfo'] != False:
+            if meta['nfo'] is not False:
                 description.write("[code]")
                 nfo = glob.glob("*.nfo")[0]
                 description.write(open(nfo, 'r', encoding="utf-8").read())
                 description.write("[/code]")
                 description.write("\n")
                 meta['description'] = "CUSTOM"
-            if desclink != None:
+            if desclink is not None:
                 parsed = urllib.parse.urlparse(desclink.replace('/raw/', '/'))
                 split = os.path.split(parsed.path)
                 if split[0] != '/':
@@ -2898,12 +2897,12 @@ class Prep():
                 description.write("\n")
                 meta['description'] = "CUSTOM"
 
-            if descfile != None:
-                if os.path.isfile(descfile) == True:
+            if descfile is not None:
+                if os.path.isfile(descfile) is True:
                     text = open(descfile, 'r').read()
                     description.write(text)
                 meta['description'] = "CUSTOM"
-            if meta['desc'] != None:
+            if meta['desc'] is not None:
                 description.write(meta['desc'])
                 description.write("\n")
                 meta['description'] = "CUSTOM"
@@ -2914,7 +2913,7 @@ class Prep():
         with open(f"{meta['base_dir']}/data/tags.json", 'r', encoding="utf-8") as f:
             tags = json.load(f)
             f.close()
-        
+
         for tag in tags:
             value = tags.get(tag)
             if value.get('in_name', "") == tag and tag in meta['path']:
@@ -2933,7 +2932,6 @@ class Prep():
                     else:
                         meta[key] = value.get(key)
         return meta
-    
 
     async def package(self, meta):
         if meta['tag'] == "":
@@ -2957,7 +2955,7 @@ class Prep():
                 generic.write(f"TVDB: https://www.thetvdb.com/?id={meta['tvdb_id']}&tab=series\n")
             poster_img = f"{meta['base_dir']}/tmp/{meta['uuid']}/POSTER.png"
             if meta.get('poster', None) not in ['', None] and not os.path.exists(poster_img):
-                if meta.get('rehosted_poster', None) == None:
+                if meta.get('rehosted_poster', None) is None:
                     r = requests.get(meta['poster'], stream=True)
                     if r.status_code == 200:
                         console.print("[bold yellow]Rehosting Poster")
@@ -2973,18 +2971,18 @@ class Prep():
                             metafile.close()
                     else:
                         console.print("[bold yellow]Poster could not be retrieved")
-            elif os.path.exists(poster_img) and meta.get('rehosted_poster') != None:
+            elif os.path.exists(poster_img) and meta.get('rehosted_poster') is not None:
                 generic.write(f"TMDB Poster: {meta.get('rehosted_poster')}\n")
             if len(meta['image_list']) > 0:
-                generic.write(f"\nImage Webpage:\n")
+                generic.write("\nImage Webpage:\n")
                 for each in meta['image_list']:
                     generic.write(f"{each['web_url']}\n")
-                generic.write(f"\nThumbnail Image:\n")
+                generic.write("\nThumbnail Image:\n")
                 for each in meta['image_list']:
                     generic.write(f"{each['img_url']}\n")
         title = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", meta['title'])
         archive = f"{meta['base_dir']}/tmp/{meta['uuid']}/{title}"
-        torrent_files = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}","*.torrent")
+        torrent_files = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", "*.torrent")
         if isinstance(torrent_files, list) and len(torrent_files) > 1:
             for each in torrent_files:
                 if not each.startswith(('BASE', '[RAND')):
@@ -2997,12 +2995,12 @@ class Prep():
                 # shutil.copy(os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent"), os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['name'].replace(' ', '.')}.torrent").replace(' ', '.'))
             filebrowser = self.config['TRACKERS'].get('MANUAL', {}).get('filebrowser', None)
             shutil.make_archive(archive, 'tar', f"{meta['base_dir']}/tmp/{meta['uuid']}")
-            if filebrowser != None:
+            if filebrowser is not None:
                 url = '/'.join(s.strip('/') for s in (filebrowser, f"/tmp/{meta['uuid']}"))
                 url = urllib.parse.quote(url, safe="https://")
             else:
                 files = {
-                    "files[]" : (f"{meta['title']}.tar", open(f"{archive}.tar", 'rb'))
+                    "files[]": (f"{meta['title']}.tar", open(f"{archive}.tar", 'rb'))
                 }
                 response = requests.post("https://uguu.se/upload.php", files=files).json()
                 if meta['debug']:
@@ -3011,14 +3009,14 @@ class Prep():
             return url
         except Exception:
             return False
-        return 
+        return
 
     async def get_imdb_aka(self, imdb_id):
         if imdb_id == "0":
             return "", None
         ia = Cinemagoer()
         result = ia.get_movie(imdb_id.replace('tt', ''))
-        
+
         original_language = result.get('language codes')
         if isinstance(original_language, list):
             if len(original_language) > 1:
@@ -3044,7 +3042,6 @@ class Prep():
         dvd_sizes.sort()
         compact = " ".join(dvd_sizes)
         return compact
-    
 
     def get_tmdb_imdb_from_mediainfo(self, mediainfo, category, is_disc, tmdbid, imdbid):
         if not is_disc:
@@ -3053,14 +3050,13 @@ class Prep():
                 for each in extra:
                     if each.lower().startswith('tmdb'):
                         parser = Args(config=self.config)
-                        category, tmdbid = parser.parse_tmdb_id(id = extra[each], category=category)
+                        category, tmdbid = parser.parse_tmdb_id(id=extra[each], category=category)
                     if each.lower().startswith('imdb'):
                         try:
                             imdbid = str(int(extra[each].replace('tt', ''))).zfill(7)
                         except Exception:
                             pass
         return category, tmdbid, imdbid
-
 
     def daily_to_tmdb_season_episode(self, tmdbid, date):
         show = tmdb.TV(tmdbid)
@@ -3080,9 +3076,6 @@ class Prep():
         else:
             console.print(f"[yellow]Unable to map the date ([bold yellow]{str(date)}[/bold yellow]) to a Season/Episode number")
         return season, episode
-
-
-
 
     async def get_imdb_info(self, imdbID, meta):
         imdb_info = {}
@@ -3112,18 +3105,17 @@ class Prep():
                     imdb_info['directors'].append(f"nm{director.getID()}")
         else:
             imdb_info = {
-                'title' : meta['title'],
-                'year' : meta['year'],
-                'aka' : '',
-                'type' : None,
-                'runtime' : meta.get('runtime', '60'),
-                'cover' : meta.get('poster'),
+                'title': meta['title'],
+                'year': meta['year'],
+                'aka': '',
+                'type': None,
+                'runtime': meta.get('runtime', '60'),
+                'cover': meta.get('poster'),
             }
             if len(meta.get('tmdb_directors', [])) >= 1:
                 imdb_info['directors'] = meta['tmdb_directors']
 
         return imdb_info
-        
 
     async def search_imdb(self, filename, search_year):
         imdbID = '0'
@@ -3134,7 +3126,6 @@ class Prep():
                 if movie.get('year') == search_year:
                     imdbID = str(movie.movieID).replace('tt', '')
         return imdbID
-
 
     async def imdb_other_meta(self, meta):
         imdb_info = meta['imdb_info'] = await self.get_imdb_info(meta['imdb_id'], meta)
@@ -3157,49 +3148,49 @@ class Prep():
         tvmazeID = 0
         lookup = False
         show = None
-        if imdbID == None:
+        if imdbID is None:
             imdbID = '0'
-        if tvdbID == None:
+        if tvdbID is None:
             tvdbID = 0
         if int(tvdbID) != 0:
             params = {
-                "thetvdb" : tvdbID
+                "thetvdb": tvdbID
             }
             url = "https://api.tvmaze.com/lookup/shows"
             lookup = True
         elif int(imdbID) != 0:
             params = {
-                "imdb" : f"tt{imdbID}"
+                "imdb": f"tt{imdbID}"
             }
             url = "https://api.tvmaze.com/lookup/shows"
             lookup = True
         else:
             params = {
-                "q" : filename
+                "q": filename
             }
-            url = f"https://api.tvmaze.com/search/shows"
+            url = "https://api.tvmaze.com/search/shows"
         resp = requests.get(url=url, params=params)
         if resp.ok:
             resp = resp.json()
-            if resp == None:
+            if resp is None:
                 return tvmazeID, imdbID, tvdbID
-            if lookup == True:
+            if lookup is True:
                 show = resp
             else:
                 if year not in (None, ''):
                     for each in resp:
                         premier_date = each['show'].get('premiered', '')
-                        if premier_date != None:
+                        if premier_date is not None:
                             if premier_date.startswith(str(year)):
                                 show = each['show']
                 elif len(resp) >= 1:
                     show = resp[0]['show']
-            if show != None:
+            if show is not None:
                 tvmazeID = show.get('id')
                 if int(imdbID) == 0:
-                    if show.get('externals', {}).get('imdb', '0') != None:
+                    if show.get('externals', {}).get('imdb', '0') is not None:
                         imdbID = str(show.get('externals', {}).get('imdb', '0')).replace('tt', '')
                 if int(tvdbID) == 0:
-                    if show.get('externals', {}).get('tvdb', '0') != None:
+                    if show.get('externals', {}).get('tvdb', '0') is not None:
                         tvdbID = show.get('externals', {}).get('tvdb', '0')
         return tvmazeID, imdbID, tvdbID

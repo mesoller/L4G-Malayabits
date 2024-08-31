@@ -195,7 +195,7 @@ async def do_the_thing(base_dir):
             if meta['debug']:
                 console.print(meta['image_list'])
             # meta['uploaded_screens'] = True
-        elif meta.get('skip_imghost_upload', False) == True and meta.get('image_list', False) is False:
+        elif meta.get('skip_imghost_upload', False) is True and meta.get('image_list', False) is False:
             meta['image_list'] = []
 
         if not os.path.exists(os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")):
@@ -208,11 +208,11 @@ async def do_the_thing(base_dir):
                 prep.create_torrent(meta, Path(meta['path']), "BASE")
             if meta['nohash']:
                 meta['client'] = "none"
-        elif os.path.exists(os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")) and meta.get('rehash', False) == True and meta['nohash'] is False:
+        elif os.path.exists(os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")) and meta.get('rehash', False) is True and meta['nohash'] is False:
             prep.create_torrent(meta, Path(meta['path']), "BASE")
         if int(meta.get('randomized', 0)) >= 1:
             prep.create_random_torrents(meta['base_dir'], meta['uuid'], meta['randomized'], meta['path'])
-            
+
         if meta.get('trackers', None) is not None:
             trackers = meta['trackers']
         else:
@@ -242,9 +242,7 @@ async def do_the_thing(base_dir):
         if meta.get('manual', False):
             trackers.insert(0, "MANUAL")
 
-        ####################################
-        #######  Upload to Trackers  #######
-        ####################################
+        # Upload to Trackers
         common = COMMON(config=config)
         api_trackers = ['BLU', 'AITHER', 'STC', 'R4E', 'STT', 'RF', 'ACM', 'LCD', 'LST', 'HUNO', 'SN', 'LT', 'NBL', 'ANT', 'JPTV', 'TDC', 'OE', 'BHDTV', 'RTF', 'OTW', 'FNP', 'CBR', 'UTP', 'AL', 'HDB']
         http_trackers = ['TTG', 'FL', 'PTER', 'HDT', 'MTV']
