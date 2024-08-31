@@ -438,7 +438,8 @@ class PTP():
                     if language == "en":
                         if track.get('Forced', "") == "Yes":
                             language = "en (Forced)"
-                        if "intertitles" in track.get('Title', "").lower():
+                        title = track.get('Title', "")
+                        if isinstance(title, str) and "intertitles" in title.lower():
                             language = "en (Intertitles)"
                     for lang, subID in sub_lang_map.items():
                         if language in lang and subID not in sub_langs:
@@ -448,7 +449,7 @@ class PTP():
                 for lang, subID in sub_lang_map.items():
                     if language in lang and subID not in sub_langs:
                         sub_langs.append(subID)
-        
+
         if sub_langs == []:
             sub_langs = [44] # No Subtitle
         return sub_langs
