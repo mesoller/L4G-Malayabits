@@ -1158,11 +1158,22 @@ class Prep():
             os.remove(smallest)
 
     def screenshots(self, path, filename, folder_id, base_dir, meta, num_screens=None):
-        if num_screens is None:
-            num_screens = self.screens - len(meta.get('image_list', []))
-        if num_screens == 0:
-            # or len(meta.get('image_list', [])) >= num_screens:
+        # Ensure the image list is initialized and preserve existing images
+        if 'image_list' not in meta:
+            meta['image_list'] = []
+
+        # Check if there are already at least 3 image links in the image list
+        existing_images = [img for img in meta['image_list'] if isinstance(img, dict) and img.get('img_url', '').startswith('http')]
+        if len(existing_images) >= 3:
+            console.print("[yellow]There are already at least 3 images in the image list. Skipping additional screenshots.")
             return
+
+        # Determine the number of screenshots to take
+        if num_screens is None:
+            num_screens = self.screens - len(existing_images)
+        if num_screens <= 0:
+            return
+
         with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", encoding='utf-8') as f:
             mi = json.load(f)
             video_track = mi['media']['track'][1]
@@ -1208,17 +1219,17 @@ class Prep():
                         ss_times = []
                         screen_task = progress.add_task("[green]Saving Screens...", total=num_screens + 1)
                         for i in range(num_screens + 1):
-                            image = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
-                            if not os.path.exists(image) or retake is not False:
+                            image_path = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
+                            if not os.path.exists(image_path) or retake is not False:
                                 retake = False
                                 try:
-                                    ss_times = self.valid_ss_time(ss_times, num_screens+1, length)
+                                    ss_times = self.valid_ss_time(ss_times, num_screens + 1, length)
                                     ff = ffmpeg.input(path, ss=ss_times[-1])
                                     if w_sar != 1 or h_sar != 1:
                                         ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
                                     (
                                         ff
-                                        .output(image, vframes=1, pix_fmt="rgb24")
+                                        .output(image_path, vframes=1, pix_fmt="rgb24")
                                         .overwrite_output()
                                         .global_args('-loglevel', loglevel)
                                         .run(quiet=debug)
@@ -1226,14 +1237,14 @@ class Prep():
                                 except Exception:
                                     console.print(traceback.format_exc())
 
-                                self.optimize_images(image)
-                                if os.path.getsize(Path(image)) <= 75000:
+                                self.optimize_images(image_path)
+                                if os.path.getsize(Path(image_path)) <= 75000:
                                     console.print("[yellow]Image is incredibly small, retaking")
                                     retake = True
                                     time.sleep(1)
-                                if os.path.getsize(Path(image)) <= 31000000 and self.img_host == "imgbb" and retake is False:
+                                if os.path.getsize(Path(image_path)) <= 31000000 and self.img_host == "imgbb" and retake is False:
                                     i += 1
-                                elif os.path.getsize(Path(image)) <= 10000000 and self.img_host in ["imgbox", 'pixhost'] and retake is False:
+                                elif os.path.getsize(Path(image_path)) <= 10000000 and self.img_host in ["imgbox", 'pixhost'] and retake is False:
                                     i += 1
                                 elif self.img_host in ["ptpimg", "lensdump", "ptscreens"] and retake is False:
                                     i += 1
@@ -1249,15 +1260,22 @@ class Prep():
                             else:
                                 i += 1
                             progress.advance(screen_task)
-                    # remove smallest image
-                    smallest = ""
-                    smallestsize = 99 ** 99
-                    for screens in glob.glob1(f"{base_dir}/tmp/{folder_id}/", f"{filename}-*"):
-                        screensize = os.path.getsize(screens)
-                        if screensize < smallestsize:
-                            smallestsize = screensize
-                            smallest = screens
-                    os.remove(smallest)
+
+                        # Add new images to the meta['image_list'] as dictionaries
+                        new_images = glob.glob(f"{filename}-*.png")
+                        for image in new_images:
+                            img_dict = {
+                                'img_url': image,
+                                'raw_url': image,
+                                'web_url': image  # Assuming local path, but you might need to update this if uploading
+                            }
+                            meta['image_list'].append(img_dict)
+
+                        # Remove the smallest image if there are more than needed
+                        if len(meta['image_list']) > self.screens:
+                            smallest = min(meta['image_list'], key=lambda x: os.path.getsize(x['img_url']))
+                            os.remove(smallest['img_url'])
+                            meta['image_list'].remove(smallest)
 
     def valid_ss_time(self, ss_times, num_screens, length):
         valid_time = False

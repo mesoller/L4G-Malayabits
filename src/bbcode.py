@@ -46,9 +46,6 @@ class BBCODE:
         desc = html.unescape(desc)
         desc = desc.replace('\r\n', '\n')
 
-        # Debugging print
-        # console.print(f"[yellow]Description after unescaping HTML:\n{desc[:500]}...")
-
         # Remove url tags with PTP/HDB links
         url_tags = re.findall(r"(\[url[\=\]]https?:\/\/passthepopcorn\.m[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
         url_tags += re.findall(r"(\[url[\=\]]https?:\/\/hdbits\.o[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
@@ -59,9 +56,6 @@ class BBCODE:
                 url_tag_removed = re.sub(r"(\[url[\=\]]https?:\/\/hdbits\.o[^\]]+])", "", url_tag_removed, flags=re.IGNORECASE)
                 url_tag_removed = url_tag_removed.replace("[/url]", "")
                 desc = desc.replace(url_tag, url_tag_removed)
-
-        # Debugging print
-        # console.print(f"[yellow]Description after removing URL tags:\n{desc[:500]}...")
 
         # Remove links to PTP/HDB
         desc = desc.replace('http://passthepopcorn.me', 'PTP').replace('https://passthepopcorn.me', 'PTP')
@@ -79,9 +73,6 @@ class BBCODE:
             desc = re.sub(r"(^(menu)( #\d+)?\n)(.*?)^$", "", f"{desc}\n\n", flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
         elif any(x in is_disc for x in ["BDMV", "DVD"]):
             return "", []
-
-        # Debugging print
-        # console.print(f"[yellow]Description after removing mediainfo tags:\n{desc[:500]}...")
 
         # Convert Quote tags:
         desc = re.sub(r"\[quote.*?\]", "[code]", desc)
@@ -127,23 +118,21 @@ class BBCODE:
             desc = desc.replace(comp, f"COMPARISON_PLACEHOLDER-{i} ")
             comp_placeholders.append(comp)
 
-        # Debugging print
-        # console.print(f"[yellow]Description after processing comparisons and hides:\n{desc[:500]}...")
-
         # Remove Images in IMG tags:
         desc = re.sub(r"\[img\][\s\S]*?\[\/img\]", "", desc, flags=re.IGNORECASE)
         desc = re.sub(r"\[img=[\s\S]*?\]", "", desc, flags=re.IGNORECASE)
 
-        # Extract loose images and add to imagelist
+        # Extract loose images and add to imagelist as dictionaries
         loose_images = re.findall(r"(https?:\/\/.*\.(?:png|jpg))", nocomp, flags=re.IGNORECASE)
         if loose_images:
-            imagelist.extend(loose_images)
-            console.print(f"[yellow]Loose images found: {len(loose_images)}")
-            for image in loose_images:
-                desc = desc.replace(image, '')
-
-        # Debugging print
-        # console.print(f"[yellow]Final description after removing loose images:\n{desc[:500]}...")
+            for img_url in loose_images:
+                image_dict = {
+                    'img_url': img_url,
+                    'raw_url': img_url,
+                    'web_url': img_url  # Since there is no distinction here, use the same URL for all
+                }
+                imagelist.append(image_dict)
+                desc = desc.replace(img_url, '')
 
         # Re-place comparisons
         for i, comp in enumerate(comp_placeholders):
@@ -164,7 +153,6 @@ class BBCODE:
             console.print(f"[yellow]Description is empty after cleaning.")
             return "", imagelist
 
-        # console.print(f"[green]Returning cleaned description and {len(imagelist)} images.")
         return desc, imagelist
 
     def clean_unit3d_description(self, desc, site):
