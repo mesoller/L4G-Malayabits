@@ -168,7 +168,7 @@ class Prep():
                 # Only fetch if not already in meta
                 imdb, ptp_torrent_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
                 if ptp_torrent_id:
-                    meta['ptp'] = ptp_torrent_id  # Store ptp_torrent_id in meta
+                    meta['ptp'] = ptp_torrent_id 
                     meta['imdb'] = str(imdb).zfill(7) if imdb else None
 
             if meta.get('imdb') and await self.prompt_user_for_id_selection(imdb=meta['imdb']):
@@ -214,18 +214,20 @@ class Prep():
                     meta[tracker_key] = tracker_id
                 found_match = True
 
-            # Prompt user for confirmation on keeping HDB data
             if found_match:
-                console.print(f"[green]{tracker_name} data found: IMDb ID: {imdb}, TVDb ID: {meta['tvdb_id']}, HDB Name: {meta['hdb_name']}")
-                if await self.prompt_user_for_confirmation(f"Do you want to keep the data found on {tracker_name}?"):
-                    console.print(f"[green]{tracker_name} data retained.")
+                if imdb or tvdb_id or hdb_name:
+                    console.print(f"[green]{tracker_name} data found: IMDb ID: {imdb}, TVDb ID: {meta['tvdb_id']}, HDB Name: {meta['hdb_name']}")
+                    if await self.prompt_user_for_confirmation(f"Do you want to keep the data found on {tracker_name}?"):
+                        console.print(f"[green]{tracker_name} data retained.")
+                    else:
+                        console.print(f"[yellow]{tracker_name} data discarded.")
+                        meta[tracker_key] = None
+                        meta['tvdb_id'] = None
+                        meta['hdb_name'] = None
+                        found_match = False
                 else:
-                    console.print(f"[yellow]{tracker_name} data discarded.")
-                    meta[tracker_key] = None
-                    meta['tvdb_id'] = None
-                    meta['hdb_name'] = None
+                    console.print(f"[yellow]Could not find a matching release on {tracker_name}.")
                     found_match = False
-
         else:
             # Handle other trackers if any
             meta['imdb'], meta['ext_torrenthash'] = await tracker_instance.get_imdb_from_torrent_id(meta.get(tracker_key))
