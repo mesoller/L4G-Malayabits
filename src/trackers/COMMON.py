@@ -3,6 +3,7 @@ import os
 import requests
 import re
 import json
+import click
 
 from src.bbcode import BBCODE
 from src.console import console
@@ -184,6 +185,21 @@ class COMMON():
                     bbcode = BBCODE()
                     description, imagelist = bbcode.clean_unit3d_description(description, torrent_url)
                     console.print(f"[green]Successfully grabbed description from {tracker}")
+
+                    # Allow user to edit or discard the description
+                    console.print("[cyan]Do you want to edit or discard the description?[/cyan]")
+                    edit_choice = input("[cyan]Enter 'e' to edit, 'd' to discard, or press Enter to keep it as is: [/cyan]")
+
+                    if edit_choice.lower() == 'e':
+                        edited_description = click.edit(description)
+                        if edited_description:
+                            description = edited_description.strip()
+                        console.print(f"[green]Final description after editing:[/green] {description}")
+                    elif edit_choice.lower() == 'd':
+                        description = None
+                        console.print("[yellow]Description discarded.[/yellow]")
+                    else:
+                        console.print(f"[green]Keeping the original description.[/green]")
                 else:
                     console.print(f"[yellow]No description found for {tracker}.[/yellow]")
             else:
@@ -192,6 +208,9 @@ class COMMON():
         except Exception as e:
             console.print_exception()
             console.print(f"[yellow]Invalid Response from {tracker} API. Error: {str(e)}[/yellow]")
+
+        if description:  # Ensure description is only printed if it's not None
+            console.print(f"[green]Final description to be returned:[/green] {description}")
 
         return tmdb, imdb, tvdb, mal, description, category, infohash, imagelist, file_name
 
