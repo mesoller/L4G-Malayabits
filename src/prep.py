@@ -1441,7 +1441,7 @@ class Prep():
                 keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('keywords')]
             elif tmdb_keywords.get('results') is not None:
                 keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('results')]
-            return(', '.join (keywords))
+            return (', '.join(keywords))
         else:
             return ''
 
@@ -1450,7 +1450,7 @@ class Prep():
             tmdb_genres = tmdb_info.get('genres', [])
             if tmdb_genres is not []:
                 genres = [f"{genre['name'].replace(',', ' ')}" for genre in tmdb_genres]
-            return(', '.join (genres))
+            return (', '.join(genres))
         else:
             return ''
 

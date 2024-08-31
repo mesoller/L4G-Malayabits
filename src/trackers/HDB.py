@@ -132,7 +132,7 @@ class HDB():
             "MASTERS OF CINEMA": 19, "MOC": 19,
             "KINO LORBER": 55, "KINO": 55,
             "BFI VIDEO": 63, "BFI": 63, "BRITISH FILM INSTITUTE": 63,
-            "STUDIO CANAL":65,
+            "STUDIO CANAL": 65,
             "ARROW": 64
         }
         if meta.get('distributor') in distributor_dict.keys():
@@ -330,16 +330,16 @@ class HDB():
             'search': meta['resolution']
         }
         if int(meta.get('imdb_id', '0').replace('tt', '0')) != 0:
-            data['imdb'] = {'id' : meta['imdb_id']}
+            data['imdb'] = {'id': meta['imdb_id']}
         if int(meta.get('tvdb_id', '0')) != 0:
-            data['tvdb'] = {'id' : meta['tvdb_id']}
+            data['tvdb'] = {'id': meta['tvdb_id']}
         try:
             response = requests.get(url=url, data=json.dumps(data))
             response = response.json()
             for each in response['data']:
                 result = each['name']
                 dupes.append(result)
-        except:
+        except Exception:
             console.print('[bold red]Unable to search for existing torrents on site. Either the site is down or your passkey is incorrect')
             await asyncio.sleep(5)
 
@@ -367,7 +367,7 @@ class HDB():
             if r.get('status', 5) == 0:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     async def validate_cookies(self, meta):
@@ -503,7 +503,7 @@ class HDB():
                     hdb_name = response['data'][0]['name']
                     hdb_torrenthash = response['data'][0]['hash']
 
-            except:
+            except Exception:
                 console.print_exception()
         else:
             console.print("Failed to get info from HDB ID. Either the site is down or your credentials are invalid")

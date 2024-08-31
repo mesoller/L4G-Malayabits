@@ -47,6 +47,7 @@ import platform
 import shutil
 import glob
 import cli_ui
+import traceback
 
 from src.console import console
 from rich.markdown import Markdown
@@ -54,13 +55,12 @@ from rich.style import Style
 
 
 cli_ui.setup(color='always', title="L4G's Upload Assistant")
-import traceback
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
 try:
     from data.config import config
-except:
+except Exception:
     if not os.path.exists(os.path.abspath(f"{base_dir}/data/config.py")):
         try:
             if os.path.exists(os.path.abspath(f"{base_dir}/data/config.json")):
@@ -75,7 +75,7 @@ except:
                 from data.config import config
             else:
                 raise NotImplementedError
-        except:
+        except Exception:
             cli_ui.info(cli_ui.red, "We have switched from .json to .py for config to have a much more lenient experience")
             cli_ui.info(cli_ui.red, "Looks like the auto updater didnt work though")
             cli_ui.info(cli_ui.red, "Updating is just 2 easy steps:")
@@ -369,7 +369,7 @@ async def do_the_thing(base_dir):
                             if meta['upload'] is True:
                                 await thr.upload(session, meta)
                                 await client.add_to_client(meta, "THR")
-                    except:
+                    except Exception:
                         console.print(traceback.print_exc())
 
             if tracker == "PTP":
@@ -406,7 +406,7 @@ async def do_the_thing(base_dir):
                             await ptp.upload(meta, ptpUrl, ptpData)
                             await asyncio.sleep(5)
                             await client.add_to_client(meta, "PTP")
-                    except:
+                    except Exception:
                         console.print(traceback.print_exc())
 
             if tracker == "TL":

@@ -118,7 +118,7 @@ class Args():
                             parsed = urllib.parse.urlparse(value2)
                             try:
                                 meta['ptp'] = urllib.parse.parse_qs(parsed.query)['torrentid'][0]
-                            except:
+                            except Exception:
                                 console.print('[red]Your terminal ate  part of the url, please surround in quotes next time, or pass only the torrentid')
                                 console.print('[red]Continuing without -ptp')
                         else:
@@ -131,7 +131,7 @@ class Args():
                                 if blupath.endswith('/'):
                                     blupath = blupath[:-1]
                                 meta['blu'] = blupath.split('/')[-1]
-                            except:
+                            except Exception:
                                 console.print('[red]Unable to parse id from url')
                                 console.print('[red]Continuing without --blu')
                         else:
@@ -141,7 +141,7 @@ class Args():
                             parsed = urllib.parse.urlparse(value2)
                             try:
                                 meta['hdb'] = urllib.parse.parse_qs(parsed.query)['id'][0]
-                            except:
+                            except Exception:
                                 console.print('[red]Your terminal ate  part of the url, please surround in quotes next time, or pass only the torrentid')
                                 console.print('[red]Continuing without -hdb')
                         else:

@@ -130,7 +130,7 @@ class CBR():
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '4320p': '1', 
+            '4320p': '1',
             '2160p': '2',
             '1080p': '3',
             '1080i': '4',

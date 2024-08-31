@@ -54,7 +54,7 @@ class UNIT3D_TEMPLATE():
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '8640p':'10',
+            '8640p': '10',
             '4320p': '1',
             '2160p': '2',
             '1440p': '3',
@@ -99,7 +99,7 @@ class UNIT3D_TEMPLATE():
             'name': meta['name'],
             'description': desc,
             'mediainfo': mi_dump,
-            'bdinfo': bd_dump, 
+            'bdinfo': bd_dump,
             'category_id': cat_id,
             'type_id': type_id,
             'resolution_id': resolution_id,
@@ -142,11 +142,11 @@ class UNIT3D_TEMPLATE():
             response = requests.post(url=self.upload_url, files=files, data=data, headers=headers, params=params)
             try:
                 console.print(response.json())
-            except:
+            except Exception:
                 console.print("It may have uploaded, go check")
                 return
         else:
-            console.print(f"[cyan]Request Data:")
+            console.print("[cyan]Request Data:")
             console.print(data)
         open_torrent.close()
 
@@ -171,7 +171,7 @@ class UNIT3D_TEMPLATE():
                 # difference = SequenceMatcher(None, meta['clean_name'], result).ratio()
                 # if difference >= 0.05:
                 dupes.append(result)
-        except:
+        except Exception:
             console.print('[bold red]Unable to search for existing torrents on site. Either the site is down or your API key is incorrect')
             await asyncio.sleep(5)
 

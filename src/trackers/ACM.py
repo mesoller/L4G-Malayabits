@@ -196,7 +196,7 @@ class ACM():
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
         acm_name = await self.edit_name(meta)
-        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) == False:
+        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
             anon = 0
         else:
             anon = 1
@@ -262,7 +262,7 @@ class ACM():
                 console.print("It may have uploaded, go check")
                 return
         else:
-            console.print(f"[cyan]Request Data:")
+            console.print("[cyan]Request Data:")
             console.print(data)
         open_torrent.close()
 

@@ -97,6 +97,7 @@ class Bot(commands.Bot):
             return  # ignore all bots
         await self.process_commands(message)
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
