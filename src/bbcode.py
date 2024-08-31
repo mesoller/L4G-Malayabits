@@ -37,7 +37,7 @@ class BBCODE:
         pass
 
     def clean_ptp_description(self, desc, is_disc):
-        console.print(f"[yellow]Cleaning PTP description...")
+        # console.print(f"[yellow]Cleaning PTP description...")
         
         # Convert Bullet Points to -
         desc = desc.replace("&bull;", "-")
@@ -47,7 +47,7 @@ class BBCODE:
         desc = desc.replace('\r\n', '\n')
 
         # Debugging print
-        console.print(f"[yellow]Description after unescaping HTML:\n{desc[:500]}...")
+        # console.print(f"[yellow]Description after unescaping HTML:\n{desc[:500]}...")
 
         # Remove url tags with PTP/HDB links
         url_tags = re.findall(r"(\[url[\=\]]https?:\/\/passthepopcorn\.m[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
@@ -61,7 +61,7 @@ class BBCODE:
                 desc = desc.replace(url_tag, url_tag_removed)
 
         # Debugging print
-        console.print(f"[yellow]Description after removing URL tags:\n{desc[:500]}...")
+        # console.print(f"[yellow]Description after removing URL tags:\n{desc[:500]}...")
 
         # Remove links to PTP/HDB
         desc = desc.replace('http://passthepopcorn.me', 'PTP').replace('https://passthepopcorn.me', 'PTP')
@@ -81,7 +81,7 @@ class BBCODE:
             return "", []
 
         # Debugging print
-        console.print(f"[yellow]Description after removing mediainfo tags:\n{desc[:500]}...")
+        # console.print(f"[yellow]Description after removing mediainfo tags:\n{desc[:500]}...")
 
         # Convert Quote tags:
         desc = re.sub(r"\[quote.*?\]", "[code]", desc)
@@ -128,7 +128,7 @@ class BBCODE:
             comp_placeholders.append(comp)
 
         # Debugging print
-        console.print(f"[yellow]Description after processing comparisons and hides:\n{desc[:500]}...")
+        # console.print(f"[yellow]Description after processing comparisons and hides:\n{desc[:500]}...")
 
         # Remove Images in IMG tags:
         desc = re.sub(r"\[img\][\s\S]*?\[\/img\]", "", desc, flags=re.IGNORECASE)
@@ -143,7 +143,7 @@ class BBCODE:
                 desc = desc.replace(image, '')
 
         # Debugging print
-        console.print(f"[yellow]Final description after removing loose images:\n{desc[:500]}...")
+        # console.print(f"[yellow]Final description after removing loose images:\n{desc[:500]}...")
 
         # Re-place comparisons
         for i, comp in enumerate(comp_placeholders):
@@ -164,7 +164,7 @@ class BBCODE:
             console.print(f"[yellow]Description is empty after cleaning.")
             return "", imagelist
 
-        console.print(f"[green]Returning cleaned description and {len(imagelist)} images.")
+        # console.print(f"[green]Returning cleaned description and {len(imagelist)} images.")
         return desc, imagelist
 
     def clean_unit3d_description(self, desc, site):

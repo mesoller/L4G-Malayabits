@@ -186,11 +186,7 @@ class PTP():
         desc, imagelist = bbcode.clean_ptp_description(ptp_desc, is_disc)
         
         console.print(f"[bold green]Successfully grabbed description from PTP")
-        console.print(f"[cyan]Description after cleaning:\n{desc[:500]}...")  # Show first 500 characters for brevity
-        console.print(f"[cyan]Images found: {len(imagelist)}")
-        if imagelist:
-            for img in imagelist:
-                console.print(f"[blue]Image: {img}")
+        console.print(f"[cyan]Description after cleaning:[yellow]\n{desc[:500]}...")  # Show first 500 characters for brevity
 
         return desc, imagelist
 
