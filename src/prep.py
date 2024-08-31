@@ -81,12 +81,14 @@ class Prep():
         selection = input("Do you want to use this ID? (y/n): ").strip().lower()
         return selection == 'y'
 
+    async def prompt_user_for_confirmation(self, message):
+        selection = input(f"{message} (y/n): ").strip().lower()
+        return selection == 'y'
+
     async def update_metadata_from_tracker(self, tracker_name, tracker_instance, meta, search_term, search_file_folder):
         tracker_key = tracker_name.lower()
         manual_key = f"{tracker_key}_manual"
         found_match = False
-
-        # console.print(f"[cyan]Attempting to search {tracker_name} with search_term: {search_term}[/cyan]")
 
         if meta.get(tracker_key) is not None:
             meta[manual_key] = meta[tracker_key]
@@ -96,6 +98,7 @@ class Prep():
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
                     console.print(f"[green]Valid data found on {tracker_name}, setting meta values[/green]")
                     if await self.prompt_user_for_id_selection(blu_tmdb, blu_imdb, blu_tvdb, blu_filename):
+                        # Setting metadata based on found IDs
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
@@ -115,6 +118,7 @@ class Prep():
                         found_match = True  # Set flag if any relevant data is found
                     else:
                         console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        await self.handle_image_list(meta, tracker_name)
                         return meta, found_match  # Return immediately to skip the current site
                 else:
                     console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
@@ -131,12 +135,10 @@ class Prep():
                 else:
                     console.print(f"[yellow]No IMDb ID found on {tracker_name}[/yellow]")
         else:
-            # console.print(f"[cyan]Searching {tracker_name} using search_term: {search_term}[/cyan]")
             imdb, tracker_id = None, None  # Initialize variables
             if tracker_name == "PTP":
                 imdb, tracker_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
             elif tracker_name == "HDB":
-                # console.print(f"[cyan]HDB search using folder/file: {search_term}[/cyan]")
                 imdb, tvdb_id, hdb_name, meta['ext_torrenthash'], tracker_id = await tracker_instance.search_filename(search_term, search_file_folder)
                 meta['tvdb_id'] = str(tvdb_id) if tvdb_id else meta.get('tvdb_id')
                 meta['hdb_name'] = hdb_name
@@ -145,6 +147,7 @@ class Prep():
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
                     console.print(f"[green]Valid data found on {tracker_name} using file name, setting meta values[/green]")
                     if await self.prompt_user_for_id_selection(blu_tmdb, blu_imdb, blu_tvdb, blu_filename):
+                        # Setting metadata based on found IDs
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
@@ -161,9 +164,10 @@ class Prep():
                             meta['image_list'] = blu_imagelist
                         if blu_filename:
                             meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
-                        found_match = True
+                        found_match = True  # Set flag if any relevant data is found
                     else:
                         console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        await self.handle_image_list(meta, tracker_name)
                         return meta, found_match  # Return immediately to skip the current site
                 else:
                     console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
@@ -182,7 +186,18 @@ class Prep():
             if tracker_id:
                 meta[tracker_key] = tracker_id
 
+        await self.handle_image_list(meta, tracker_name)
         return meta, found_match
+
+    async def handle_image_list(self, meta, tracker_name):
+        if meta.get('image_list'):
+            keep_images = await self.prompt_user_for_confirmation(f"Do you want to keep the images found on {tracker_name}?")
+            if not keep_images:
+                meta['image_list'] = []
+                console.print(f"[yellow]Images discarded from {tracker_name}[/yellow]")
+            else:
+                console.print(f"[green]Images retained from {tracker_name}[/green]")
+
 
     async def gather_prep(self, meta, mode):
         meta['mode'] = mode
@@ -202,7 +217,7 @@ class Prep():
         meta['is_disc'], videoloc, bdinfo, meta['discs'] = await self.get_disc(meta)
 
         # Debugging information
-        console.print(f"Debug: meta['filelist'] before population: {meta.get('filelist', 'Not Set')}")
+        # console.print(f"Debug: meta['filelist'] before population: {meta.get('filelist', 'Not Set')}")
 
         if meta['is_disc'] == "BDMV":
             video, meta['scene'], meta['imdb'] = self.is_scene(meta['path'], meta.get('imdb', None))
@@ -306,7 +321,7 @@ class Prep():
         meta['bdinfo'] = bdinfo
 
         # Debugging information after population
-        console.print(f"Debug: meta['filelist'] after population: {meta.get('filelist', 'Not Set')}")
+        # console.print(f"Debug: meta['filelist'] after population: {meta.get('filelist', 'Not Set')}")
 
         # Reuse information from trackers with fallback
         if search_term:  # Ensure there's a valid search term
