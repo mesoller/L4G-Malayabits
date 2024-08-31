@@ -86,7 +86,7 @@ class Prep():
         manual_key = f"{tracker_key}_manual"
         found_match = False
 
-        console.print(f"[cyan]Attempting to search {tracker_name} with search_term: {search_term}[/cyan]")
+        # console.print(f"[cyan]Attempting to search {tracker_name} with search_term: {search_term}[/cyan]")
 
         if meta.get(tracker_key) is not None:
             meta[manual_key] = meta[tracker_key]
@@ -131,12 +131,12 @@ class Prep():
                 else:
                     console.print(f"[yellow]No IMDb ID found on {tracker_name}[/yellow]")
         else:
-            console.print(f"[cyan]Searching {tracker_name} using search_term: {search_term}[/cyan]")
+            # console.print(f"[cyan]Searching {tracker_name} using search_term: {search_term}[/cyan]")
             imdb, tracker_id = None, None  # Initialize variables
             if tracker_name == "PTP":
                 imdb, tracker_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
             elif tracker_name == "HDB":
-                console.print(f"[cyan]HDB search using folder/file: {search_term}[/cyan]")
+                # console.print(f"[cyan]HDB search using folder/file: {search_term}[/cyan]")
                 imdb, tvdb_id, hdb_name, meta['ext_torrenthash'], tracker_id = await tracker_instance.search_filename(search_term, search_file_folder)
                 meta['tvdb_id'] = str(tvdb_id) if tvdb_id else meta.get('tvdb_id')
                 meta['hdb_name'] = hdb_name
@@ -314,16 +314,16 @@ class Prep():
 
             if str(self.config['TRACKERS'].get('PTP', {}).get('useAPI')).lower() == "true":
                 ptp = PTP(config=self.config)
-                console.print(f"[cyan]Attempting to search PTP with search_term: {search_term}[/cyan]")
+                # console.print(f"[cyan]Attempting to search PTP with search_term: {search_term}[/cyan]")
                 meta, found_match = await self.update_metadata_from_tracker('PTP', ptp, meta, search_term, search_file_folder)
 
             if not found_match and str(self.config['TRACKERS'].get('HDB', {}).get('useAPI')).lower() == "true":
-                console.print(f"[cyan]Attempting to search HDB with search_term: {search_term}[/cyan]")
+                # console.print(f"[cyan]Attempting to search HDB with search_term: {search_term}[/cyan]")
                 hdb = HDB(config=self.config)
                 meta, found_match = await self.update_metadata_from_tracker('HDB', hdb, meta, search_term, search_file_folder)
 
             if not found_match and str(self.config['TRACKERS'].get('BLU', {}).get('useAPI')).lower() == "true":
-                console.print(f"[cyan]Attempting to search BLU with search_term: {search_term}[/cyan]")
+                # console.print(f"[cyan]Attempting to search BLU with search_term: {search_term}[/cyan]")
                 blu = BLU(config=self.config)
                 meta, found_match = await self.update_metadata_from_tracker('BLU', blu, meta, search_term, search_file_folder)
 
