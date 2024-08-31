@@ -68,15 +68,21 @@ class Prep():
     async def prompt_user_for_id_selection(self, blu_tmdb=None, blu_imdb=None, blu_tvdb=None, blu_filename=None, imdb=None):
         if imdb:
             imdb = str(imdb).zfill(7)  # Convert to string and ensure IMDb ID is 7 characters long by adding leading zeros
-            console.print(f"[cyan]Found IMDb ID: https://www.imdb.com/title/tt{imdb}[/cyan]")
+            console.print(f"[cyan]Found IMDb ID: https://www.imdb.com/title/tt{imdb}")
         if blu_tmdb or blu_imdb or blu_tvdb:
             if blu_imdb:
                 blu_imdb = str(blu_imdb).zfill(7)  # Convert to string and ensure IMDb ID is 7 characters long by adding leading zeros
-            console.print("[cyan]Found the following IDs on BLU:[/cyan]")
+            console.print("[cyan]Found the following IDs on BLU:")
             console.print(f"TMDb ID: {blu_tmdb}")
             console.print(f"IMDb ID: https://www.imdb.com/title/tt{blu_imdb}")
             console.print(f"TVDb ID: {blu_tvdb}")
             console.print(f"Filename: {blu_filename}")
+        
+        if blu_imdb:  # Assuming blu_imagelist would be linked with this function
+            if meta.get('image_list'):
+                console.print("[cyan]Found the following images:")
+                for img in meta['image_list']:
+                    console.print(f"[blue]{img}")
 
         selection = input("Do you want to use this ID? (y/n): ").strip().lower()
         return selection == 'y'
@@ -92,13 +98,12 @@ class Prep():
 
         if meta.get(tracker_key) is not None:
             meta[manual_key] = meta[tracker_key]
-            console.print(f"[cyan]{tracker_name} ID found in meta, reusing existing ID: {meta[tracker_key]}[/cyan]")
+            console.print(f"[cyan]{tracker_name} ID found in meta, reusing existing ID: {meta[tracker_key]}")
             if tracker_name == "BLU":
                 blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist, blu_filename = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, tracker_instance.search_url, id=meta[tracker_key])
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
-                    console.print(f"[green]Valid data found on {tracker_name}, setting meta values[/green]")
+                    console.print(f"[green]Valid data found on {tracker_name}, setting meta values")
                     if await self.prompt_user_for_id_selection(blu_tmdb, blu_imdb, blu_tvdb, blu_filename):
-                        # Setting metadata based on found IDs
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
@@ -115,27 +120,79 @@ class Prep():
                             meta['image_list'] = blu_imagelist
                         if blu_filename:
                             meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
-                        found_match = True  # Set flag if any relevant data is found
+                        found_match = True
                     else:
-                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.")
                         await self.handle_image_list(meta, tracker_name)
-                        return meta, found_match  # Return immediately to skip the current site
+                        return meta, found_match
                 else:
-                    console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
+                    console.print(f"[yellow]No valid data found on {tracker_name}")
+            elif tracker_name == "PTP":
+                ptp_desc, ptp_imagelist = await tracker_instance.get_ptp_description(meta['ptp'], meta['is_disc'])
+                if ptp_desc.replace('\r\n', '').replace('\n', '').strip() != "":
+                    meta['description'] = ptp_desc
+                    meta['image_list'] = ptp_imagelist
+                    console.print(f"[green]PTP description and images added to metadata.")
+
+                    # Print images before asking for confirmation
+                    if ptp_imagelist:
+                        console.print("[cyan]Found the following images:")
+                        for img in ptp_imagelist:
+                            console.print(f"[blue]{img}")
+
+                    if await self.prompt_user_for_confirmation("Do you want to keep the description and images from PTP?"):
+                        found_match = True
+                    else:
+                        console.print(f"[yellow]Description and images discarded from PTP")
+                        meta['description'] = None
+                        meta['image_list'] = []
+                        return meta, found_match
+                else:
+                    console.print(f"[yellow]No valid data found on {tracker_name}")
             else:
                 meta['imdb'], meta['ext_torrenthash'] = await tracker_instance.get_imdb_from_torrent_id(meta[tracker_key])
                 if meta['imdb']:
-                    meta['imdb'] = str(meta['imdb']).zfill(7)  # Pad IMDb ID with leading zeros
+                    meta['imdb'] = str(meta['imdb']).zfill(7)
                     if await self.prompt_user_for_id_selection(imdb=meta['imdb']):
-                        console.print(f"[green]{tracker_name} IMDb ID found: {meta['imdb']}[/green]")
+                        console.print(f"[green]{tracker_name} IMDb ID found: {meta['imdb']}")
                         found_match = True
+
+                        if tracker_name == "PTP":
+                            imdb, ptp_torrent_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
+                            if ptp_torrent_id:
+                                meta['ptp'] = ptp_torrent_id  # Store ptp_torrent_id in meta
+                                if imdb:
+                                    imdb = str(imdb).zfill(7)
+                                    if await self.prompt_user_for_id_selection(imdb=imdb):
+                                        console.print(f"[green]{tracker_name} IMDb ID found: {imdb}")
+                                        meta['imdb'] = imdb
+                                        found_match = True
+
+                                        ptp_desc, ptp_imagelist = await tracker_instance.get_ptp_description(meta['ptp'], meta['is_disc'])
+                                        if ptp_desc.replace('\r\n', '').replace('\n', '').strip() != "":
+                                            meta['description'] = ptp_desc
+                                            meta['image_list'] = ptp_imagelist
+                                            console.print(f"[green]PTP description and images added to metadata.")
+
+                                            if ptp_imagelist:
+                                                console.print("[cyan]Found the following images:")
+                                                for img in ptp_imagelist:
+                                                    console.print(f"[blue]{img}")
+
+                                            if await self.prompt_user_for_confirmation("Do you want to keep the description and images from PTP?"):
+                                                found_match = True
+                                            else:
+                                                console.print(f"[yellow]Description and images discarded from PTP")
+                                                meta['description'] = None
+                                                meta['image_list'] = []
+                                                return meta, found_match
                     else:
-                        console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.[/yellow]")
-                        return meta, found_match  # Return immediately to skip the current site
+                        console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.")
+                        return meta, found_match
                 else:
-                    console.print(f"[yellow]No IMDb ID found on {tracker_name}[/yellow]")
+                    console.print(f"[yellow]No IMDb ID found on {tracker_name}")
         else:
-            imdb, tracker_id = None, None  # Initialize variables
+            imdb, tracker_id = None, None
             if tracker_name == "PTP":
                 imdb, tracker_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
             elif tracker_name == "HDB":
@@ -145,13 +202,12 @@ class Prep():
             elif tracker_name == "BLU":
                 blu_tmdb, blu_imdb, blu_tvdb, blu_mal, blu_desc, blu_category, meta['ext_torrenthash'], blu_imagelist, blu_filename = await COMMON(self.config).unit3d_torrent_info("BLU", tracker_instance.torrent_url, tracker_instance.search_url, file_name=search_term)
                 if blu_tmdb not in [None, '0'] or blu_imdb not in [None, '0'] or blu_tvdb not in [None, '0']:
-                    console.print(f"[green]Valid data found on {tracker_name} using file name, setting meta values[/green]")
+                    console.print(f"[green]Valid data found on {tracker_name} using file name, setting meta values")
                     if await self.prompt_user_for_id_selection(blu_tmdb, blu_imdb, blu_tvdb, blu_filename):
-                        # Setting metadata based on found IDs
                         if blu_tmdb not in [None, '0']:
                             meta['tmdb_manual'] = blu_tmdb
                         if blu_imdb not in [None, '0']:
-                            meta['imdb'] = str(blu_imdb).zfill(7)  # Pad IMDb ID with leading zeros
+                            meta['imdb'] = str(blu_imdb).zfill(7)
                         if blu_tvdb not in [None, '0']:
                             meta['tvdb_id'] = blu_tvdb
                         if blu_mal not in [None, '0']:
@@ -163,26 +219,56 @@ class Prep():
                         if meta.get('image_list', []) == []:
                             meta['image_list'] = blu_imagelist
                         if blu_filename:
-                            meta['blu_filename'] = blu_filename  # Store the filename in meta for later use
-                        found_match = True  # Set flag if any relevant data is found
+                            meta['blu_filename'] = blu_filename
+                        found_match = True
                     else:
-                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.[/yellow]")
+                        console.print(f"[yellow]User skipped the found ID on {tracker_name}, moving to the next site.")
                         await self.handle_image_list(meta, tracker_name)
-                        return meta, found_match  # Return immediately to skip the current site
+                        return meta, found_match
                 else:
-                    console.print(f"[yellow]No valid data found on {tracker_name}[/yellow]")
+                    console.print(f"[yellow]No valid data found on {tracker_name}")
             else:
                 imdb = tracker_id = None
 
             if imdb:
-                imdb = str(imdb).zfill(7)  # Pad IMDb ID with leading zeros
+                imdb = str(imdb).zfill(7)
                 if await self.prompt_user_for_id_selection(imdb=imdb):
-                    console.print(f"[green]{tracker_name} IMDb ID found: {imdb}[/green]")
+                    console.print(f"[green]{tracker_name} IMDb ID found: {imdb}")
                     meta['imdb'] = imdb
                     found_match = True
+
+                    if tracker_name == "PTP":
+                        imdb, ptp_torrent_id, meta['ext_torrenthash'] = await tracker_instance.get_ptp_id_imdb(search_term, search_file_folder)
+                        if ptp_torrent_id:
+                            meta['ptp'] = ptp_torrent_id  # Store ptp_torrent_id in meta
+                            if imdb:
+                                imdb = str(imdb).zfill(7)
+                                if await self.prompt_user_for_id_selection(imdb=imdb):
+                                    console.print(f"[green]{tracker_name} IMDb ID found: {imdb}")
+                                    meta['imdb'] = imdb
+                                    found_match = True
+
+                                    ptp_desc, ptp_imagelist = await tracker_instance.get_ptp_description(meta['ptp'], meta['is_disc'])
+                                    if ptp_desc.replace('\r\n', '').replace('\n', '').strip() != "":
+                                        meta['description'] = ptp_desc
+                                        meta['image_list'] = ptp_imagelist
+                                        console.print(f"[green]PTP description and images added to metadata.")
+
+                                        if ptp_imagelist:
+                                            console.print("[cyan]Found the following images:")
+                                            for img in ptp_imagelist:
+                                                console.print(f"[blue]{img}")
+
+                                        if await self.prompt_user_for_confirmation("Do you want to keep the description and images from PTP?"):
+                                            found_match = True
+                                        else:
+                                            console.print(f"[yellow]Description and images discarded from PTP")
+                                            meta['description'] = None
+                                            meta['image_list'] = []
+                                            return meta, found_match
                 else:
-                    console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.[/yellow]")
-                    return meta, found_match  # Return immediately to skip the current site
+                    console.print(f"[yellow]User skipped the found IMDb ID on {tracker_name}, moving to the next site.")
+                    return meta, found_match
             if tracker_id:
                 meta[tracker_key] = tracker_id
 
@@ -191,13 +277,15 @@ class Prep():
 
     async def handle_image_list(self, meta, tracker_name):
         if meta.get('image_list'):
+            console.print("[cyan]Found the following images:")
+            for img in meta['image_list']:
+                console.print(f"[blue]{img}[/blue]")
             keep_images = await self.prompt_user_for_confirmation(f"Do you want to keep the images found on {tracker_name}?")
             if not keep_images:
                 meta['image_list'] = []
-                console.print(f"[yellow]Images discarded from {tracker_name}[/yellow]")
+                console.print(f"[yellow]Images discarded from {tracker_name}")
             else:
-                console.print(f"[green]Images retained from {tracker_name}[/green]")
-
+                console.print(f"[green]Images retained from {tracker_name}")
 
     async def gather_prep(self, meta, mode):
         meta['mode'] = mode

@@ -1,6 +1,7 @@
 import re
 import html
 import urllib.parse
+from src.console import console
 
 # Bold - KEEP
 # Italic - KEEP
@@ -36,18 +37,22 @@ class BBCODE:
         pass
 
     def clean_ptp_description(self, desc, is_disc):
+        console.print(f"[yellow]Cleaning PTP description...")
+        
         # Convert Bullet Points to -
         desc = desc.replace("&bull;", "-")
 
         # Unescape html
         desc = html.unescape(desc)
-        # End my suffering
         desc = desc.replace('\r\n', '\n')
+
+        # Debugging print
+        console.print(f"[yellow]Description after unescaping HTML:\n{desc[:500]}...")
 
         # Remove url tags with PTP/HDB links
         url_tags = re.findall(r"(\[url[\=\]]https?:\/\/passthepopcorn\.m[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
-        url_tags = url_tags + re.findall(r"(\[url[\=\]]https?:\/\/hdbits\.o[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
-        if url_tags != []:
+        url_tags += re.findall(r"(\[url[\=\]]https?:\/\/hdbits\.o[^\]]+)([^\[]+)(\[\/url\])?", desc, flags=re.IGNORECASE)
+        if url_tags:
             for url_tag in url_tags:
                 url_tag = ''.join(url_tag)
                 url_tag_removed = re.sub(r"(\[url[\=\]]https?:\/\/passthepopcorn\.m[^\]]+])", "", url_tag, flags=re.IGNORECASE)
@@ -55,13 +60,16 @@ class BBCODE:
                 url_tag_removed = url_tag_removed.replace("[/url]", "")
                 desc = desc.replace(url_tag, url_tag_removed)
 
-        # Remove links to PTP
+        # Debugging print
+        console.print(f"[yellow]Description after removing URL tags:\n{desc[:500]}...")
+
+        # Remove links to PTP/HDB
         desc = desc.replace('http://passthepopcorn.me', 'PTP').replace('https://passthepopcorn.me', 'PTP')
         desc = desc.replace('http://hdbits.org', 'HDB').replace('https://hdbits.org', 'HDB')
 
         # Remove Mediainfo Tags / Attempt to regex out mediainfo
-        mediainfo_tags = re.findall(r"\[mediainfo\][\s\S]*?\[\/mediainfo\]",  desc)
-        if len(mediainfo_tags) >= 1:
+        mediainfo_tags = re.findall(r"\[mediainfo\][\s\S]*?\[\/mediainfo\]", desc)
+        if mediainfo_tags:
             desc = re.sub(r"\[mediainfo\][\s\S]*?\[\/mediainfo\]", "", desc)
         elif is_disc != "BDMV":
             desc = re.sub(r"(^general\nunique)(.*?)^$", "", desc, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
@@ -70,7 +78,10 @@ class BBCODE:
             desc = re.sub(r"(^(video|audio|text)( #\d+)?\nid)(.*?)^$", "", desc, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
             desc = re.sub(r"(^(menu)( #\d+)?\n)(.*?)^$", "", f"{desc}\n\n", flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
         elif any(x in is_disc for x in ["BDMV", "DVD"]):
-            return ""
+            return "", []
+
+        # Debugging print
+        console.print(f"[yellow]Description after removing mediainfo tags:\n{desc[:500]}...")
 
         # Convert Quote tags:
         desc = re.sub(r"\[quote.*?\]", "[code]", desc)
@@ -102,7 +113,8 @@ class BBCODE:
         for each in remove_list:
             desc = desc.replace(each, '')
 
-        # Catch Stray Images
+        # Catch Stray Images and Prepare Image List
+        imagelist = []
         comps = re.findall(r"\[comparison=[\s\S]*?\[\/comparison\]", desc)
         hides = re.findall(r"\[hide[\s\S]*?\[\/hide\]", desc)
         comps.extend(hides)
@@ -110,24 +122,33 @@ class BBCODE:
         comp_placeholders = []
 
         # Replace comparison/hide tags with placeholder because sometimes uploaders use comp images as loose images
-        for i in range(len(comps)):
-            nocomp = nocomp.replace(comps[i], '')
-            desc = desc.replace(comps[i], f"COMPARISON_PLACEHOLDER-{i} ")
-            comp_placeholders.append(comps[i])
+        for i, comp in enumerate(comps):
+            nocomp = nocomp.replace(comp, '')
+            desc = desc.replace(comp, f"COMPARISON_PLACEHOLDER-{i} ")
+            comp_placeholders.append(comp)
+
+        # Debugging print
+        console.print(f"[yellow]Description after processing comparisons and hides:\n{desc[:500]}...")
 
         # Remove Images in IMG tags:
         desc = re.sub(r"\[img\][\s\S]*?\[\/img\]", "", desc, flags=re.IGNORECASE)
         desc = re.sub(r"\[img=[\s\S]*?\]", "", desc, flags=re.IGNORECASE)
-        # Replace Images
+
+        # Extract loose images and add to imagelist
         loose_images = re.findall(r"(https?:\/\/.*\.(?:png|jpg))", nocomp, flags=re.IGNORECASE)
-        if len(loose_images) >= 1:
+        if loose_images:
+            imagelist.extend(loose_images)
+            console.print(f"[yellow]Loose images found: {len(loose_images)}")
             for image in loose_images:
                 desc = desc.replace(image, '')
+
+        # Debugging print
+        console.print(f"[yellow]Final description after removing loose images:\n{desc[:500]}...")
+
         # Re-place comparisons
-        if comp_placeholders != []:
-            for i, comp in enumerate(comp_placeholders):
-                comp = re.sub(r"\[\/?img[\s\S]*?\]", "", comp, flags=re.IGNORECASE)
-                desc = desc.replace(f"COMPARISON_PLACEHOLDER-{i} ", comp)
+        for i, comp in enumerate(comp_placeholders):
+            comp = re.sub(r"\[\/?img[\s\S]*?\]", "", comp, flags=re.IGNORECASE)
+            desc = desc.replace(f"COMPARISON_PLACEHOLDER-{i} ", comp)
 
         # Convert hides with multiple images to comparison
         desc = self.convert_collapse_to_comparison(desc, "hide", hides)
@@ -139,9 +160,12 @@ class BBCODE:
             desc = desc.replace('\n', '', 1)
         desc = desc.strip('\n')
 
-        if desc.replace('\n', '') == '':
-            return ""
-        return desc
+        if desc.replace('\n', '').strip() == '':
+            console.print(f"[yellow]Description is empty after cleaning.")
+            return "", imagelist
+
+        console.print(f"[green]Returning cleaned description and {len(imagelist)} images.")
+        return desc, imagelist
 
     def clean_unit3d_description(self, desc, site):
         # Unescape html
