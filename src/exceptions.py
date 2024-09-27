@@ -1,6 +1,6 @@
 class LoginException(Exception):
     def __init__(self, *args, **kwargs):
-        default_message = 'An error occured while logging in'
+        default_message = "An error occured while logging in"
         # if any arguments are passed...
         # If you inherit from the exception that takes message as a keyword
         # maybe you will need to check kwargs here
@@ -14,7 +14,7 @@ class LoginException(Exception):
 
 class UploadException(Exception):
     def __init__(self, *args, **kwargs):
-        default_message = 'An error occured while uploading'
+        default_message = "An error occured while uploading"
         # if any arguments are passed...
         # If you inherit from the exception that takes message as a keyword
         # maybe you will need to check kwargs here

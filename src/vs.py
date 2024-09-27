@@ -20,7 +20,8 @@ def CustomFrameInfo(clip, text):
 
 def optimize_images(image, config):
     import platform  # Ensure platform is imported here
-    if config.get('optimize_images', True):
+
+    if config.get("optimize_images", True):
         if os.path.exists(image):
             try:
                 pyver = platform.python_version_tuple()
@@ -35,9 +36,11 @@ def optimize_images(image, config):
     return
 
 
-def vs_screengn(source, encode=None, filter_b_frames=False, num=5, dir=".", config=None):
+def vs_screengn(
+    source, encode=None, filter_b_frames=False, num=5, dir=".", config=None
+):
     if config is None:
-        config = {'optimize_images': True}  # Default configuration
+        config = {"optimize_images": True}  # Default configuration
 
     screens_file = os.path.join(dir, "screens.txt")
 

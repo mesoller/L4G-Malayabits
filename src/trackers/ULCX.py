@@ -17,9 +17,36 @@ class ULCX:
         self.search_url = "https://upload.cx/api/torrents/filter"
         self.signature = "\n[center][url=https://github.com/Audionut/Upload-Assistant]Created by L4G's Upload Assistant[/url][/center]"
         self.banned_groups = [
-            "Tigole", "x0r", "Judas", "SPDVD", "MeGusta", "YIFY", "SWTYBLZ", "TAoE", "TSP", "TSPxL", "LAMA", "4K4U", "ION10",
-            "Will1869", "TGx", "Sicario", "QxR", "Hi10", "EMBER", "FGT", "AROMA", "d3g", "nikt0", "Grym", "RARBG", "iVy", "NuBz",
-            "NAHOM", "EDGE2020", "FnP",
+            "Tigole",
+            "x0r",
+            "Judas",
+            "SPDVD",
+            "MeGusta",
+            "YIFY",
+            "SWTYBLZ",
+            "TAoE",
+            "TSP",
+            "TSPxL",
+            "LAMA",
+            "4K4U",
+            "ION10",
+            "Will1869",
+            "TGx",
+            "Sicario",
+            "QxR",
+            "Hi10",
+            "EMBER",
+            "FGT",
+            "AROMA",
+            "d3g",
+            "nikt0",
+            "Grym",
+            "RARBG",
+            "iVy",
+            "NuBz",
+            "NAHOM",
+            "EDGE2020",
+            "FnP",
         ]
 
     async def get_cat_id(self, category_name):
@@ -90,7 +117,8 @@ class ULCX:
             bd_dump = None
         desc = open(
             f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt",
-            "r", encoding='utf-8',
+            "r",
+            encoding="utf-8",
         ).read()
         open_torrent = open(
             f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent",

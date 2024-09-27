@@ -3,10 +3,11 @@ import os
 from src.console import console
 
 
-class Search():
+class Search:
     """
     Logic for searching
     """
+
     def __init__(self, config):
         self.config = config
         pass
@@ -26,17 +27,18 @@ class Search():
             console.print(f"Searching {search_dir}")
             for root, dirs, files in os.walk(search_dir, topdown=False):
                 for name in files:
-                    if not name.endswith('.nfo'):
+                    if not name.endswith(".nfo"):
                         l_name = name.lower()
                         os_info = platform.platform()
                         if await self.file_search(l_name, words):
                             file_found = True  # noqa F841
-                            if ('Windows' in os_info):
-                                files_total_search.append(root + '\\' + name)
+                            if "Windows" in os_info:
+                                files_total_search.append(root + "\\" + name)
                             else:
-                                files_total_search.append(root + '/' + name)
+                                files_total_search.append(root + "/" + name)
             return files_total_search
-        config_dir = self.config['DISCORD']['search_dir']
+
+        config_dir = self.config["DISCORD"]["search_dir"]
         if isinstance(config_dir, list):
             for each in config_dir:
                 files = await search_file(each)
@@ -67,13 +69,14 @@ class Search():
 
                     if await self.file_search(l_name, words):
                         folder_found = True  # noqa F841
-                        if ('Windows' in os_info):
-                            folders_total_search.append(root + '\\' + name)
+                        if "Windows" in os_info:
+                            folders_total_search.append(root + "\\" + name)
                         else:
-                            folders_total_search.append(root + '/' + name)
+                            folders_total_search.append(root + "/" + name)
 
             return folders_total_search
-        config_dir = self.config['DISCORD']['search_dir']
+
+        config_dir = self.config["DISCORD"]["search_dir"]
         if isinstance(config_dir, list):
             for each in config_dir:
                 folders = await search_dir(each)

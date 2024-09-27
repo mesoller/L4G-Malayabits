@@ -1,17 +1,14 @@
 config = {
     "DEFAULT": {
-
         # ------ READ THIS ------
         # Any lines starting with the # symbol are commented and will not be used.
         # If you change any of these options, remove the #
         # -----------------------
-
         "tmdb_api": "tmdb_api key",
         "imgbb_api": "imgbb api key",
         "ptpimg_api": "ptpimg api key",
         "lensdump_api": "lensdump api key",
         "ptscreens_api": "ptscreens api key",
-
         # Order of image hosts, and backup image hosts
         "img_host_1": "imgbb",
         "img_host_2": "ptpimg",
@@ -19,27 +16,19 @@ config = {
         "img_host_4": "pixhost",
         "img_host_5": "lensdump",
         "img_host_6": "ptscreens",
-
-
         "screens": "6",
         # Enable lossless PNG Compression (True/False)
         "optimize_images": True,
-
-
         # The name of your default torrent client, set in the torrent client sections below
         "default_torrent_client": "Client1",
-
         # Play the bell sound effect when asking for confirmation
         "sfx_on_prompt": True,
-
     },
-
     "TRACKERS": {
         # Which trackers do you want to upload to?
         # Available tracker: BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL, HDB, TIK, PSS, ULCX
         # Remove the trackers from the default_trackers list that are not used, to save being asked everytime
         "default_trackers": "BLU, BHD, AITHER, STC, STT, SN, THR, R4E, HP, ACM, PTP, LCD, LST, PTER, NBL, ANT, MTV, CBR, RTF, HUNO, BHDTV, LT, PTER, TL, TDC, HDT, OE, RF, OTW, FNP, UTP, AL, HDB, TIK, PSS, ULCX",
-
         "BLU": {
             "useAPI": False,  # Set to True if using BLU
             "api_key": "BLU api key",
@@ -64,10 +53,10 @@ config = {
             "useAPI": False,  # Set to True if using PTP
             "add_web_source_to_desc": True,
             "ApiUser": "ptp api user",
-            "ApiKey": 'ptp api key',
+            "ApiKey": "ptp api key",
             "username": "",
             "password": "",
-            "announce_url": ""
+            "announce_url": "",
         },
         "AITHER": {
             "useAPI": False,  # Set to True if using Aither
@@ -87,11 +76,11 @@ config = {
             # "anon" : False
         },
         "MTV": {
-            'api_key': 'get from security page',
-            'username': '<USERNAME>',
-            'password': '<PASSWORD>',
-            'announce_url': "get from https://www.morethantv.me/upload.php",
-            'anon': False,
+            "api_key": "get from security page",
+            "username": "<USERNAME>",
+            "password": "<PASSWORD>",
+            "announce_url": "get from https://www.morethantv.me/upload.php",
+            "anon": False,
             # 'otp_uri' : 'OTP URI, read the following for more information https://github.com/google/google-authenticator/wiki/Key-Uri-Format'
         },
         "STC": {
@@ -117,7 +106,6 @@ config = {
             "api_key": "ACM api key",
             "announce_url": "https://asiancinema.me/announce/customannounceurl",
             # "anon" : False,
-
             # FOR INTERNAL USE ONLY:
             # "internal" : True,
             # "internal_groups" : ["What", "Internal", "Groups", "Are", "You", "In"],
@@ -165,7 +153,7 @@ config = {
             # "anon" : False
         },
         "PTER": {
-            "passkey": 'passkey',
+            "passkey": "passkey",
             "img_rehost": False,
             "username": "",
             "password": "",
@@ -196,10 +184,10 @@ config = {
         "RTF": {
             "username": "username",
             "password": "password",
-            "api_key": 'get_it_by_running_/api/ login command from https://retroflix.club/api/doc',
+            "api_key": "get_it_by_running_/api/ login command from https://retroflix.club/api/doc",
             "announce_url": "get from upload page",
             # "tag": "RetroFlix, nd",
-            "anon": True
+            "anon": True,
         },
         "RF": {
             "api_key": "RF api key",
@@ -261,7 +249,6 @@ config = {
             # "filebrowser" : "https://domain.tld/filebrowser/files/Upload-Assistant/"
         },
     },
-
     # enable_search to True will automatically try and find a suitable hash to save having to rehash when creating torrents
     # Should use the qbit API, but will also use the torrent_storage_dir to find suitable hashes
     # If you find issue, use the "--debug" argument to print out some related details
@@ -277,7 +264,6 @@ config = {
             "qbit_user": "username",
             "qbit_pass": "password",
             # "torrent_storage_dir": "path/to/BT_backup folder"  ## use double-backslash on windows eg: "C:\\client\\backup"
-
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path": "/LocalPath",
             # "remote_path": "/RemotePath"
@@ -292,10 +278,8 @@ config = {
             # "torrent_storage_dir": "path/to/BT_backup folder"
             # "qbit_tag": "tag",
             # "qbit_cat": "category"
-
             # Content Layout for adding .torrents: "Original"(recommended)/"Subfolder"/"NoSubfolder"
-            "content_layout": "Original"
-
+            "content_layout": "Original",
             # Enable automatic torrent management if listed path(s) are present in the path
             # If using remote path mapping, use remote path
             # For using multiple paths, use a list ["path1", "path2"]
@@ -303,21 +287,17 @@ config = {
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path" : "E:\\downloads\\tv",
             # "remote_path" : "/remote/downloads/tv"
-
             # Set to False to skip verify certificate for HTTPS connections; for instance, if the connection is using a self-signed certificate.
             # "VERIFY_WEBUI_CERTIFICATE" : True
         },
-
         "rtorrent_sample": {
             "torrent_client": "rtorrent",
             "rtorrent_url": "https://user:password@server.host.tld:443/username/rutorrent/plugins/httprpc/action.php",
             # "torrent_storage_dir" : "path/to/session folder",
             # "rtorrent_label" : "Add this label to all uploads"
-
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path" : "/LocalPath",
             # "remote_path" : "/RemotePath"
-
         },
         "deluge_sample": {
             "torrent_client": "deluge",
@@ -326,25 +306,21 @@ config = {
             "deluge_user": "username",
             "deluge_pass": "password",
             # "torrent_storage_dir" : "path/to/session folder",
-
             # Remote path mapping (docker/etc.) CASE SENSITIVE
             # "local_path" : "/LocalPath",
             # "remote_path" : "/RemotePath"
         },
         "watch_sample": {
             "torrent_client": "watch",
-            "watch_folder": "/Path/To/Watch/Folder"
+            "watch_folder": "/Path/To/Watch/Folder",
         },
-
     },
-
     "DISCORD": {
         "discord_bot_token": "discord bot token",
         "discord_bot_description": "L4G's Upload Assistant",
         "command_prefix": "!",
         "discord_channel_id": "discord channel id for use",
         "admin_id": "your discord user id",
-
         "search_dir": "Path/to/downloads/folder/   this is used for search",
         # Alternatively, search multiple folders:
         # "search_dir" : [
@@ -359,7 +335,7 @@ config = {
             "ACM": "🍙",
             "MANUAL": "📩",
             "UPLOAD": "✅",
-            "CANCEL": "🚫"
-        }
-    }
+            "CANCEL": "🚫",
+        },
+    },
 }
