@@ -966,18 +966,18 @@ class PTP:
                         resp = loginresponse.json()
                     try:
                         if resp["Result"] != "Ok":
-                            raise LoginException(
+                            raise LoginException(  # noqa F405
                                 "Failed to login to PTP. Probably due to the bad user name, password, announce url, or 2FA code."
                             )  # noqa F405
                         AntiCsrfToken = resp["AntiCsrfToken"]
                         with open(cookiefile, "wb") as cf:
                             pickle.dump(session.cookies, cf)
                     except Exception:
-                        raise LoginException(
+                        raise LoginException(  # noqa F405
                             f"Got exception while loading JSON login response from PTP. Response: {loginresponse.text}"
                         )  # noqa F405
                 except Exception:
-                    raise LoginException(
+                    raise LoginException(  # noqa F405
                         f"Got exception while loading JSON login response from PTP. Response: {loginresponse.text}"
                     )  # noqa F405
         return AntiCsrfToken
@@ -989,7 +989,7 @@ class PTP:
                 "Looks like you are not logged in to PTP. Probably due to the bad user name, password, or expired session."
             )
         elif "Your popcorn quota has been reached, come back later!" in response.text:
-            raise LoginException(
+            raise LoginException(  # noqa F405
                 "Your PTP request/popcorn quota has been reached, try again later"
             )  # noqa F405
         else:
@@ -1182,7 +1182,7 @@ class PTP:
                     if match is not None:
                         errorMessage = match.group(1)
 
-                    raise UploadException(
+                    raise UploadException(  # noqa F405
                         f"Upload to PTP failed: {errorMessage} ({response.status_code}). (We are still on the upload page.)"
                     )  # noqa F405
 
@@ -1194,6 +1194,6 @@ class PTP:
                 if match is None:
                     console.print(url)
                     console.print(data)
-                    raise UploadException(
+                    raise UploadException(  # noqa F405
                         f"Upload to PTP failed: result URL {response.url} ({response.status_code}) is not the expected one."
                     )  # noqa F405

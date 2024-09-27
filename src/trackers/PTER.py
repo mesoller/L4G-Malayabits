@@ -479,7 +479,7 @@ class PTER:
                         else:
                             console.print(data)
                             console.print("\n\n")
-                            raise UploadException(
+                            raise UploadException(  # noqa F405
                                 f"Upload to Pter Failed: result URL {up.url} ({up.status_code}) was not expected",
                                 "red",
                             )  # noqa #F405

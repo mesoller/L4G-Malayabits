@@ -243,7 +243,7 @@ class FL:
                         console.print(data)
                         console.print("\n\n")
                         console.print(up.text)
-                        raise UploadException(
+                        raise UploadException(  # noqa F405
                             f"Upload to FL Failed: result URL {up.url} ({up.status_code}) was not expected",
                             "red",
                         )  # noqa F405

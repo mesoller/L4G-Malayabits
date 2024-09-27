@@ -355,7 +355,7 @@ class Commands(commands.Cog):
             channel = message.channel
             if meta["nohash"] is False:
                 if meta.get("torrenthash", None) is not None:
-                    reuse_torrent = await client.find_existing_torrent(
+                    reuse_torrent = await client.find_existing_torrent(  # noqa F841
                         meta
                     )  # noqa F821
                     if reuse_torrent is not None:

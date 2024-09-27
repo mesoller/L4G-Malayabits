@@ -1407,13 +1407,13 @@ class Prep:
             "854x480i": "480i",
             "480i": "480i",
             "720x576p": "576p",
-            "576p": "576p",
+            "576p": "576p",  # noqa F601
             "720x576i": "576i",
-            "576i": "576i",
+            "576i": "576i",  # noqa F601
             "720x480p": "480p",
-            "480p": "480p",
+            "480p": "480p",  # noqa F601
             "720x480i": "480i",
-            "480i": "480i",
+            "480i": "480i",  # noqa F601
             "15360x8640p": "8640p",
             "8640p": "8640p",
             "7680x4320p": "4320p",
@@ -1639,7 +1639,7 @@ class Prep:
                     length = max(durations) / 1000  # Use the longest duration
                 else:
                     # If the duration is already an int or float, use it directly
-                    length = (
+                    length = (  # noqa F841
                         float(track.duration) / 1000
                     )  # noqa #F841 # Convert to seconds
 
