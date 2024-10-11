@@ -38,20 +38,18 @@ class MTV():
         pass
 
     async def upload(self, meta, disctype):
+        # Initiate the upload with retry logic
+        await self.upload_with_retry(meta)
+
+    async def upload_with_retry(self, meta, img_host_index=1):
+        approved_image_hosts = ['ptpimg', 'imgbox']
         common = COMMON(config=self.config)
         cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/MTV.pkl")
-
-        # Initiate the upload with retry logic
-        await self.upload_with_retry(meta, cookiefile, common)
-
-    async def upload_with_retry(self, meta, cookiefile, common, img_host_index=1):
-        approved_image_hosts = ['ptpimg', 'imgbox']
 
         # Check if the images are already hosted on an approved image host
         if all(any(host in image['raw_url'] for host in approved_image_hosts) for image in meta['image_list']):
             console.print("[green]Images are already hosted on an approved image host. Skipping re-upload.")
             image_list = meta['image_list']  # Use the existing images
-
         else:
             # Proceed with the retry logic if images are not hosted on an approved image host
             while img_host_index <= len(approved_image_hosts):
@@ -114,16 +112,6 @@ class MTV():
 
             torrent_filename = "MTV"
 
-        # Validate session and re-login if necessary before proceeding with upload
-        vcookie = await self.validate_cookies(meta, cookiefile)
-        if not vcookie:
-            console.print("[yellow]Session expired or invalid. Trying to log in.")
-            await self.login(cookiefile)
-            vcookie = await self.validate_cookies(meta, cookiefile)
-            if not vcookie:
-                console.print("[red]Re-login failed. Cannot proceed with the upload.")
-                return
-
         await common.edit_torrent(meta, self.tracker, self.source_flag, torrent_filename=torrent_filename)
 
         cat_id = await self.get_cat_id(meta)
@@ -170,6 +158,18 @@ class MTV():
             'submit': 'true',
         }
 
+        # Validate session and re-login if necessary right before upload
+        vcookie = await self.validate_cookies(meta, cookiefile)
+        console.print(f"[blue]Validating MTV cookies: {vcookie}")
+        if not vcookie:
+            console.print("[yellow]Session expired or invalid. Trying to log in.")
+            await self.login(cookiefile)
+            vcookie = await self.validate_cookies(meta, cookiefile)
+            if not vcookie:
+                console.print("[red]Re-login failed. Cannot proceed with the upload.")
+                return
+        console.print("[blue]MTV cookies validated")
+        # Uploading the torrent
         if not meta['debug']:
             with requests.Session() as session:
                 with open(cookiefile, 'rb') as cf:
@@ -183,12 +183,17 @@ class MTV():
                             console.print("[red]No DL link in response, It may have uploaded, check manually.")
                         else:
                             console.print("[red]Upload Failed. It doesn't look like you are logged in.")
+                            console.print("[red]Upload Failed. It doesn't look like you are logged in.")
+                            console.print(f"[red]Response Status Code: {response.status_code}")
+                            console.print(f"[red]Response Headers: {response.headers}")
+                            console.print(f"[red]Response Text: {response.text}")
                 except Exception:
                     console.print("[red]It may have uploaded, check manually.")
                     print(traceback.print_exc())
         else:
             console.print("[cyan]Request Data:")
             console.print(data)
+
         return
 
     async def handle_image_upload(self, meta, img_host_index=1, approved_image_hosts=None):
