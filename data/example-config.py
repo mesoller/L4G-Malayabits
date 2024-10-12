@@ -25,7 +25,7 @@ config = {
 
         "screens": "6",
         # Providing the option to change the size of the thumbnails where supported, default is 350
-        "thumbnail_size": "350"
+        "thumbnail_size": "350",
         # Providing the option to add a header, in bbcode, above the screenshot section where supported
         # "screenshot_header": "[centers] SCREENSHOTS [/center]"
         # Enable lossless PNG Compression (True/False)
