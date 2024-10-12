@@ -71,12 +71,12 @@ class COMMON():
             if len(images) > 0:
                 try:
                     thumbsize = self.config['DEFAULT']['thumbnail_size']
-                except:
+                except Exception:
                     thumbsize = "350"
                 
                 try:
                     screenheader = self.config['DEFAULT']['screenshot_header']
-                except:
+                except Exception:
                     screenheader = None
                 if screenheader is not None:
                     descfile.write(screenheader + '\n')
