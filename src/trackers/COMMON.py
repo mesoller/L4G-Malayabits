@@ -69,6 +69,18 @@ class COMMON():
             descfile.write(desc)
             images = meta['image_list']
             if len(images) > 0:
+                try:
+                    thumbsize = self.config['DEFAULT']['thumbnail_size']
+                except:
+                    thumbsize = "350"
+                
+                try:
+                    screenheader = self.config['DEFAULT']['screenshot_header']
+                except:
+                    screenheader = None
+                if screenheader is not None:
+                    descfile.write(screenheader + '\n')
+
                 descfile.write("[center]")
                 for each in range(len(images[:int(meta['screens'])])):
                     web_url = images[each]['web_url']
