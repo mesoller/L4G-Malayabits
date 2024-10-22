@@ -73,7 +73,7 @@ class COMMON():
                     thumbsize = self.config['DEFAULT']['thumbnail_size']
                 except Exception:
                     thumbsize = "350"
-                
+
                 try:
                     screenheader = self.config['DEFAULT']['screenshot_header']
                 except Exception:
