@@ -32,7 +32,7 @@ class SPD():
 
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
-        # await common.edit_torrent(meta, self.tracker, self.source_flag)
+        await common.edit_torrent(meta, self.tracker, self.source_flag)
         type_id = ""
         if meta['anime']:
             type_id = '3'
