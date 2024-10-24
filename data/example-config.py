@@ -214,7 +214,6 @@ config = {
             "password": "password",
             "api_key": 'get_it_by_running_/api/ login command from https://retroflix.club/api/doc',
             "announce_url": "get from upload page",
-            # "tag": "RetroFlix, nd",
             "anon": True
         },
         "RF": {
@@ -269,7 +268,6 @@ config = {
         "TVC": {
             "api_key": "TVC API Key",
             "announce_url": "https://tvchaosuk.com/announce/<PASSKEY>",
-            "tag": "TVChaosUK, 7d",
             "anon" : "False"
         },
         "PSS": {
