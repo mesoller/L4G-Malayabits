@@ -30,7 +30,7 @@ class SPD():
         pass
 
 
-    async def upload(self, meta):
+    async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
         # await common.edit_torrent(meta, self.tracker, self.source_flag)
         type_id = ""
