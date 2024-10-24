@@ -34,6 +34,8 @@ class SPD():
         common = COMMON(config=self.config)
         # await common.edit_torrent(meta, self.tracker, self.source_flag)
         type_id = ""
+        if meta['genres'].__contains__('sport') or (str(meta['title']).lower().__contains__('ufc') or str(meta['title']).lower().__contains__('vs')):
+            meta['media_type'] = "sport"
         if meta['anime']:
             type_id = '3'
         elif meta['media_type'] == 'sport':
@@ -41,7 +43,6 @@ class SPD():
         elif meta['category'] == 'TV':
             if meta['tv_pack']:
                 type_id = '41'
-                    #await self.get_type_tv_id(meta['type'])
             elif meta['sd'] and not meta['tv_pack']:
                 type_id = '45'
             # must be hd
