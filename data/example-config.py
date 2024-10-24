@@ -254,12 +254,23 @@ config = {
             "announce_url": "https://shareisland.org/announce/customannounceurl",
             # "anon" : "False"
         },
+        "SPD": {
+            "api_key": "SPEEDAPP API KEY",
+            "announce_url": "https://ramjet.speedapp.io/<PASSKEY>/announce",
+            # "anon" : "False"
+        },
         "TIK": {
             "useAPI": False,  # Set to True if using TIK
             "api_key": "",
             "announce_url": "https://cinematik.net/announce/",
             "anon": False,
             "modq": True,
+        },
+        "TVC": {
+            "api_key": "TVC API Key",
+            "announce_url": "https://tvchaosuk.com/announce/<PASSKEY>",
+            "tag": "TVChaosUK, 7d",
+            "anon" : "False"
         },
         "PSS": {
             "api_key": "PSS api key",
