@@ -256,7 +256,6 @@ config = {
         "SPD": {
             "api_key": "SPEEDAPP API KEY",
             "announce_url": "https://ramjet.speedapp.io/<PASSKEY>/announce",
-            # "anon" : "False"
         },
         "TIK": {
             "useAPI": False,  # Set to True if using TIK
@@ -268,7 +267,7 @@ config = {
         "TVC": {
             "api_key": "TVC API Key",
             "announce_url": "https://tvchaosuk.com/announce/<PASSKEY>",
-            "anon" : "False"
+            "anon": "False"
         },
         "PSS": {
             "api_key": "PSS api key",

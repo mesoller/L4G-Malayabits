@@ -4,7 +4,6 @@ import asyncio
 from torf import Torrent
 import requests
 from src.console import console
-from str2bool import str2bool
 from pprint import pprint
 import base64
 import shutil
@@ -28,7 +27,6 @@ class SPD():
         self.forum_link = 'https://speedapp.io/support/wiki/rules'
         self.banned_groups = ['']
         pass
-
 
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
@@ -58,14 +56,7 @@ class SPD():
                     'ENCODE': '8'
                 }.get(type, '0')
 
-        region_id = await common.unit3d_region_ids(meta.get('region'))
-        distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
-        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
-            anon = 0
-        else:
-            anon = 1
-
-        if meta['bdinfo'] != None:
+        if meta['bdinfo'] is not None:
             mi_dump = None
             bd_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8').read()
         else:
@@ -93,14 +84,14 @@ class SPD():
             base64_message = base64_encoded_data.decode('utf-8')
             data['file'] = base64_message
 
-        headers = {'Authorization': 'Bearer ' + self.config['TRACKERS'][self.tracker]['api_key'].strip() }
+        headers = {'Authorization': 'Bearer ' + self.config['TRACKERS'][self.tracker]['api_key'].strip()}
 
-        if meta['debug'] == False:
+        if meta['debug'] is False:
             response = requests.request("POST", url=self.upload_url, json=data, headers=headers)
             try:
                 print(response.json())
                 # response = {'status': True, 'error': False, 'downloadUrl': '/api/torrent/383435/download', 'torrent': {'id': 383435, 'name': 'name-with-full-stops', 'slug': 'name-with-dashs', 'category_id': 3}}
-                #downloading the torrent from site as it adds a tonne of different trackers and the source is different all the time.
+                # downloading the torrent from site as it adds a tonne of different trackers and the source is different all the time.
                 try:
                     # torrent may not dl and may not provide error if machine is under load or network connection usage high.
                     with requests.get(url=self.url + response.json()['downloadUrl'], stream=True, headers=headers) as r:
@@ -113,17 +104,16 @@ class SPD():
                         new_torrent = Torrent.read(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent")
                         new_torrent.metainfo['comment'] = f"{self.url}/browse/{response.json()['torrent']['id']}"
                         Torrent.copy(new_torrent).write(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", overwrite=True)
-                except:
+                except Exception:
                     console.print(traceback.print_exc())
-                    console.print(f"[red]Unable to Download torrent, try manually")
-            except:
+                    console.print("[red]Unable to Download torrent, try manually")
+            except Exception:
                 console.print(traceback.print_exc())
-                console.print(f"[yellow]Unable to Download torrent, try manually")
+                console.print("[yellow]Unable to Download torrent, try manually")
                 return
         else:
-            console.print(f"[cyan]Request Data:")
+            console.print("[cyan]Request Data:")
             pprint(data)
-
 
     async def get_cat_id(self, category_name):
         category_id = {
@@ -132,7 +122,6 @@ class SPD():
             'FANRES': '3'
         }.get(category_name, '0')
         return category_id
-
 
     async def search_existing(self, meta, disctype):
         dupes = []
