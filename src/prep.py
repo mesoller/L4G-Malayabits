@@ -1087,7 +1087,7 @@ class Prep():
                 scan = "p"
             else:
                 scan = "i"
-            width_list = [3840, 2560, 1920, 1280, 1024, 854, 720, 15360, 7680, 0]
+            width_list = [3840, 2560, 1920, 1280, 1024, 960, 854, 720, 15360, 7680, 0]
             height_list = [2160, 1440, 1080, 720, 576, 540, 480, 8640, 4320, 0]
             width = self.closest(width_list, int(width))
             actual_height = int(height)
@@ -1121,6 +1121,8 @@ class Prep():
             "1280x540p": "720p", "1280x576p": "720p",
             "1024x576p": "576p", "576p": "576p",
             "1024x576i": "576i", "576i": "576i",
+            "960x540p": "540p", "540p": "540p",
+            "960x540i": "540i", "540i": "540i",
             "854x480p": "480p", "480p": "480p",
             "854x480i": "480i", "480i": "480i",
             "720x576p": "576p", "576p": "576p",
@@ -1131,8 +1133,9 @@ class Prep():
             "7680x4320p": "4320p", "4320p": "4320p",
             "OTHER": "OTHER"}
         resolution = res_map.get(res, None)
-        if actual_height == 540:
-            resolution = "OTHER"
+        #im unsure why 540 is being marked other
+        # if actual_height == 540:
+        #     resolution = "OTHER"
         if resolution is None:
             try:
                 resolution = guess['screen_size']
@@ -1145,6 +1148,8 @@ class Prep():
                     '1280p': '720p',
                     '1024p': '576p',
                     '1024i': '576i',
+                    '960p': '540p',
+                    '960i': '540i',
                     '854p': '480p',
                     '854i': '480i',
                     '720p': '576p',
@@ -1158,7 +1163,7 @@ class Prep():
         return resolution
 
     def is_sd(self, resolution):
-        if resolution in ("480i", "480p", "576i", "576p", "540p"):
+        if resolution in ("480i", "480p", "576i", "576p", "540p", "540i"):
             sd = 1
         else:
             sd = 0
