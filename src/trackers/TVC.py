@@ -419,15 +419,16 @@ class TVC():
             meta['has_subs'] = 0
         for s in mi.get("media").get("track"):
             if s["@type"] == "Text":
-                if "Language_String" in s:
+                if "Language" in s:
                     if not subs_num <= 0:
-                        subs = subs + s["Language_String"] + ", "
+                        subs = subs + s["Language"] + ", "
                         # checking if it has romanian subs as for data scene.
-                        if s["Language_String"] == "Romanian":
+                        if s["Language"] == "ro":
                             # console.print("it has romanian subs", 'grey', 'on_green')
                             meta['ro_sub'] = 1
-                        if str(s["Language_String"]).lower().__contains__("english"):
+                        if str(s["Language"]).lower().__contains__("en"):
                             meta['eng_subs'] = 1
+
                         if str(s).lower().__contains__("sdh"):
                             meta['sdh_subs'] = 1
 
