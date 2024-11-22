@@ -1319,8 +1319,8 @@ class Prep():
                         loglevel = 'quiet'
                         debug = True
                         if bool(meta.get('debug', False)):
-                            loglevel = 'error'
-                            debug = False
+                            loglevel = 'error'  # noqa F841
+                            debug = False  # noqa F841
 
                         def _is_vob_good(n, loops, num_screens):
                             max_loops = 6
@@ -1331,13 +1331,17 @@ class Prep():
                                 try:
                                     vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
                                     vob_mi = json.loads(vob_mi)
+
                                     for track in vob_mi['media']['track']:
-                                        if 'Duration' in track:
-                                            voblength = float(track['Duration'])
-                                            return voblength, n
+                                        if 'Duration' in track and 'Width' in track and 'Height' in track:
+                                            if float(track['Width']) > 0 and float(track['Height']) > 0:
+                                                voblength = float(track['Duration'])
+                                                return voblength, n
+
                                 except Exception as e:
                                     print(f"Error parsing VOB {n}: {e}")
 
+                                # Move to the next VOB in the main set
                                 n = (n + 1) % len(main_set)
                                 if n >= num_screens:
                                     n -= num_screens
@@ -1350,6 +1354,9 @@ class Prep():
                             voblength, n = _is_vob_good(n, 0, num_screens)
                             ss_times = self.valid_ss_time(ss_times, num_screens + 1, voblength)
 
+                            if ss_times[i] < 0 or ss_times[i] > voblength:
+                                raise ValueError(f"Invalid seek time: {ss_times[i]} for video length {voblength}")
+
                             ff = ffmpeg.input(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", ss=ss_times[i])
                             if w_sar != 1 or h_sar != 1:
                                 ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
@@ -1358,11 +1365,12 @@ class Prep():
                                 image,
                                 vframes=1,
                                 pix_fmt="rgb24"
-                            ).overwrite_output().global_args('-loglevel', 'quiet' if debug else loglevel).run(quiet=debug)
+                            ).overwrite_output().global_args('-loglevel', 'verbose').run()
 
                         except Exception as e:
                             console.print(f"Error processing video file: {e}")
                             console.print(traceback.format_exc())
+
                         self.optimize_images(image)
                         n += 1
                         try:
