@@ -1344,11 +1344,19 @@ class Prep():
                                         output='JSON'
                                     )
                                     vob_mi = json.loads(vob_mi)
+                                    console.print("[yellow]Analyzing VOB file:[/yellow]", main_set[n])
 
-                                    for track in vob_mi['media']['track']:
-                                        if 'Duration' in track and 'Width' in track and 'Height' in track:
-                                            if float(track['Width']) > 0 and float(track['Height']) > 0:
-                                                voblength = float(track['Duration'])
+                                    for track in vob_mi.get('media', {}).get('track', []):
+                                        duration = track.get('Duration')
+                                        width = track.get('Width')
+                                        height = track.get('Height')
+
+                                        console.print(f"Track {n}: Duration={duration}, Width={width}, Height={height}")
+
+                                        if duration and width and height:
+                                            if float(width) > 0 and float(height) > 0:
+                                                voblength = float(duration)
+                                                console.print(f"[green]Valid track found: voblength={voblength}, n={n}[/green]")
                                                 return voblength, n
 
                                 except Exception as e:
@@ -1357,9 +1365,10 @@ class Prep():
                                 n = (n + 1) % len(main_set)
                                 if n >= num_screens:
                                     n -= num_screens
-
                                 loops += 1
+                                console.print(f"[yellow]Retrying: loops={loops}, current voblength={voblength}[/yellow]")
 
+                            console.print(f"[red]Fallback triggered: returning fallback_duration={fallback_duration}[/red]")
                             return fallback_duration, n
 
                         try:
@@ -1369,18 +1378,31 @@ class Prep():
                             if ss_times[i] < 0 or ss_times[i] > voblength:
                                 raise ValueError(f"Invalid seek time: {ss_times[i]} for video length {voblength}")
 
-                            ff = ffmpeg.input(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", ss=ss_times[i])
-                            if w_sar != 1 or h_sar != 1:
-                                ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
+                            input_file = f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}"
+                            if not os.path.exists(input_file):
+                                console.print(f"[red]Missing input file: {input_file}")
+                                retake = True
+                                continue
 
-                            ff.output(
-                                image,
-                                vframes=1,
-                                pix_fmt="rgb24"
-                            ).overwrite_output().global_args('-loglevel', loglevel).run()
+                            # Run FFmpeg with timeout
+                            try:
+                                ff = ffmpeg.input(input_file, ss=ss_times[i])
+                                if w_sar != 1 or h_sar != 1:
+                                    ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
 
-                            if not os.path.exists(image):
-                                console.print(f"[red]Image not created: {image}, retaking...")
+                                ff.output(
+                                    image,
+                                    vframes=1,
+                                    pix_fmt="rgb24"
+                                ).overwrite_output().global_args('-loglevel', loglevel).run()
+
+                                if not os.path.exists(image):
+                                    console.print(f"[red]Image not created: {image}, retaking...")
+                                    retake = True
+                                    continue
+
+                            except ffmpeg.Error as e:
+                                console.print(f"[red]FFmpeg error: {e.stderr}")
                                 retake = True
                                 continue
 
