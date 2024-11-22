@@ -1326,10 +1326,10 @@ class Prep():
                     if not os.path.exists(image) or retake:
                         retake = False
                         console.print(f"[blue]Processing screenshot {i+1}/{num_screens + 1}...")
-                        loglevel = 'quiet'
+                        loglevel = 'quiet'  # noqa F841
                         debug = True
                         if bool(meta.get('debug', False)):
-                            loglevel = 'error'
+                            loglevel = 'error'  # noqa F841
                             debug = False  # noqa F841
 
                         def _is_vob_good(n, loops, num_screens):
