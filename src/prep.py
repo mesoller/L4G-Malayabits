@@ -1323,43 +1323,45 @@ class Prep():
                             debug = False
 
                         def _is_vob_good(n, loops, num_screens):
-                            voblength = 300
-                            vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
-                            vob_mi = json.loads(vob_mi)
-                            try:
-                                voblength = float(vob_mi['media']['track'][1]['Duration'])
-                                return voblength, n
-                            except Exception:
+                            max_loops = 6
+                            fallback_duration = 300
+                            voblength = fallback_duration
+
+                            while loops < max_loops:
                                 try:
-                                    voblength = float(vob_mi['media']['track'][2]['Duration'])
-                                    return voblength, n
-                                except Exception:
-                                    n += 1
-                                    if n >= len(main_set):
-                                        n = 0
-                                    if n >= num_screens:
-                                        n -= num_screens
-                                    if loops < 6:
-                                        loops = loops + 1
-                                        voblength, n = _is_vob_good(n, loops, num_screens)
-                                        return voblength, n
-                                    else:
-                                        return 300, n
+                                    vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
+                                    vob_mi = json.loads(vob_mi)
+                                    for track in vob_mi['media']['track']:
+                                        if 'Duration' in track:
+                                            voblength = float(track['Duration'])
+                                            return voblength, n
+                                except Exception as e:
+                                    print(f"Error parsing VOB {n}: {e}")
+
+                                n = (n + 1) % len(main_set)
+                                if n >= num_screens:
+                                    n -= num_screens
+
+                                loops += 1
+
+                            return fallback_duration, n
+
                         try:
                             voblength, n = _is_vob_good(n, 0, num_screens)
-                            # img_time = random.randint(round(voblength/5), round(voblength - voblength/5))
                             ss_times = self.valid_ss_time(ss_times, num_screens + 1, voblength)
+
                             ff = ffmpeg.input(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", ss=ss_times[i])
                             if w_sar != 1 or h_sar != 1:
                                 ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
-                            (
-                                ff
-                                .output(image, vframes=1, pix_fmt="rgb24")
-                                .overwrite_output()
-                                .global_args('-loglevel', loglevel)
-                                .run(quiet=debug)
-                            )
-                        except Exception:
+
+                            ff.output(
+                                image,
+                                vframes=1,
+                                pix_fmt="rgb24"
+                            ).overwrite_output().global_args('-loglevel', 'quiet' if debug else loglevel).run(quiet=debug)
+
+                        except Exception as e:
+                            console.print(f"Error processing video file: {e}")
                             console.print(traceback.format_exc())
                         self.optimize_images(image)
                         n += 1
