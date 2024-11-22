@@ -1394,7 +1394,7 @@ class Prep():
                                     image,
                                     vframes=1,
                                     pix_fmt="rgb24"
-                                ).overwrite_output().global_args('-loglevel', loglevel).run()
+                                ).overwrite_output().global_args('-loglevel', 'verbose').run()
 
                                 if not os.path.exists(image):
                                     console.print(f"[red]Image not created: {image}, retaking...")
