@@ -578,15 +578,24 @@ class Prep():
                         await asyncio.sleep(1)
                 except KeyboardInterrupt:
                     ds.terminate()
-        elif meta['is_disc'] == "DVD":
-            if meta.get('edit', False) is False:
-                try:
-                    ds = multiprocessing.Process(target=self.dvd_screenshots, args=(meta, 0, None))
-                    ds.start()
-                    while ds.is_alive() is True:
-                        await asyncio.sleep(1)
-                except KeyboardInterrupt:
+        elif meta['is_disc'] == "DVD" and not meta.get('edit', False):
+            try:
+                ds = multiprocessing.Process(target=self.dvd_screenshots, args=(meta, 0, None))
+                ds.start()
+                while ds.is_alive():
+                    await asyncio.sleep(0.5)
+
+            except KeyboardInterrupt:
+                console.print("[red]KeyboardInterrupt detected. Terminating screenshot process.")
+                if ds.is_alive():
                     ds.terminate()
+                    ds.join()
+            except Exception as e:
+                console.print(f"[red]An error occurred during DVD screenshots: {e}")
+            finally:
+                if ds.is_alive():
+                    ds.terminate()
+                    ds.join()
         else:
             if meta.get('edit', False) is False:
                 try:
@@ -1295,7 +1304,7 @@ class Prep():
             i = num_screens
             console.print('[bold green]Reusing screenshots')
         else:
-            if bool(meta.get('ffdebug', False)) is True:
+            if bool(meta.get('ffdebug', False)):
                 loglevel = 'verbose'
                 debug = False
             looped = 0
@@ -1313,13 +1322,14 @@ class Prep():
                         n = 0
                     if n >= num_screens:
                         n -= num_screens
-                    image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i}.png"
-                    if not os.path.exists(image) or retake is not False:
+                    image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i:03d}.png"
+                    if not os.path.exists(image) or retake:
                         retake = False
+                        console.print(f"[blue]Processing screenshot {i+1}/{num_screens + 1}...")
                         loglevel = 'quiet'
                         debug = True
                         if bool(meta.get('debug', False)):
-                            loglevel = 'error'  # noqa F841
+                            loglevel = 'error'
                             debug = False  # noqa F841
 
                         def _is_vob_good(n, loops, num_screens):
@@ -1329,7 +1339,10 @@ class Prep():
 
                             while loops < max_loops:
                                 try:
-                                    vob_mi = MediaInfo.parse(f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}", output='JSON')
+                                    vob_mi = MediaInfo.parse(
+                                        f"{meta['discs'][disc_num]['path']}/VTS_{main_set[n]}",
+                                        output='JSON'
+                                    )
                                     vob_mi = json.loads(vob_mi)
 
                                     for track in vob_mi['media']['track']:
@@ -1339,9 +1352,8 @@ class Prep():
                                                 return voblength, n
 
                                 except Exception as e:
-                                    print(f"Error parsing VOB {n}: {e}")
+                                    console.print(f"[red]Error parsing VOB {n}: {e}")
 
-                                # Move to the next VOB in the main set
                                 n = (n + 1) % len(main_set)
                                 if n >= num_screens:
                                     n -= num_screens
@@ -1365,53 +1377,59 @@ class Prep():
                                 image,
                                 vframes=1,
                                 pix_fmt="rgb24"
-                            ).overwrite_output().global_args('-loglevel', 'verbose').run()
+                            ).overwrite_output().global_args('-loglevel', loglevel).run()
+
+                            if not os.path.exists(image):
+                                console.print(f"[red]Image not created: {image}, retaking...")
+                                retake = True
+                                continue
 
                         except Exception as e:
-                            console.print(f"Error processing video file: {e}")
+                            console.print(f"[red]Error processing video file: {e}")
                             console.print(traceback.format_exc())
+                            retake = True
+                            continue
 
                         self.optimize_images(image)
                         n += 1
                         try:
-                            if os.path.getsize(Path(image)) <= 31000000 and self.img_host == "imgbb":
+                            file_size = os.path.getsize(image)
+                            if self.img_host == "imgbb" and file_size <= 31000000:
                                 i += 1
-                            elif os.path.getsize(Path(image)) <= 10000000 and self.img_host in ["imgbox", 'pixhost']:
+                            elif self.img_host in ["imgbox", "pixhost"] and file_size <= 10000000:
                                 i += 1
-                            elif os.path.getsize(Path(image)) <= 75000:
-                                console.print("[yellow]Image is incredibly small (and is most likely to be a single color), retaking")
+                            elif file_size <= 75000:
+                                console.print("[yellow]Image too small (likely a single color), retaking...")
                                 retake = True
                                 time.sleep(1)
-                            elif self.img_host == "ptpimg":
-                                i += 1
-                            elif self.img_host == "lensdump":
-                                i += 1
-                            elif self.img_host == "ptscreens":
-                                i += 1
-                            elif self.img_host == "oeimg":
+                            elif self.img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"]:
                                 i += 1
                             else:
-                                console.print("[red]Image too large for your image host, retaking")
+                                console.print("[red]Image too large for image host, retaking...")
                                 retake = True
                                 time.sleep(1)
+
                             looped = 0
-                        except Exception:
-                            if looped >= 25:
-                                console.print('[red]Failed to take screenshots')
-                                exit()
+
+                        except Exception as e:
+                            console.print(f"[red]Error validating image file: {e}")
                             looped += 1
+                            if looped >= 15:
+                                console.print('[red]Failed to take screenshots after multiple attempts')
+                                raise RuntimeError("Screenshot process failed")
+
                     progress.advance(screen_task)
-            # remove smallest image
+
             smallest = None
-            smallestsize = 99**99
+            smallest_size = float('inf')
             for screens in glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}/", f"{meta['discs'][disc_num]['name']}-*"):
                 screen_path = os.path.join(f"{meta['base_dir']}/tmp/{meta['uuid']}/", screens)
-                screensize = os.path.getsize(screen_path)
-                if screensize < smallestsize:
-                    smallestsize = screensize
+                screen_size = os.path.getsize(screen_path)
+                if screen_size < smallest_size:
+                    smallest_size = screen_size
                     smallest = screen_path
 
-            if smallest is not None:
+            if smallest:
                 os.remove(smallest)
 
     def screenshots(self, path, filename, folder_id, base_dir, meta, num_screens=None, force_screenshots=False, manual_frames=None):
