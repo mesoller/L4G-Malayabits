@@ -57,6 +57,7 @@ import glob
 import cli_ui
 import traceback
 import click
+import re
 
 from src.console import console
 from rich.markdown import Markdown
@@ -157,6 +158,36 @@ def resolve_queue_with_glob_or_split(path, paths, allowed_extensions=None):
         ]
         display_queue(queue)
     return queue
+
+
+def extract_safe_file_locations(log_file):
+    """
+    Parse the log file to extract file locations under the 'safe' header.
+
+    :param log_file: Path to the log file to parse.
+    :return: List of file paths from the 'safe' section.
+    """
+    safe_section = False
+    safe_file_locations = []
+
+    with open(log_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+
+            # Detect the start and end of 'safe' sections
+            if line.lower() == "safe":
+                safe_section = True
+                continue
+            elif line.lower() in {"danger", "risky"}:
+                safe_section = False
+
+            # Extract 'File Location' if in a 'safe' section
+            if safe_section and line.startswith("File Location:"):
+                match = re.search(r"File Location:\s*(.+)", line)
+                if match:
+                    safe_file_locations.append(match.group(1).strip())
+
+    return safe_file_locations
 
 
 def merge_meta(meta, saved_meta, path):
@@ -340,6 +371,21 @@ async def do_the_thing(base_dir):
     else:
         meta, help, before_args = parser.parse(tuple(' '.join(sys.argv[1:]).split(' ')), meta)
         queue = [path]
+
+    if path.endswith('.txt') and meta.get('unit3d'):
+        console.print(f"[bold yellow]Detected a text file for queue input: {path}[/bold yellow]")
+        if os.path.exists(path):
+            safe_file_locations = extract_safe_file_locations(path)
+            if safe_file_locations:
+                console.print(f"[cyan]Extracted {len(safe_file_locations)} safe file locations from the text file.[/cyan]")
+                queue = safe_file_locations
+                meta['queue'] = "unit3d"
+            else:
+                console.print("[bold red]No safe file locations found in the text file. Exiting.[/bold red]")
+                exit(1)
+        else:
+            console.print(f"[bold red]Text file not found: {path}. Exiting.[/bold red]")
+            exit(1)
 
     if not queue:
         console.print(f"[red]No valid files or directories found for path: {path}")
