@@ -314,6 +314,32 @@ async def do_the_thing(base_dir):
 
     log_file = os.path.join(base_dir, "tmp", f"{meta['queue']}_queue.log")
     allowed_extensions = ['.mkv', '.mp4', '.ts']
+
+    if path.endswith('.txt') and meta.get('unit3d'):
+        console.print(f"[bold yellow]Detected a text file for queue input: {path}[/bold yellow]")
+        if os.path.exists(path):
+            safe_file_locations = extract_safe_file_locations(path)
+            if safe_file_locations:
+                console.print(f"[cyan]Extracted {len(safe_file_locations)} safe file locations from the text file.[/cyan]")
+                # console.print("safe location:", safe_file_locations)
+                queue = safe_file_locations
+                meta['queue'] = "unit3d"
+
+                # Save the queue to the log file
+                try:
+                    with open(log_file, 'w') as f:
+                        json.dump(queue, f, indent=4)
+                    console.print(f"[bold green]Queue log file saved successfully: {log_file}[/bold green]")
+                except IOError as e:
+                    console.print(f"[bold red]Failed to save the queue log file: {e}[/bold red]")
+                    exit(1)
+            else:
+                console.print("[bold red]No safe file locations found in the text file. Exiting.[/bold red]")
+                exit(1)
+        else:
+            console.print(f"[bold red]Text file not found: {path}. Exiting.[/bold red]")
+            exit(1)
+
     if meta.get('queue'):
         meta, help, before_args = parser.parse(tuple(' '.join(sys.argv[1:]).split(' ')), meta)
         if os.path.exists(log_file):
@@ -373,21 +399,6 @@ async def do_the_thing(base_dir):
     else:
         meta, help, before_args = parser.parse(tuple(' '.join(sys.argv[1:]).split(' ')), meta)
         queue = [path]
-
-    if path.endswith('.txt') and meta.get('unit3d'):
-        console.print(f"[bold yellow]Detected a text file for queue input: {path}[/bold yellow]")
-        if os.path.exists(path):
-            safe_file_locations = extract_safe_file_locations(path)
-            if safe_file_locations:
-                console.print(f"[cyan]Extracted {len(safe_file_locations)} safe file locations from the text file.[/cyan]")
-                queue = safe_file_locations
-                meta['queue'] = "unit3d"
-            else:
-                console.print("[bold red]No safe file locations found in the text file. Exiting.[/bold red]")
-                exit(1)
-        else:
-            console.print(f"[bold red]Text file not found: {path}. Exiting.[/bold red]")
-            exit(1)
 
     if not queue:
         console.print(f"[red]No valid files or directories found for path: {path}")
