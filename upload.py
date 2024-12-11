@@ -45,6 +45,7 @@ from src.trackers.PSS import PSS
 from src.trackers.ULCX import ULCX
 from src.trackers.SPD import SPD
 from src.trackers.YOINK import YOINK
+from src.trackers.PTT import PTT
 import json
 from pathlib import Path
 import asyncio
