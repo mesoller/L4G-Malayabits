@@ -249,6 +249,11 @@ config = {
             "password": "",
             "announce_url": ""
         },
+        "PTT": {
+            "api_key": "PTT api key",
+            "announce_url": "https://polishtorrent.top/announce/customannounceurl",
+            # "anon" : False,
+        },
         "R4E": {
             "api_key": "R4E api key",
             "announce_url": "https://racing4everyone.eu/announce/customannounceurl",
