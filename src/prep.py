@@ -1409,8 +1409,8 @@ class Prep():
             return
 
         if num_screens is None:
-            num_screens = self.screens
-        if num_screens == 0 or (len(meta.get('image_list', [])) >= num_screens and disc_num == 0):
+            num_screens = self.screens - len(existing_images)
+        if num_screens == 0 or (len(meta.get('image_list', [])) >= self.screens and disc_num == 0):
             return
 
         if len(glob.glob(f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-*.png")) >= num_screens:
@@ -1608,15 +1608,19 @@ class Prep():
             if w_sar != 1 or h_sar != 1:
                 ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
 
-            ff.output(image, vframes=1, pix_fmt="rgb24").overwrite_output().global_args('-loglevel', loglevel, '-accurate_seek').run()
+            try:
+                ff.output(image, vframes=1, pix_fmt="rgb24").overwrite_output().global_args('-loglevel', loglevel, '-accurate_seek').run()
+            except ffmpeg._run.Error as e:
+                stderr_output = e.stderr.decode() if e.stderr else "No stderr output available"
+                console.print(f"[red]Error capturing screenshot for {input_file} at {seek_time}s: {stderr_output}[/red]")
             if os.path.exists(image):
                 return image
             else:
                 console.print(f"[red]Screenshot creation failed for {image}[/red]")
                 return None
 
-        except ffmpeg.Error as e:
-            console.print(f"[red]Error capturing screenshot for {input_file} at {seek_time}s: {e.stderr.decode()}[/red]")
+        except Exception as e:
+            console.print(f"[red]Error capturing screenshot for {input_file} at {seek_time}s: {e}[/red]")
             return None
 
     def screenshots(self, path, filename, folder_id, base_dir, meta, num_screens=None, force_screenshots=False, manual_frames=None):
@@ -1877,8 +1881,6 @@ class Prep():
                 return f"Error: Screenshot not generated or is empty at {image_path}"
 
             return image_path
-        except ffmpeg.Error as e:
-            return f"FFmpeg Error: {e.stderr.decode()}"
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -2501,14 +2503,26 @@ class Prep():
 
     def get_tag(self, video, meta):
         try:
-            tag = guessit(video)['release_group']
-            tag = f"-{tag}"
-        except Exception:
+            parsed = guessit(video)
+            release_group = parsed.get('release_group')
+
+            if meta['is_disc'] == "BDMV":
+                if release_group:
+                    if f"-{release_group}" not in video:
+                        if meta['debug']:
+                            console.print(f"[warning] Invalid release group format: {release_group}")
+                        release_group = None
+
+            tag = f"-{release_group}" if release_group else ""
+        except Exception as e:
+            console.print(f"Error while parsing: {e}")
             tag = ""
+
         if tag == "-":
             tag = ""
-        if tag[1:].lower() in ["nogroup", 'nogrp']:
+        if tag[1:].lower() in ["nogroup", "nogrp"]:
             tag = ""
+
         return tag
 
     def get_source(self, type, video, path, is_disc, meta, folder_id, base_dir):
@@ -4325,7 +4339,8 @@ class Prep():
             if resp.ok:
                 return resp.json()
             else:
-                print(f"HTTP Request failed with status code: {resp.status_code}, response: {resp.text}")
+                if meta['debug']:
+                    print(f"HTTP Request failed with status code: {resp.status_code}, response: {resp.text}")
                 return None
         except Exception as e:
             print(f"Error making TVmaze request: {e}")
