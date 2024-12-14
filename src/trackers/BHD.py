@@ -428,7 +428,7 @@ class BHD():
                 data['pack'] = 1
             data['search'] = f"{meta.get('season', '')}{meta.get('episode', '')}"
         url = f"https://beyond-hd.me/api/torrents/{self.config['TRACKERS']['BHD']['api_key'].strip()}"
-        meta['with_size'] = True
+
         try:
             response = requests.post(url=url, data=data)
             response = response.json()

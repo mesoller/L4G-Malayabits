@@ -629,9 +629,6 @@ class COMMON():
             console.log("[cyan]Pre-filtered dupes")
             console.log(dupes)
 
-        if 'with_size' not in meta:
-            meta['with_size'] = {}
-
         processed_dupes = [
             {'name': d, 'size': None} if isinstance(d, str) else {'name': d['name'], 'size': d['size']}
             for d in dupes
@@ -729,7 +726,7 @@ class COMMON():
                     return True
 
                 if len(dupes) == 1:
-                    if fileSize:
+                    if fileSize and "1080" in target_resolution and meta.get('is_disc') != "BDMV":
                         target_size = fileSize
                         size = sized
 
@@ -779,7 +776,6 @@ class COMMON():
         if meta['debug']:
             console.log(f"[cyan]Final dupes: {new_dupes}")
 
-        meta['with_size'] = False
         return new_dupes
 
     def normalize_filename(self, filename):
