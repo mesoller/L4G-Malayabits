@@ -643,8 +643,9 @@ class COMMON():
             normalized_encoder = self.normalize_filename(has_encoder_in_name)
         else:
             normalized_encoder = False
-        tracks = meta.get('mediainfo').get('media', {}).get('track', [])
-        fileSize = tracks[0].get('FileSize', '')
+        if not meta['is_disc'] == "BDMV":
+            tracks = meta.get('mediainfo').get('media', {}).get('track', [])
+            fileSize = tracks[0].get('FileSize', '')
         has_is_disc = bool(meta.get('is_disc', False))
         target_hdr = self.refine_hdr_terms(meta.get("hdr"))
         target_season = meta.get("season")
