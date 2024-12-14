@@ -890,7 +890,7 @@ def dupe_check(dupes, meta):
         return meta
     else:
         console.print()
-        dupe_text = "\n".join(dupes)
+        dupe_text = "\n".join([d['name'] if isinstance(d, dict) else d for d in dupes])
         console.print()
         cli_ui.info_section(cli_ui.bold, "Check if these are actually dupes!")
         cli_ui.info(dupe_text)
@@ -912,7 +912,8 @@ def dupe_check(dupes, meta):
         else:
             meta['upload'] = True
             for each in dupes:
-                if each == meta['name']:
+                each_name = each['name'] if isinstance(each, dict) else each
+                if each_name == meta['name']:
                     meta['name'] = f"{meta['name']} DUPE?"
 
         return meta

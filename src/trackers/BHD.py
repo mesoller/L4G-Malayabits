@@ -383,12 +383,18 @@ class BHD():
             else:
                 images = meta['image_list']
             if len(images) > 0:
-                desc.write("[center]")
+                desc.write("[align=center]")
                 for each in range(len(images[:int(meta['screens'])])):
                     web_url = images[each]['web_url']
                     img_url = images[each]['img_url']
-                    desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url]")
-                desc.write("[/center]")
+                    if (each == len(images) - 1):
+                        desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url]")
+                    elif (each + 1) % 2 == 0:
+                        desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url]\n")
+                        desc.write("\n")
+                    else:
+                        desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url] ")
+                desc.write("[/align]")
             desc.write(self.signature)
             desc.close()
         return
@@ -422,20 +428,29 @@ class BHD():
                 data['pack'] = 1
             data['search'] = f"{meta.get('season', '')}{meta.get('episode', '')}"
         url = f"https://beyond-hd.me/api/torrents/{self.config['TRACKERS']['BHD']['api_key'].strip()}"
+        meta['with_size'] = True
         try:
             response = requests.post(url=url, data=data)
             response = response.json()
             if response.get('status_code') == 1:
                 for each in response['results']:
-                    result = each['name']
-                    difference = SequenceMatcher(None, meta['clean_name'].replace('DD+', 'DDP'), result).ratio()
+                    result = {
+                        'name': each['name'],
+                        'size': each['size']
+                    }
+                    difference = SequenceMatcher(
+                        None,
+                        meta['clean_name'].replace('DD+', 'DDP'),
+                        result['name']
+                    ).ratio()
                     if difference >= 0.05:
                         dupes.append(result)
             else:
                 console.print(f"[yellow]{response.get('status_message')}")
                 await asyncio.sleep(5)
-        except Exception:
-            console.print('[bold red]Unable to search for existing torrents on site. Most likely the site is down.')
+        except Exception as e:
+            console.print('[bold red]Unable to search for existing torrents on site. Either the site is down or your API key is incorrect')
+            console.print(f'[bold red]Error details: {e}')
             await asyncio.sleep(5)
 
         return dupes
