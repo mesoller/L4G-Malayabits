@@ -734,6 +734,7 @@ class COMMON():
                         size = sized
 
                         if size is not None and target_size is not None:
+                            target_size = int(target_size)
                             size_difference = abs(size - target_size) / target_size
                             if meta['debug']:
                                 console.print(f"Actual size: {size}, Target size: {target_size}, Size difference: {size_difference:.4f}")
