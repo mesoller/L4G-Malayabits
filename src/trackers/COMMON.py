@@ -726,8 +726,8 @@ class COMMON():
                     log_exclusion(f"resolution '{target_resolution}' mismatch", each)
                     return True
 
-                if len(dupes) == 1:
-                    if fileSize and "1080" in target_resolution and meta.get('is_disc') != "BDMV":
+                if len(dupes) == 1 and meta.get('is_disc') != "BDMV":
+                    if fileSize and "1080" in target_resolution:
                         target_size = fileSize
                         size = sized
 
