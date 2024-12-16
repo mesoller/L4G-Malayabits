@@ -11,3 +11,4 @@ tmp/*
 .wdm/
 .DS_Store
 .venv
+.idea
