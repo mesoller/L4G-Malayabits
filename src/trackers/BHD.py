@@ -40,12 +40,11 @@ class BHD():
     async def upload_with_retry(self, meta, common, img_host_index=1):
         url_host_mapping = {
             "i.ibb.co": "imgbb",
-            "ptpimg.me": "ptpimg",
             "img100.pixhost.to": "pixhost",
             "images2.imgbox.com": "imgbox",
         }
 
-        approved_image_hosts = ['ptpimg', 'imgbox', 'imgbb', 'pixhost']
+        approved_image_hosts = ['imgbox', 'imgbb', 'pixhost']
         images_reuploaded = False
         normalized_approved_hosts = set(approved_image_hosts + list(url_host_mapping.keys()))  # noqa F841
         for image in meta['image_list']:
@@ -176,11 +175,10 @@ class BHD():
 
     async def handle_image_upload(self, meta, img_host_index=1, approved_image_hosts=None, file=None):
         if approved_image_hosts is None:
-            approved_image_hosts = ['ptpimg', 'imgbox', 'imgbb', 'pixhost']
+            approved_image_hosts = ['imgbox', 'imgbb', 'pixhost']
 
         url_host_mapping = {
             "i.ibb.co": "imgbb",
-            "ptpimg.me": "ptpimg",
             "img100.pixhost.to": "pixhost",
             "images2.imgbox.com": "imgbox",
         }

@@ -88,7 +88,7 @@ class Prep():
             sys.exit(1)
 
     async def check_images_concurrently(self, imagelist, meta):
-        approved_image_hosts = ['ptpimg', 'imgbox']
+        approved_image_hosts = ['imgbox']
         invalid_host_found = False  # Track if any image is on a non-approved host
 
         # Ensure meta['image_sizes'] exists
@@ -124,11 +124,6 @@ class Prep():
             img_url = image_dict.get('raw_url')
             if not img_url:
                 return None
-
-            if "ptpimg.me" in img_url and img_url.startswith("http://"):
-                img_url = img_url.replace("http://", "https://")
-                image_dict['raw_url'] = img_url
-                image_dict['web_url'] = img_url
 
             # Verify the image link
             if await self.check_image_link(img_url):
@@ -1334,7 +1329,7 @@ class Prep():
                     pass
                 elif image_size <= 10000000 and self.img_host in ["imgbox", "pixhost"] and not retake:
                     pass
-                elif self.img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"] and not retake:
+                elif self.img_host in ["lensdump", "ptscreens", "oeimg"] and not retake:
                     pass
                 elif not retake:
                     console.print("[red]Image too large for your image host, retaking.")
@@ -1359,7 +1354,7 @@ class Prep():
                             elif new_size > 75000 and new_size <= 10000000 and self.img_host in ["imgbox", "pixhost"]:
                                 console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                                 valid_image = True
-                            elif new_size > 75000 and self.img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"]:
+                            elif new_size > 75000 and self.img_host in ["lensdump", "ptscreens", "oeimg"]:
                                 console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                                 valid_image = True
 
@@ -1781,7 +1776,7 @@ class Prep():
                     pass
                 elif image_size <= 10000000 and self.img_host in ["imgbox", "pixhost"] and not retake:
                     pass
-                elif self.img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"] and not retake:
+                elif self.img_host in ["lensdump", "ptscreens", "oeimg"] and not retake:
                     pass
                 elif not retake:
                     console.print("[red]Image too large for your image host, retaking.")
@@ -1806,7 +1801,7 @@ class Prep():
                         elif new_size > 75000 and new_size <= 10000000 and self.img_host in ["imgbox", "pixhost"]:
                             console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                             valid_image = True
-                        elif new_size > 75000 and self.img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"]:
+                        elif new_size > 75000 and self.img_host in ["lensdump", "ptscreens", "oeimg"]:
                             console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                             valid_image = True
 
@@ -3119,24 +3114,6 @@ class Prep():
                         'status': 'failed',
                         'reason': f"Error during Imgbox upload: {str(e)}"
                     }
-
-            elif img_host == "ptpimg":
-                payload = {
-                    'format': 'json',
-                    'api_key': config['DEFAULT']['ptpimg_api']
-                }
-                files = [('file-upload[0]', open(image, 'rb'))]
-                headers = {'referer': 'https://ptpimg.me/index.php'}
-                response = requests.post(
-                    "https://ptpimg.me/upload.php", headers=headers, data=payload, files=files, timeout=timeout
-                )
-                response_data = response.json()
-                if response_data:
-                    code = response_data[0]['code']
-                    ext = response_data[0]['ext']
-                    img_url = f"https://ptpimg.me/{code}.{ext}"
-                    raw_url = img_url
-                    web_url = img_url
 
             elif img_host == "imgbb":
                 url = "https://api.imgbb.com/1/upload"
