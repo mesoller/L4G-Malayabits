@@ -88,7 +88,7 @@ class Prep():
             sys.exit(1)
 
     async def check_images_concurrently(self, imagelist, meta):
-        approved_image_hosts = ['ptpimg', 'imgbox']
+        approved_image_hosts = ['ptpimg', 'imgbox', 'imgbb']
         invalid_host_found = False  # Track if any image is on a non-approved host
 
         # Ensure meta['image_sizes'] exists
@@ -697,6 +697,7 @@ class Prep():
             tracks = meta.get('mediainfo').get('media', {}).get('track', [])  # Get all tracks
             bitrate = tracks[1].get('BitRate', '') if len(tracks) > 1 else ''  # Get video bitrate if available
             bitrate_oldMediaInfo = tracks[0].get('OverallBitRate', '') if len(tracks) > 0 else ''  # For old MediaInfo (< 24.x where video bitrate is empty, use 'OverallBitRate' instead)
+            meta['episode_title'] = ""
             if (bitrate.isdigit() and int(bitrate) >= 8000000) or (bitrate_oldMediaInfo.isdigit() and int(bitrate_oldMediaInfo) >= 8000000):
                 meta['service'] = "CR"
             elif (bitrate.isdigit() or bitrate_oldMediaInfo.isdigit()):  # Only assign if at least one bitrate is present, otherwise leave it to user
@@ -947,6 +948,9 @@ class Prep():
                         "ID": track.get("ID", {}),
                         "UniqueID": track.get("UniqueID", {}),
                         "Format": track.get("Format", {}),
+                        "Format_Version": track.get("Format_Version", {}),
+                        "Format_Profile": track.get("Format_Profile", {}),
+                        "Format_Settings": track.get("Format_Settings", {}),
                         "Format_Commercial_IfAny": track.get("Format_Commercial_IfAny", {}),
                         "Format_Settings_Endianness": track.get("Format_Settings_Endianness", {}),
                         "Format_AdditionalFeatures": track.get("Format_AdditionalFeatures", {}),
@@ -1238,13 +1242,16 @@ class Prep():
         os.chdir(f"{base_dir}/tmp/{folder_id}")
         existing_screens = glob.glob(f"{sanitized_filename}-*.png")
         total_existing = len(existing_screens) + len(existing_images)
-        num_screens = max(0, self.screens - total_existing)
+        if not force_screenshots:
+            num_screens = max(0, self.screens - total_existing)
+        else:
+            num_screens = num_screens
 
-        if num_screens == 0:
+        if num_screens == 0 and not force_screenshots:
             console.print('[bold green]Reusing existing screenshots. No additional screenshots needed.')
             return
 
-        if meta['debug']:
+        if meta['debug'] and not force_screenshots:
             console.print(f"[bold yellow]Saving Screens... Total needed: {self.screens}, Existing: {total_existing}, To capture: {num_screens}")
         capture_results = []
         capture_tasks = []
@@ -2346,8 +2353,11 @@ class Prep():
             additional = track.get('Format_AdditionalFeatures', '')
 
             format_settings = track.get('Format_Settings', '')
+            if not isinstance(format_settings, str):
+                format_settings = ""
             if format_settings in ['Explicit']:
                 format_settings = ""
+            format_profile = track.get('Format_Profile', '')
             # Channels
             channels = track.get('Channels_Original', track.get('Channels'))
             if not str(channels).isnumeric():
@@ -2485,8 +2495,12 @@ class Prep():
             if additional and additional.endswith("X"):
                 codec = "DTS:X"
                 chan = f"{int(channels) - 1}.1"
+
         if format == "MPEG Audio":
-            codec = track.get('CodecID_Hint', '')
+            if format_profile == "Layer 2":
+                codec = "MP2"
+            else:
+                codec = track.get('CodecID_Hint', '')
 
         audio = f"{dual} {codec or ''} {format_settings or ''} {chan or ''}{extra or ''}"
         audio = ' '.join(audio.split())
@@ -3463,7 +3477,10 @@ class Prep():
         source = meta.get('source', "")
         uhd = meta.get('uhd', "")
         hdr = meta.get('hdr', "")
-        episode_title = meta.get('episode_title', '')
+        if meta.get('manual_episode_title'):
+            episode_title = meta.get('manual_episode_title')
+        else:
+            episode_title = meta.get('episode_title', '')
         if meta.get('is_disc', "") == "BDMV":  # Disk
             video_codec = meta.get('video_codec', "")
             region = meta.get('region', "")
@@ -3772,7 +3789,12 @@ class Prep():
             meta['season_int'] = season_int
             meta['episode_int'] = episode_int
 
-            meta['episode_title_storage'] = guessit(video, {"excludes": "part"}).get('episode_title', '')
+            # Manual episode title
+            if meta['manual_episode_title'] == "":
+                meta['episode_title_storage'] = meta.get('manual_episode_title')
+            else:
+                meta['episode_title_storage'] = guessit(video, {"excludes": "part"}).get('episode_title', '')
+
             if meta['season'] == "S00" or meta['episode'] == "E00":
                 meta['episode_title'] = meta['episode_title_storage']
 
