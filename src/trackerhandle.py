@@ -6,8 +6,7 @@ from src.trackers.THR import THR
 from src.trackers.PTP import PTP
 from src.trackersetup import TRACKER_SETUP
 from src.trackers.COMMON import COMMON
-
-from src.prep import Prep
+from src.manualpackage import package
 
 
 async def check_mod_q_and_draft(tracker_class, meta, debug, disctype):
@@ -36,7 +35,6 @@ async def check_mod_q_and_draft(tracker_class, meta, debug, disctype):
 
 
 async def process_trackers(meta, config, client, console, api_trackers, tracker_class_map, http_trackers, other_api_trackers):
-    prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=config)
     common = COMMON(config=config)
     tracker_setup = TRACKER_SETUP(config=config)
     enabled_trackers = tracker_setup.trackers_enabled(meta)
@@ -123,7 +121,7 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                             await common.unit3d_edit_desc(meta, tracker_class.tracker, tracker_class.signature)
                         else:
                             await tracker_class.edit_desc(meta)
-                url = await prep.package(meta)
+                url = await package(meta)
                 if url is False:
                     console.print(f"[yellow]Unable to upload prep files, they can be found at `tmp/{meta['uuid']}")
                 else:

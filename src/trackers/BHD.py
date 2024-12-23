@@ -77,23 +77,27 @@ class BHD():
             console.print("[green]Images are already hosted on an approved image host. Skipping re-upload.")
             image_list = meta['image_list']
         else:
-            images_reuploaded = False
-            while img_host_index <= len(approved_image_hosts):
-                image_list, retry_mode, images_reuploaded = await self.handle_image_upload(meta, img_host_index, approved_image_hosts)
+            if not meta.get('skip_imghost_upload'):
+                images_reuploaded = False
+                while img_host_index <= len(approved_image_hosts):
+                    image_list, retry_mode, images_reuploaded = await self.handle_image_upload(meta, img_host_index, approved_image_hosts)
 
-                if retry_mode:
-                    console.print(f"[yellow]Switching to the next image host. Current index: {img_host_index}")
-                    img_host_index += 1
-                    continue
+                    if retry_mode:
+                        console.print(f"[yellow]Switching to the next image host. Current index: {img_host_index}")
+                        img_host_index += 1
+                        continue
 
-                new_images_key = 'bhd_images_key'
-                if image_list is not None:
-                    image_list = meta[new_images_key]
-                    break
+                    new_images_key = 'bhd_images_key'
+                    if image_list is not None:
+                        image_list = meta[new_images_key]
+                        break
 
-            if image_list is None:
-                console.print("[red]All image hosts failed. Please check your configuration.")
-                return
+                if image_list is None:
+                    console.print("[red]All image hosts failed. Please check your configuration.")
+                    return
+            else:
+                console.print("[yellow]Skipping image host upload.")
+                image_list = []
 
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)

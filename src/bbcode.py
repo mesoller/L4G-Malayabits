@@ -185,7 +185,7 @@ class BBCODE:
             desc = desc.replace(comp, f"COMPARISON_PLACEHOLDER-{i} ")
             comp_placeholders.append(comp)
 
-        # Remove Images in IMG tags:
+        # Remove Images in IMG tags
         desc = re.sub(r"\[img\][\s\S]*?\[\/img\]", "", desc, flags=re.IGNORECASE)
         desc = re.sub(r"\[img=[\s\S]*?\]", "", desc, flags=re.IGNORECASE)
 

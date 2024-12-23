@@ -2,6 +2,7 @@
 
 from src.args import Args
 from src.clients import Clients
+from src.uploadscreens import upload_screens
 import json
 from pathlib import Path
 import asyncio
@@ -15,7 +16,6 @@ import traceback
 from src.trackersetup import tracker_class_map, api_trackers, other_api_trackers, http_trackers
 from src.trackerhandle import process_trackers
 from src.queuemanage import handle_queue
-
 from src.console import console
 
 cli_ui.setup(color='always', title="Audionut's Upload Assistant")
@@ -87,10 +87,7 @@ async def process_meta(meta, base_dir):
             if 'image_list' not in meta:
                 meta['image_list'] = []
             return_dict = {}
-            new_images, dummy_var = prep.upload_screens(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict=return_dict)
-
-            with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
-                json.dump(meta, f, indent=4)
+            new_images, dummy_var = await upload_screens(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict=return_dict)
 
         elif meta.get('skip_imghost_upload', False) is True and meta.get('image_list', False) is False:
             meta['image_list'] = []
@@ -113,6 +110,9 @@ async def process_meta(meta, base_dir):
 
         if int(meta.get('randomized', 0)) >= 1:
             prep.create_random_torrents(meta['base_dir'], meta['uuid'], meta['randomized'], meta['path'])
+
+        with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
+            json.dump(meta, f, indent=4)
 
 
 async def get_log_file(base_dir, queue_name):
@@ -184,7 +184,7 @@ async def do_the_thing(base_dir):
             if os.path.exists(meta_file):
                 with open(meta_file, "r") as f:
                     saved_meta = json.load(f)
-                    meta.update(merge_meta(meta, saved_meta, path))
+                    meta.update(await merge_meta(meta, saved_meta, path))
             else:
                 if meta['debug']:
                     console.print(f"[yellow]No metadata file found at {meta_file}")
