@@ -145,7 +145,7 @@ def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, image_
                     else:
                         console.print(f"[red]{result}")
 
-        if capture_results and len(capture_results) > num_screens and not force_screenshots:
+        if capture_results and len(capture_results) > num_screens:
             try:
                 smallest = min(capture_results, key=os.path.getsize)
                 if meta['debug']:
@@ -664,7 +664,7 @@ def screenshots(path, filename, folder_id, base_dir, meta, num_screens=None, for
                     else:
                         console.print(f"[red]{result}")
 
-    if capture_results and len(capture_results) > num_screens and not force_screenshots:
+    if capture_results and len(capture_results) > num_screens:
         try:
             smallest = min(capture_results, key=os.path.getsize)
             if meta['debug']:

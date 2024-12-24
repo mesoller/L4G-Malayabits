@@ -277,6 +277,7 @@ class BBCODE:
             "https://i.ibb.co/2NVWb0c/uploadrr.webp",
             "https://blutopia/favicon.ico",
             "https://ptpimg.me/606tk4.png",
+            "https://github.com/edge20200/Only-Uploader"
             # Add any other known bot image URLs here
         ]
         imagelist = [
