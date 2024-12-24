@@ -7,11 +7,11 @@ import requests
 import os
 import re
 from difflib import SequenceMatcher
-from src.tmdb import get_tmdb_id, tmdb_other_meta, daily_to_tmdb_season_episode
+from src.tmdb import get_tmdb_id, tmdb_other_meta, daily_to_tmdb_season_episode, get_romaji
 from src.exceptions import *  # noqa: F403
 
 
-async def get_season_episode(self, video, meta):
+async def get_season_episode(video, meta):
     if meta['category'] == 'TV':
         filelist = meta['filelist']
         meta['tv_pack'] = 0
@@ -82,7 +82,7 @@ async def get_season_episode(self, video, meta):
         else:
             # If Anime
             parsed = anitopy.parse(Path(video).name)
-            romaji, mal_id, eng_title, seasonYear, anilist_episodes = self.get_romaji(parsed['anime_title'], meta.get('mal', None))
+            romaji, mal_id, eng_title, seasonYear, anilist_episodes = await get_romaji(parsed['anime_title'], meta.get('mal', None))
             if mal_id:
                 meta['mal_id'] = mal_id
             if meta.get('mal') is not None:

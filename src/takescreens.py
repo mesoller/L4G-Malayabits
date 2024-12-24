@@ -1,4 +1,3 @@
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 import os
@@ -372,21 +371,55 @@ def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
     os.chdir(f"{meta['base_dir']}/tmp/{meta['uuid']}")
     voblength, n = _is_vob_good(0, 0, num_screens)
     ss_times = valid_ss_time([], num_screens + 1, voblength, frame_rate)
-    tasks = []
-    task_limit = int(meta.get('task_limit', os.cpu_count()))
+    capture_tasks = []
+    existing_images = 0
+    existing_image_paths = []
+
     for i in range(num_screens + 1):
         image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i}.png"
         input_file = f"{meta['discs'][disc_num]['path']}/VTS_{main_set[i % len(main_set)]}"
-        tasks.append((input_file, image, ss_times[i], meta, width, height, w_sar, h_sar))
+        if os.path.exists(image) and not meta.get('retake', False):
+            existing_images += 1
+            existing_image_paths.append(image)
 
-    with get_context("spawn").Pool(processes=min(num_screens + 1, task_limit)) as pool:
-        try:
-            results = list(tqdm(pool.imap_unordered(capture_dvd_screenshot, tasks), total=len(tasks), desc="Capturing Screenshots", ascii=True, dynamic_ncols=False))
-        finally:
-            pool.close()
-            pool.join()
+    if meta['debug']:
+        console.print(f"Found {existing_images} existing screenshots")
 
-    if len(glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}/", f"{meta['discs'][disc_num]['name']}-*")) > num_screens:
+    if existing_images == num_screens and not meta.get('retake', False):
+        console.print("[yellow]The correct number of screenshots already exists. Skipping capture process.")
+        capture_results = existing_image_paths
+        return
+    else:
+        for i in range(num_screens + 1):
+            image = f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][disc_num]['name']}-{i}.png"
+            input_file = f"{meta['discs'][disc_num]['path']}/VTS_{main_set[i % len(main_set)]}"
+            if not os.path.exists(image) and not meta.get('retake', False):
+                capture_tasks.append((input_file, image, ss_times[i], meta, width, height, w_sar, h_sar))
+
+    capture_results = []
+    max_workers = min(len(capture_tasks), int(meta.get('task_limit', os.cpu_count())))
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_task = {executor.submit(capture_dvd_screenshot, task): task for task in capture_tasks}
+
+        if sys.stdout.isatty():  # Check if running in terminal
+            with tqdm(total=len(capture_tasks), desc="Capturing Screenshots", ascii=True) as pbar:
+                for future in as_completed(future_to_task):
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
+                        capture_results.append(result)
+                    else:
+                        console.print(f"[red]{result}")
+                    pbar.update(1)
+        else:
+            for future in as_completed(future_to_task):
+                result = future.result()
+                if not isinstance(result, str) or not result.startswith("Error"):
+                    capture_results.append(result)
+                else:
+                    console.print(f"[red]{result}")
+
+    if capture_results and len(capture_results) > num_screens and not retry_cap:
         smallest = None
         smallest_size = float('inf')
         for screens in glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}/", f"{meta['discs'][disc_num]['name']}-*"):
@@ -405,38 +438,53 @@ def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
                 console.print(f"[yellow]Removing smallest image: {smallest} ({smallest_size} bytes)[/yellow]")
             os.remove(smallest)
 
-    optimize_tasks = [(image, config) for image in results if image and os.path.exists(image)]
+    optimize_results = []
+    optimize_tasks = [(result, config) for result in capture_results if result and os.path.exists(result)]
 
-    with get_context("spawn").Pool(processes=min(len(optimize_tasks), task_limit)) as pool:
-        try:
-            optimize_results = list(  # noqa F841
-                tqdm(
-                    pool.imap_unordered(optimize_image_task, optimize_tasks),
-                    total=len(optimize_tasks),
-                    desc="Optimizing Images",
-                    ascii=True,
-                    dynamic_ncols=False
-                )
-            )
-        finally:
-            pool.close()
-            pool.join()
+    max_workers = min(len(optimize_tasks), int(meta.get('task_limit', os.cpu_count())))
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        future_to_task = {executor.submit(optimize_image_task, task): task for task in optimize_tasks}
+
+        if sys.stdout.isatty():
+            with tqdm(total=len(optimize_tasks), desc="Optimizing Images", ascii=True) as pbar:
+                for future in as_completed(future_to_task):
+                    try:
+                        result = future.result()
+                        if not isinstance(result, str) or not result.startswith("Error"):
+                            optimize_results.append(result)
+                        else:
+                            console.print(f"[red]{result}")
+                    except Exception as e:
+                        console.print(f"[red]Error in optimization task: {str(e)}")
+                    pbar.update(1)
+        else:
+            for future in as_completed(future_to_task):
+                try:
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
+                        optimize_results.append(result)
+                    else:
+                        console.print(f"[red]{result}")
+                except Exception as e:
+                    console.print(f"[red]Error in optimization task: {str(e)}")
 
     valid_results = []
-    retry_attempts = 3
+    remaining_retakes = []
 
     for image in optimize_results:
         if "Error" in image:
             console.print(f"[red]{image}")
             continue
 
-        retry_cap = False
+        retake = False
         image_size = os.path.getsize(image)
         if image_size <= 120000:
             console.print(f"[yellow]Image {image} is incredibly small, retaking.")
             retry_cap = True
 
-        if retry_cap:
+        if retake:
+            retry_attempts = 3
             for attempt in range(1, retry_attempts + 1):
                 console.print(f"[yellow]Retaking screenshot for: {image} (Attempt {attempt}/{retry_attempts})[/yellow]")
                 try:
@@ -464,8 +512,11 @@ def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
 
             else:
                 console.print(f"[red]All retry attempts failed for {image}. Skipping.[/red]")
+                remaining_retakes.append(image)
         else:
             valid_results.append(image)
+    if remaining_retakes:
+        console.print(f"[red]The following images could not be retaken successfully: {remaining_retakes}[/red]")
 
     console.print(f"[green]Successfully captured {len(optimize_results)} screenshots.")
 
