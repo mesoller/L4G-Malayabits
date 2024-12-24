@@ -208,7 +208,8 @@ class Prep():
         client = Clients(config=config)
         if meta.get('infohash') is not None:
             meta = await client.get_ptp_from_hash(meta)
-
+        common = COMMON(config=config)
+        tracker_setup = TRACKER_SETUP(config=config)
         if not meta.get('image_list'):
             # Reuse information from trackers with fallback
             found_match = False
@@ -228,12 +229,11 @@ class Prep():
 
                 async def process_tracker(tracker_name, meta):
                     nonlocal found_match
-                    tracker_class = globals().get(tracker_name)
-                    if tracker_class is None:
+                    if tracker_class_map is None:
                         print(f"Tracker class for {tracker_name} not found.")
                         return meta
 
-                    tracker_instance = tracker_class(config=self.config)
+                    tracker_instance = tracker_class_map[tracker_name](config=config)
                     try:
                         updated_meta, match = await update_metadata_from_tracker(
                             tracker_name, tracker_instance, meta, search_term, search_file_folder
@@ -359,8 +359,6 @@ class Prep():
             console.print(f"Metadata processed in {meta_finish_time - meta_start_time:.2f} seconds")
         parser = Args(config)
         helper = UploadHelper()
-        common = COMMON(config=config)
-        tracker_setup = TRACKER_SETUP(config=config)
         enabled_trackers = tracker_setup.trackers_enabled(meta)
         if "saved_trackers" not in meta:
             meta['trackers'] = enabled_trackers
