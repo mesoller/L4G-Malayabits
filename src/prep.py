@@ -10,8 +10,12 @@ from src.uphelper import UploadHelper
 from src.trackersetup import TRACKER_SETUP, tracker_class_map
 from src.takescreens import disc_screenshots, dvd_screenshots, screenshots
 from src.tvmaze import search_tvmaze
-from src.imdb import get_imdb_aka_api, get_imdb_info_api, search_imdb, imdb_other_meta
+from src.imdb import get_imdb_info_api, search_imdb, imdb_other_meta
 from src.trackermeta import update_metadata_from_tracker
+from src.tmdb import tmdb_other_meta, get_tmdb_imdb_from_mediainfo, get_tmdb_from_imdb, get_tmdb_id
+from src.region import get_region, get_distributor, get_service
+from src.exportmi import exportInfo, mi_resolution
+from src.getseasonep import get_season_episode
 
 try:
     import traceback
@@ -20,7 +24,6 @@ try:
     import re
     import math
     from str2bool import str2bool
-    import asyncio
     from guessit import guessit
     import ntpath
     from pathlib import Path
@@ -33,11 +36,9 @@ try:
     from pymediainfo import MediaInfo
     import tmdbsimple as tmdb
     from datetime import datetime
-    from difflib import SequenceMatcher
     import torf
     from torf import Torrent
     import time
-    import anitopy
     import itertools
     import cli_ui
     import aiohttp
@@ -93,7 +94,7 @@ class Prep():
         # console.print(f"Debug: meta['filelist'] before population: {meta.get('filelist', 'Not Set')}")
 
         if meta['is_disc'] == "BDMV":
-            video, meta['scene'], meta['imdb'] = self.is_scene(meta['path'], meta, meta.get('imdb', None))
+            video, meta['scene'], meta['imdb'] = await self.is_scene(meta['path'], meta, meta.get('imdb', None))
             meta['filelist'] = []  # No filelist for discs, use path
             search_term = os.path.basename(meta['path'])
             search_file_folder = 'folder'
@@ -115,13 +116,13 @@ class Prep():
                     meta['search_year'] = ""
 
             if meta.get('resolution', None) is None:
-                meta['resolution'] = self.mi_resolution(bdinfo['video'][0]['res'], guessit(video), width="OTHER", scan="p", height="OTHER", actual_height=0)
-            meta['sd'] = self.is_sd(meta['resolution'])
+                meta['resolution'] = await mi_resolution(bdinfo['video'][0]['res'], guessit(video), width="OTHER", scan="p", height="OTHER", actual_height=0)
+            meta['sd'] = await self.is_sd(meta['resolution'])
 
             mi = None
 
         elif meta['is_disc'] == "DVD":
-            video, meta['scene'], meta['imdb'] = self.is_scene(meta['path'], meta, meta.get('imdb', None))
+            video, meta['scene'], meta['imdb'] = await self.is_scene(meta['path'], meta, meta.get('imdb', None))
             meta['filelist'] = []
             search_term = os.path.basename(meta['path'])
             search_file_folder = 'folder'
@@ -133,17 +134,17 @@ class Prep():
             except Exception:
                 meta['search_year'] = ""
             if not meta.get('edit', False):
-                mi = self.exportInfo(f"{meta['discs'][0]['path']}/VTS_{meta['discs'][0]['main_set'][0][:2]}_1.VOB", False, meta['uuid'], meta['base_dir'], export_text=False)
+                mi = await exportInfo(f"{meta['discs'][0]['path']}/VTS_{meta['discs'][0]['main_set'][0][:2]}_1.VOB", False, meta['uuid'], meta['base_dir'], export_text=False)
                 meta['mediainfo'] = mi
             else:
                 mi = meta['mediainfo']
 
             meta['dvd_size'] = await self.get_dvd_size(meta['discs'], meta.get('manual_dvds'))
-            meta['resolution'] = self.get_resolution(guessit(video), meta['uuid'], base_dir)
-            meta['sd'] = self.is_sd(meta['resolution'])
+            meta['resolution'] = await self.get_resolution(guessit(video), meta['uuid'], base_dir)
+            meta['sd'] = await self.is_sd(meta['resolution'])
 
         elif meta['is_disc'] == "HDDVD":
-            video, meta['scene'], meta['imdb'] = self.is_scene(meta['path'], meta, meta.get('imdb', None))
+            video, meta['scene'], meta['imdb'] = await self.is_scene(meta['path'], meta, meta.get('imdb', None))
             meta['filelist'] = []
             search_term = os.path.basename(meta['path'])
             search_file_folder = 'folder'
@@ -156,18 +157,18 @@ class Prep():
             except Exception:
                 meta['search_year'] = ""
             if not meta.get('edit', False):
-                mi = self.exportInfo(meta['discs'][0]['largest_evo'], False, meta['uuid'], meta['base_dir'], export_text=False)
+                mi = await exportInfo(meta['discs'][0]['largest_evo'], False, meta['uuid'], meta['base_dir'], export_text=False)
                 meta['mediainfo'] = mi
             else:
                 mi = meta['mediainfo']
-            meta['resolution'] = self.get_resolution(guessit(video), meta['uuid'], base_dir)
+            meta['resolution'] = await self.get_resolution(guessit(video), meta['uuid'], base_dir)
             meta['sd'] = self.is_sd(meta['resolution'])
 
         else:
-            videopath, meta['filelist'] = self.get_video(videoloc, meta.get('mode', 'discord'))
+            videopath, meta['filelist'] = await self.get_video(videoloc, meta.get('mode', 'discord'))
             search_term = os.path.basename(meta['filelist'][0]) if meta['filelist'] else None
             search_file_folder = 'file'
-            video, meta['scene'], meta['imdb'] = self.is_scene(videopath, meta, meta.get('imdb', None))
+            video, meta['scene'], meta['imdb'] = await self.is_scene(videopath, meta, meta.get('imdb', None))
             guess_name = ntpath.basename(video).replace('-', ' ')
             filename = guessit(re.sub(r"[^0-9a-zA-Z\[\\]]+", " ", guess_name), {"excludes": ["country", "language"]}).get("title", guessit(re.sub("[^0-9a-zA-Z]+", " ", guess_name), {"excludes": ["country", "language"]})["title"])
             untouched_filename = os.path.basename(video)
@@ -177,14 +178,14 @@ class Prep():
                 meta['search_year'] = ""
 
             if not meta.get('edit', False):
-                mi = self.exportInfo(videopath, meta['isdir'], meta['uuid'], base_dir, export_text=True)
+                mi = await exportInfo(videopath, meta['isdir'], meta['uuid'], base_dir, export_text=True)
                 meta['mediainfo'] = mi
             else:
                 mi = meta['mediainfo']
 
             if meta.get('resolution', None) is None:
-                meta['resolution'] = self.get_resolution(guessit(video), meta['uuid'], base_dir)
-            meta['sd'] = self.is_sd(meta['resolution'])
+                meta['resolution'] = await self.get_resolution(guessit(video), meta['uuid'], base_dir)
+            meta['sd'] = await self.is_sd(meta['resolution'])
 
         if " AKA " in filename.replace('.', ' '):
             filename = filename.split('AKA')[0]
@@ -273,18 +274,18 @@ class Prep():
         if meta.get('manual_language'):
             meta['original_langauge'] = meta.get('manual_language').lower()
         meta['tmdb'] = meta.get('tmdb_manual', None)
-        meta['type'] = self.get_type(video, meta['scene'], meta['is_disc'], meta)
+        meta['type'] = await self.get_type(video, meta['scene'], meta['is_disc'], meta)
         if meta.get('category', None) is None:
-            meta['category'] = self.get_cat(video)
+            meta['category'] = await self.get_cat(video)
         else:
             meta['category'] = meta['category'].upper()
         if meta.get('tmdb', None) is None and meta.get('imdb', None) is None:
-            meta['category'], meta['tmdb'], meta['imdb'] = self.get_tmdb_imdb_from_mediainfo(mi, meta['category'], meta['is_disc'], meta['tmdb'], meta['imdb'])
+            meta['category'], meta['tmdb'], meta['imdb'] = await get_tmdb_imdb_from_mediainfo(mi, meta['category'], meta['is_disc'], meta['tmdb'], meta['imdb'])
         if meta.get('tmdb', None) is None and meta.get('imdb', None) is None:
-            meta = await self.get_tmdb_id(filename, meta['search_year'], meta, meta['category'], untouched_filename)
+            meta = await get_tmdb_id(filename, meta['search_year'], meta, meta['category'], untouched_filename)
         elif meta.get('imdb', None) is not None and meta.get('tmdb_manual', None) is None:
             meta['imdb_id'] = str(meta['imdb']).replace('tt', '')
-            meta = await self.get_tmdb_from_imdb(meta, filename)
+            meta = await get_tmdb_from_imdb(meta, filename)
         else:
             meta['tmdb_manual'] = meta.get('tmdb', None)
 
@@ -292,7 +293,7 @@ class Prep():
         if int(meta['tmdb']) == 0:
             meta = await imdb_other_meta(meta)
         else:
-            meta = await self.tmdb_other_meta(meta)
+            meta = await tmdb_other_meta(meta)
         # Search tvmaze
         if meta['category'] == "TV":
             meta['tvmaze_id'], meta['imdb_id'], meta['tvdb_id'] = await search_tvmaze(filename, meta['search_year'], meta.get('imdb_id', '0'), meta.get('tvdb_id', 0), meta)
@@ -304,12 +305,12 @@ class Prep():
         if meta.get('imdb_info', None) is None and int(meta['imdb_id']) != 0:
             meta['imdb_info'] = await get_imdb_info_api(meta['imdb_id'], meta)
         if meta.get('tag', None) is None:
-            meta['tag'] = self.get_tag(video, meta)
+            meta['tag'] = await self.get_tag(video, meta)
         else:
             if not meta['tag'].startswith('-') and meta['tag'] != "":
                 meta['tag'] = f"-{meta['tag']}"
         if meta['category'] == "TV":
-            meta = await self.get_season_episode(video, meta)
+            meta = await get_season_episode(video, meta)
         meta = await self.tag_override(meta)
         if meta.get('tag') == "-SubsPlease":  # SubsPlease-specific
             tracks = meta.get('mediainfo').get('media', {}).get('track', [])  # Get all tracks
@@ -321,32 +322,32 @@ class Prep():
             elif (bitrate.isdigit() or bitrate_oldMediaInfo.isdigit()):  # Only assign if at least one bitrate is present, otherwise leave it to user
                 meta['service'] = "HIDI"
         meta['video'] = video
-        meta['audio'], meta['channels'], meta['has_commentary'] = self.get_audio_v2(mi, meta, bdinfo)
+        meta['audio'], meta['channels'], meta['has_commentary'] = await self.get_audio_v2(mi, meta, bdinfo)
         if meta['tag'][1:].startswith(meta['channels']):
             meta['tag'] = meta['tag'].replace(f"-{meta['channels']}", '')
         if meta.get('no_tag', False):
             meta['tag'] = ""
-        meta['3D'] = self.is_3d(mi, bdinfo)
+        meta['3D'] = await self.is_3d(mi, bdinfo)
         if meta.get('manual_source', None):
             meta['source'] = meta['manual_source']
-            _, meta['type'] = self.get_source(meta['type'], video, meta['path'], meta['is_disc'], meta, folder_id, base_dir)
+            _, meta['type'] = await self.get_source(meta['type'], video, meta['path'], meta['is_disc'], meta, folder_id, base_dir)
         else:
-            meta['source'], meta['type'] = self.get_source(meta['type'], video, meta['path'], meta['is_disc'], meta, folder_id, base_dir)
+            meta['source'], meta['type'] = await self.get_source(meta['type'], video, meta['path'], meta['is_disc'], meta, folder_id, base_dir)
         if meta.get('service', None) in (None, ''):
-            meta['service'], meta['service_longname'] = self.get_service(video, meta.get('tag', ''), meta['audio'], meta['filename'])
+            meta['service'], meta['service_longname'] = await get_service(video, meta.get('tag', ''), meta['audio'], meta['filename'])
         elif meta.get('service'):
-            services = self.get_service(get_services_only=True)
+            services = await get_service(get_services_only=True)
             meta['service_longname'] = max((k for k, v in services.items() if v == meta['service']), key=len, default=meta['service'])
-        meta['uhd'] = self.get_uhd(meta['type'], guessit(meta['path']), meta['resolution'], meta['path'])
-        meta['hdr'] = self.get_hdr(mi, bdinfo)
-        meta['distributor'] = self.get_distributor(meta['distributor'])
+        meta['uhd'] = await self.get_uhd(meta['type'], guessit(meta['path']), meta['resolution'], meta['path'])
+        meta['hdr'] = await self.get_hdr(mi, bdinfo)
+        meta['distributor'] = await get_distributor(meta['distributor'])
         if meta.get('is_disc', None) == "BDMV":  # Blu-ray Specific
-            meta['region'] = self.get_region(bdinfo, meta.get('region', None))
-            meta['video_codec'] = self.get_video_codec(bdinfo)
+            meta['region'] = await get_region(bdinfo, meta.get('region', None))
+            meta['video_codec'] = await self.get_video_codec(bdinfo)
         else:
-            meta['video_encode'], meta['video_codec'], meta['has_encode_settings'], meta['bit_depth'] = self.get_video_encode(mi, meta['type'], bdinfo)
+            meta['video_encode'], meta['video_codec'], meta['has_encode_settings'], meta['bit_depth'] = await self.get_video_encode(mi, meta['type'], bdinfo)
         if meta.get('no_edition') is False:
-            meta['edition'], meta['repack'] = self.get_edition(meta['path'], bdinfo, meta['filelist'], meta.get('manual_edition'))
+            meta['edition'], meta['repack'] = await self.get_edition(meta['path'], bdinfo, meta['filelist'], meta.get('manual_edition'))
             if "REPACK" in meta.get('edition', ""):
                 meta['repack'] = re.search(r"REPACK[\d]?", meta['edition'])[0]
                 meta['edition'] = re.sub(r"REPACK[\d]?", "", meta['edition']).strip().replace('  ', ' ')
@@ -444,7 +445,7 @@ class Prep():
                                 check_torrent = await client.find_existing_torrent(meta)
                                 if check_torrent:
                                     console.print(f"[yellow]Existing torrent found on {check_torrent}[/yellow]")
-                                    self.create_base_from_existing_torrent(check_torrent, meta['base_dir'], meta['uuid'])
+                                    await self.create_base_from_existing_torrent(check_torrent, meta['base_dir'], meta['uuid'])
                                     torrent = Torrent.read(torrent_path)
                                     if torrent.piece_size > 8388608:
                                         console.print("[yellow]No existing torrent found with piece size lesser than 8MB[/yellow]")
@@ -539,7 +540,7 @@ class Prep():
 
         # WORK ON THIS
         meta.get('stream', False)
-        meta['stream'] = self.stream_optimized(meta['stream'])
+        meta['stream'] = await self.stream_optimized(meta['stream'])
         meta.get('anon', False)
         meta['anon'] = self.is_anon(meta['anon'])
         if meta['saved_description'] is False:
@@ -615,7 +616,7 @@ class Prep():
     Get video files
 
     """
-    def get_video(self, videoloc, mode):
+    async def get_video(self, videoloc, mode):
         filelist = []
         videoloc = os.path.abspath(videoloc)
         if os.path.isdir(videoloc):
@@ -636,207 +637,10 @@ class Prep():
         return video, filelist
 
     """
-    Get and parse mediainfo
-    """
-    def exportInfo(self, video, isdir, folder_id, base_dir, export_text):
-        def filter_mediainfo(data):
-            filtered = {
-                "creatingLibrary": data.get("creatingLibrary"),
-                "media": {
-                    "@ref": data["media"]["@ref"],
-                    "track": []
-                }
-            }
-
-            for track in data["media"]["track"]:
-                if track["@type"] == "General":
-                    filtered["media"]["track"].append({
-                        "@type": track["@type"],
-                        "UniqueID": track.get("UniqueID", {}),
-                        "VideoCount": track.get("VideoCount", {}),
-                        "AudioCount": track.get("AudioCount", {}),
-                        "TextCount": track.get("TextCount", {}),
-                        "MenuCount": track.get("MenuCount", {}),
-                        "FileExtension": track.get("FileExtension", {}),
-                        "Format": track.get("Format", {}),
-                        "Format_Version": track.get("Format_Version", {}),
-                        "FileSize": track.get("FileSize", {}),
-                        "Duration": track.get("Duration", {}),
-                        "OverallBitRate": track.get("OverallBitRate", {}),
-                        "FrameRate": track.get("FrameRate", {}),
-                        "FrameCount": track.get("FrameCount", {}),
-                        "StreamSize": track.get("StreamSize", {}),
-                        "IsStreamable": track.get("IsStreamable", {}),
-                        "File_Created_Date": track.get("File_Created_Date", {}),
-                        "File_Created_Date_Local": track.get("File_Created_Date_Local", {}),
-                        "File_Modified_Date": track.get("File_Modified_Date", {}),
-                        "File_Modified_Date_Local": track.get("File_Modified_Date_Local", {}),
-                        "Encoded_Application": track.get("Encoded_Application", {}),
-                        "Encoded_Library": track.get("Encoded_Library", {}),
-                    })
-                elif track["@type"] == "Video":
-                    filtered["media"]["track"].append({
-                        "@type": track["@type"],
-                        "StreamOrder": track.get("StreamOrder", {}),
-                        "ID": track.get("ID", {}),
-                        "UniqueID": track.get("UniqueID", {}),
-                        "Format": track.get("Format", {}),
-                        "Format_Profile": track.get("Format_Profile", {}),
-                        "Format_Version": track.get("Format_Version", {}),
-                        "Format_Level": track.get("Format_Level", {}),
-                        "Format_Tier": track.get("Format_Tier", {}),
-                        "HDR_Format": track.get("HDR_Format", {}),
-                        "HDR_Format_Version": track.get("HDR_Format_Version", {}),
-                        "HDR_Format_String": track.get("HDR_Format_String", {}),
-                        "HDR_Format_Profile": track.get("HDR_Format_Profile", {}),
-                        "HDR_Format_Level": track.get("HDR_Format_Level", {}),
-                        "HDR_Format_Settings": track.get("HDR_Format_Settings", {}),
-                        "HDR_Format_Compression": track.get("HDR_Format_Compression", {}),
-                        "HDR_Format_Compatibility": track.get("HDR_Format_Compatibility", {}),
-                        "CodecID": track.get("CodecID", {}),
-                        "CodecID_Hint": track.get("CodecID_Hint", {}),
-                        "Duration": track.get("Duration", {}),
-                        "BitRate": track.get("BitRate", {}),
-                        "Width": track.get("Width", {}),
-                        "Height": track.get("Height", {}),
-                        "Stored_Height": track.get("Stored_Height", {}),
-                        "Sampled_Width": track.get("Sampled_Width", {}),
-                        "Sampled_Height": track.get("Sampled_Height", {}),
-                        "PixelAspectRatio": track.get("PixelAspectRatio", {}),
-                        "DisplayAspectRatio": track.get("DisplayAspectRatio", {}),
-                        "FrameRate_Mode": track.get("FrameRate_Mode", {}),
-                        "FrameRate": track.get("FrameRate", {}),
-                        "FrameRate_Num": track.get("FrameRate_Num", {}),
-                        "FrameRate_Den": track.get("FrameRate_Den", {}),
-                        "FrameCount": track.get("FrameCount", {}),
-                        "Standard": track.get("Standard", {}),
-                        "ColorSpace": track.get("ColorSpace", {}),
-                        "ChromaSubsampling": track.get("ChromaSubsampling", {}),
-                        "ChromaSubsampling_Position": track.get("ChromaSubsampling_Position", {}),
-                        "BitDepth": track.get("BitDepth", {}),
-                        "ScanType": track.get("ScanType", {}),
-                        "ScanOrder": track.get("ScanOrder", {}),
-                        "Delay": track.get("Delay", {}),
-                        "Delay_Source": track.get("Delay_Source", {}),
-                        "StreamSize": track.get("StreamSize", {}),
-                        "Language": track.get("Language", {}),
-                        "Default": track.get("Default", {}),
-                        "Forced": track.get("Forced", {}),
-                        "colour_description_present": track.get("colour_description_present", {}),
-                        "colour_description_present_Source": track.get("colour_description_present_Source", {}),
-                        "colour_range": track.get("colour_range", {}),
-                        "colour_range_Source": track.get("colour_range_Source", {}),
-                        "colour_primaries": track.get("colour_primaries", {}),
-                        "colour_primaries_Source": track.get("colour_primaries_Source", {}),
-                        "transfer_characteristics": track.get("transfer_characteristics", {}),
-                        "transfer_characteristics_Source": track.get("transfer_characteristics_Source", {}),
-                        "transfer_characteristics_Original": track.get("transfer_characteristics_Original", {}),
-                        "matrix_coefficients": track.get("matrix_coefficients", {}),
-                        "matrix_coefficients_Source": track.get("matrix_coefficients_Source", {}),
-                        "MasteringDisplay_ColorPrimaries": track.get("MasteringDisplay_ColorPrimaries", {}),
-                        "MasteringDisplay_ColorPrimaries_Source": track.get("MasteringDisplay_ColorPrimaries_Source", {}),
-                        "MasteringDisplay_Luminance": track.get("MasteringDisplay_Luminance", {}),
-                        "MasteringDisplay_Luminance_Source": track.get("MasteringDisplay_Luminance_Source", {}),
-                        "MaxCLL": track.get("MaxCLL", {}),
-                        "MaxCLL_Source": track.get("MaxCLL_Source", {}),
-                        "MaxFALL": track.get("MaxFALL", {}),
-                        "MaxFALL_Source": track.get("MaxFALL_Source", {}),
-                        "Encoded_Library_Settings": track.get("Encoded_Library_Settings", {}),
-                    })
-                elif track["@type"] == "Audio":
-                    filtered["media"]["track"].append({
-                        "@type": track["@type"],
-                        "StreamOrder": track.get("StreamOrder", {}),
-                        "ID": track.get("ID", {}),
-                        "UniqueID": track.get("UniqueID", {}),
-                        "Format": track.get("Format", {}),
-                        "Format_Version": track.get("Format_Version", {}),
-                        "Format_Profile": track.get("Format_Profile", {}),
-                        "Format_Settings": track.get("Format_Settings", {}),
-                        "Format_Commercial_IfAny": track.get("Format_Commercial_IfAny", {}),
-                        "Format_Settings_Endianness": track.get("Format_Settings_Endianness", {}),
-                        "Format_AdditionalFeatures": track.get("Format_AdditionalFeatures", {}),
-                        "CodecID": track.get("CodecID", {}),
-                        "Duration": track.get("Duration", {}),
-                        "BitRate_Mode": track.get("BitRate_Mode", {}),
-                        "BitRate": track.get("BitRate", {}),
-                        "Channels": track.get("Channels", {}),
-                        "ChannelPositions": track.get("ChannelPositions", {}),
-                        "ChannelLayout": track.get("ChannelLayout", {}),
-                        "Channels_Original": track.get("Channels_Original", {}),
-                        "ChannelLayout_Original": track.get("ChannelLayout_Original", {}),
-                        "SamplesPerFrame": track.get("SamplesPerFrame", {}),
-                        "SamplingRate": track.get("SamplingRate", {}),
-                        "SamplingCount": track.get("SamplingCount", {}),
-                        "FrameRate": track.get("FrameRate", {}),
-                        "FrameCount": track.get("FrameCount", {}),
-                        "Compression_Mode": track.get("Compression_Mode", {}),
-                        "Delay": track.get("Delay", {}),
-                        "Delay_Source": track.get("Delay_Source", {}),
-                        "Video_Delay": track.get("Video_Delay", {}),
-                        "StreamSize": track.get("StreamSize", {}),
-                        "Title": track.get("Title", {}),
-                        "Language": track.get("Language", {}),
-                        "ServiceKind": track.get("ServiceKind", {}),
-                        "Default": track.get("Default", {}),
-                        "Forced": track.get("Forced", {}),
-                        "extra": track.get("extra", {}),
-                    })
-                elif track["@type"] == "Text":
-                    filtered["media"]["track"].append({
-                        "@type": track["@type"],
-                        "@typeorder": track.get("@typeorder", {}),
-                        "StreamOrder": track.get("StreamOrder", {}),
-                        "ID": track.get("ID", {}),
-                        "UniqueID": track.get("UniqueID", {}),
-                        "Format": track.get("Format", {}),
-                        "CodecID": track.get("CodecID", {}),
-                        "Duration": track.get("Duration", {}),
-                        "BitRate": track.get("BitRate", {}),
-                        "FrameRate": track.get("FrameRate", {}),
-                        "FrameCount": track.get("FrameCount", {}),
-                        "ElementCount": track.get("ElementCount", {}),
-                        "StreamSize": track.get("StreamSize", {}),
-                        "Title": track.get("Title", {}),
-                        "Language": track.get("Language", {}),
-                        "Default": track.get("Default", {}),
-                        "Forced": track.get("Forced", {}),
-                    })
-                elif track["@type"] == "Menu":
-                    filtered["media"]["track"].append({
-                        "@type": track["@type"],
-                        "extra": track.get("extra", {}),
-                    })
-            return filtered
-
-        if not os.path.exists(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt") and export_text:
-            console.print("[bold yellow]Exporting MediaInfo...")
-            if not isdir:
-                os.chdir(os.path.dirname(video))
-            media_info = MediaInfo.parse(video, output="STRING", full=False, mediainfo_options={'inform_version': '1'})
-            with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO.txt", 'w', newline="", encoding='utf-8') as export:
-                export.write(media_info)
-            with open(f"{base_dir}/tmp/{folder_id}/MEDIAINFO_CLEANPATH.txt", 'w', newline="", encoding='utf-8') as export_cleanpath:
-                export_cleanpath.write(media_info.replace(video, os.path.basename(video)))
-            console.print("[bold green]MediaInfo Exported.")
-
-        if not os.path.exists(f"{base_dir}/tmp/{folder_id}/MediaInfo.json.txt"):
-            media_info_json = MediaInfo.parse(video, output="JSON", mediainfo_options={'inform_version': '1'})
-            media_info_dict = json.loads(media_info_json)
-            filtered_info = filter_mediainfo(media_info_dict)
-            with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'w', encoding='utf-8') as export:
-                json.dump(filtered_info, export, indent=4)
-
-        with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", 'r', encoding='utf-8') as f:
-            mi = json.load(f)
-
-        return mi
-
-    """
     Get Resolution
     """
 
-    def get_resolution(self, guess, folder_id, base_dir):
+    async def get_resolution(self, guess, folder_id, base_dir):
         with open(f'{base_dir}/tmp/{folder_id}/MediaInfo.json', 'r', encoding='utf-8') as f:
             mi = json.load(f)
             try:
@@ -865,14 +669,14 @@ class Prep():
                     scan = "i"  # Default to interlaced if no indicators are found
             width_list = [3840, 2560, 1920, 1280, 1024, 854, 720, 15360, 7680, 0]
             height_list = [2160, 1440, 1080, 720, 576, 540, 480, 8640, 4320, 0]
-            width = self.closest(width_list, int(width))
+            width = await self.closest(width_list, int(width))
             actual_height = int(height)
-            height = self.closest(height_list, int(height))
+            height = await self.closest(height_list, int(height))
             res = f"{width}x{height}{scan}"
-            resolution = self.mi_resolution(res, guess, width, scan, height, actual_height)
+            resolution = await mi_resolution(res, guess, width, scan, height, actual_height)
         return resolution
 
-    def closest(self, lst, K):
+    async def closest(self, lst, K):
         # Get closest, but not over
         lst = sorted(lst)
         mi_input = K
@@ -887,53 +691,7 @@ class Prep():
 
         # return lst[min(range(len(lst)), key = lambda i: abs(lst[i]-K))]
 
-    def mi_resolution(self, res, guess, width, scan, height, actual_height):
-        res_map = {
-            "3840x2160p": "2160p", "2160p": "2160p",
-            "2560x1440p": "1440p", "1440p": "1440p",
-            "1920x1080p": "1080p", "1080p": "1080p",
-            "1920x1080i": "1080i", "1080i": "1080i",
-            "1280x720p": "720p", "720p": "720p",
-            "1280x540p": "720p", "1280x576p": "720p",
-            "1024x576p": "576p", "576p": "576p",
-            "1024x576i": "576i", "576i": "576i",
-            "854x480p": "480p", "480p": "480p",
-            "854x480i": "480i", "480i": "480i",
-            "720x576p": "576p", "576p": "576p",
-            "720x576i": "576i", "576i": "576i",
-            "720x480p": "480p", "480p": "480p",
-            "720x480i": "480i", "480i": "480i",
-            "15360x8640p": "8640p", "8640p": "8640p",
-            "7680x4320p": "4320p", "4320p": "4320p",
-            "OTHER": "OTHER"}
-        resolution = res_map.get(res, None)
-        if actual_height == 540:
-            resolution = "OTHER"
-        if resolution is None:
-            try:
-                resolution = guess['screen_size']
-            except Exception:
-                width_map = {
-                    '3840p': '2160p',
-                    '2560p': '1550p',
-                    '1920p': '1080p',
-                    '1920i': '1080i',
-                    '1280p': '720p',
-                    '1024p': '576p',
-                    '1024i': '576i',
-                    '854p': '480p',
-                    '854i': '480i',
-                    '720p': '576p',
-                    '720i': '576i',
-                    '15360p': '4320p',
-                    'OTHERp': 'OTHER'
-                }
-                resolution = width_map.get(f"{width}{scan}", "OTHER")
-            resolution = self.mi_resolution(resolution, guess, width, scan, height, actual_height)
-
-        return resolution
-
-    def is_sd(self, resolution):
+    async def is_sd(self, resolution):
         if resolution in ("480i", "480p", "576i", "576p", "540p"):
             sd = 1
         else:
@@ -943,7 +701,7 @@ class Prep():
     """
     Is a scene release?
     """
-    def is_scene(self, video, meta, imdb=None):
+    async def is_scene(self, video, meta, imdb=None):
         scene = False
         base = os.path.basename(video)
         base = os.path.splitext(base)[0]
@@ -1010,7 +768,7 @@ class Prep():
     Get type and category
     """
 
-    def get_type(self, video, scene, is_disc, meta):
+    async def get_type(self, video, scene, is_disc, meta):
         if meta.get('manual_type'):
             type = meta.get('manual_type')
         else:
@@ -1034,7 +792,7 @@ class Prep():
                 type = "ENCODE"
         return type
 
-    def get_cat(self, video):
+    async def get_cat(self, video):
         # if category is None:
         category = guessit(video.replace('1.0', ''))['type']
         if category.lower() == "movie":
@@ -1045,372 +803,10 @@ class Prep():
             category = "MOVIE"
         return category
 
-    async def get_tmdb_from_imdb(self, meta, filename):
-        if meta.get('tmdb_manual') is not None:
-            meta['tmdb'] = meta['tmdb_manual']
-            return meta
-        imdb_id = meta['imdb']
-        if str(imdb_id)[:2].lower() != "tt":
-            imdb_id = f"tt{imdb_id}"
-        find = tmdb.Find(id=imdb_id)
-        info = find.info(external_source="imdb_id")
-        if len(info['movie_results']) >= 1:
-            meta['category'] = "MOVIE"
-            meta['tmdb'] = info['movie_results'][0]['id']
-            meta['original_language'] = info['movie_results'][0].get('original_language')
-        elif len(info['tv_results']) >= 1:
-            meta['category'] = "TV"
-            meta['tmdb'] = info['tv_results'][0]['id']
-            meta['original_language'] = info['tv_results'][0].get('original_language')
-        else:
-            imdb_info = await get_imdb_info_api(imdb_id.replace('tt', ''), meta)
-            title = imdb_info.get("title")
-            if title is None:
-                title = filename
-            year = imdb_info.get('year')
-            if year is None:
-                year = meta['search_year']
-            console.print(f"[yellow]TMDb was unable to find anything with that IMDb, searching TMDb for {title}")
-            meta = await self.get_tmdb_id(title, year, meta, meta['category'], imdb_info.get('original title', imdb_info.get('localized title', meta['uuid'])))
-            if meta.get('tmdb') in ('None', '', None, 0, '0'):
-                if meta.get('mode', 'discord') == 'cli':
-                    console.print('[yellow]Unable to find a matching TMDb entry')
-                    tmdb_id = console.input("Please enter tmdb id: ")
-                    parser = Args(config=self.config)
-                    meta['category'], meta['tmdb'] = parser.parse_tmdb_id(id=tmdb_id, category=meta.get('category'))
-        await asyncio.sleep(2)
-        return meta
-
-    async def get_tmdb_id(self, filename, search_year, meta, category, untouched_filename="", attempted=0):
-        search = tmdb.Search()
-        try:
-            if category == "MOVIE":
-                search.movie(query=filename, year=search_year)
-            elif category == "TV":
-                search.tv(query=filename, first_air_date_year=search_year)
-            if meta.get('tmdb_manual') is not None:
-                meta['tmdb'] = meta['tmdb_manual']
-            else:
-                meta['tmdb'] = search.results[0]['id']
-                meta['category'] = category
-        except IndexError:
-            try:
-                if category == "MOVIE":
-                    search.movie(query=filename)
-                elif category == "TV":
-                    search.tv(query=filename)
-                meta['tmdb'] = search.results[0]['id']
-                meta['category'] = category
-            except IndexError:
-                if category == "MOVIE":
-                    category = "TV"
-                else:
-                    category = "MOVIE"
-                if attempted <= 1:
-                    attempted += 1
-                    meta = await self.get_tmdb_id(filename, search_year, meta, category, untouched_filename, attempted)
-                elif attempted == 2:
-                    attempted += 1
-                    meta = await self.get_tmdb_id(anitopy.parse(guessit(untouched_filename, {"excludes": ["country", "language"]})['title'])['anime_title'], search_year, meta, meta['category'], untouched_filename, attempted)
-                if meta['tmdb'] in (None, ""):
-                    console.print(f"[red]Unable to find TMDb match for {filename}")
-                    if meta.get('mode', 'discord') == 'cli':
-                        tmdb_id = cli_ui.ask_string("Please enter tmdb id in this format: tv/12345 or movie/12345")
-                        parser = Args(config=self.config)
-                        meta['category'], meta['tmdb'] = parser.parse_tmdb_id(id=tmdb_id, category=meta.get('category'))
-                        meta['tmdb_manual'] = meta['tmdb']
-                        return meta
-
-        return meta
-
-    async def tmdb_other_meta(self, meta):
-
-        if meta['tmdb'] == "0":
-            try:
-                title = guessit(meta['path'], {"excludes": ["country", "language"]})['title'].lower()
-                title = title.split('aka')[0]
-                meta = await self.get_tmdb_id(guessit(title, {"excludes": ["country", "language"]})['title'], meta['search_year'], meta)
-                if meta['tmdb'] == "0":
-                    meta = await self.get_tmdb_id(title, "", meta, meta['category'])
-            except Exception:
-                if meta.get('mode', 'discord') == 'cli':
-                    console.print("[bold red]Unable to find tmdb entry. Exiting.")
-                    exit()
-                else:
-                    console.print("[bold red]Unable to find tmdb entry")
-                    return meta
-        if meta['category'] == "MOVIE":
-            movie = tmdb.Movies(meta['tmdb'])
-            response = movie.info()
-            meta['title'] = response['title']
-            if response['release_date']:
-                meta['year'] = datetime.strptime(response['release_date'], '%Y-%m-%d').year
-            else:
-                console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
-                meta['year'] = meta['search_year']
-            external = movie.external_ids()
-            if meta.get('imdb', None) is None:
-                imdb_id = external.get('imdb_id', "0")
-                if imdb_id == "" or imdb_id is None:
-                    meta['imdb_id'] = '0'
-                else:
-                    meta['imdb_id'] = str(int(imdb_id.replace('tt', ''))).zfill(7)
-            else:
-                meta['imdb_id'] = str(meta['imdb']).replace('tt', '').zfill(7)
-            if meta.get('tvdb_manual'):
-                meta['tvdb_id'] = meta['tvdb_manual']
-            else:
-                if meta.get('tvdb_id', '0') in ['', ' ', None, 'None', '0']:
-                    meta['tvdb_id'] = external.get('tvdb_id', '0')
-                    if meta['tvdb_id'] in ["", None, " ", "None"]:
-                        meta['tvdb_id'] = '0'
-            try:
-                videos = movie.videos()
-                for each in videos.get('results', []):
-                    if each.get('site', "") == 'YouTube' and each.get('type', "") == "Trailer":
-                        meta['youtube'] = f"https://www.youtube.com/watch?v={each.get('key')}"
-                        break
-            except Exception:
-                console.print('[yellow]Unable to grab videos from TMDb.')
-
-            meta['aka'], original_language = await get_imdb_aka_api(meta['imdb_id'], meta)
-            if original_language is not None:
-                meta['original_language'] = original_language
-            else:
-                meta['original_language'] = response['original_language']
-
-            meta['original_title'] = response.get('original_title', meta['title'])
-            meta['keywords'] = self.get_keywords(movie)
-            meta['genres'] = self.get_genres(response)
-            meta['tmdb_directors'] = self.get_directors(movie)
-            if meta.get('anime', False) is False:
-                meta['mal_id'], meta['aka'], meta['anime'] = self.get_anime(response, meta)
-            if meta.get('mal') is not None:
-                meta['mal_id'] = meta['mal']
-            meta['poster'] = response.get('poster_path', "")
-            meta['tmdb_poster'] = response.get('poster_path', "")
-            meta['overview'] = response['overview']
-            meta['tmdb_type'] = 'Movie'
-            meta['runtime'] = response.get('episode_run_time', 60)
-        elif meta['category'] == "TV":
-            tv = tmdb.TV(meta['tmdb'])
-            response = tv.info()
-            meta['title'] = response['name']
-            if response['first_air_date']:
-                meta['year'] = datetime.strptime(response['first_air_date'], '%Y-%m-%d').year
-            else:
-                console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
-                meta['year'] = meta['search_year']
-            external = tv.external_ids()
-            if meta.get('imdb', None) is None:
-                imdb_id = external.get('imdb_id', "0")
-                if imdb_id == "" or imdb_id is None:
-                    meta['imdb_id'] = '0'
-                else:
-                    meta['imdb_id'] = str(int(imdb_id.replace('tt', ''))).zfill(7)
-            else:
-                meta['imdb_id'] = str(int(meta['imdb'].replace('tt', ''))).zfill(7)
-            if meta.get('tvdb_manual'):
-                meta['tvdb_id'] = meta['tvdb_manual']
-            else:
-                if meta.get('tvdb_id', '0') in ['', ' ', None, 'None', '0']:
-                    meta['tvdb_id'] = external.get('tvdb_id', '0')
-                    if meta['tvdb_id'] in ["", None, " ", "None"]:
-                        meta['tvdb_id'] = '0'
-            try:
-                videos = tv.videos()
-                for each in videos.get('results', []):
-                    if each.get('site', "") == 'YouTube' and each.get('type', "") == "Trailer":
-                        meta['youtube'] = f"https://www.youtube.com/watch?v={each.get('key')}"
-                        break
-            except Exception:
-                console.print('[yellow]Unable to grab videos from TMDb.')
-
-            # meta['aka'] = f" AKA {response['original_name']}"
-            meta['aka'], original_language = await get_imdb_aka_api(meta['imdb_id'], meta)
-            if original_language is not None:
-                meta['original_language'] = original_language
-            else:
-                meta['original_language'] = response['original_language']
-            meta['original_title'] = response.get('original_name', meta['title'])
-            meta['keywords'] = self.get_keywords(tv)
-            meta['genres'] = self.get_genres(response)
-            meta['tmdb_directors'] = self.get_directors(tv)
-            meta['mal_id'], meta['aka'], meta['anime'] = self.get_anime(response, meta)
-            if meta.get('mal') is not None:
-                meta['mal_id'] = meta['mal']
-            meta['poster'] = response.get('poster_path', '')
-            meta['overview'] = response['overview']
-
-            meta['tmdb_type'] = response.get('type', 'Scripted')
-            runtime = response.get('episode_run_time', [60])
-            if runtime == []:
-                runtime = [60]
-            meta['runtime'] = runtime[0]
-        if meta['poster'] not in (None, ''):
-            meta['poster'] = f"https://image.tmdb.org/t/p/original{meta['poster']}"
-
-        difference = SequenceMatcher(None, meta['title'].lower(), meta['aka'][5:].lower()).ratio()
-        if difference >= 0.9 or meta['aka'][5:].strip() == "" or meta['aka'][5:].strip().lower() in meta['title'].lower():
-            meta['aka'] = ""
-        if f"({meta['year']})" in meta['aka']:
-            meta['aka'] = meta['aka'].replace(f"({meta['year']})", "").strip()
-
-        return meta
-
-    def get_keywords(self, tmdb_info):
-        if tmdb_info is not None:
-            tmdb_keywords = tmdb_info.keywords()
-            if tmdb_keywords.get('keywords') is not None:
-                keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('keywords')]
-            elif tmdb_keywords.get('results') is not None:
-                keywords = [f"{keyword['name'].replace(',', ' ')}" for keyword in tmdb_keywords.get('results')]
-            return (', '.join(keywords))
-        else:
-            return ''
-
-    def get_genres(self, tmdb_info):
-        if tmdb_info is not None:
-            tmdb_genres = tmdb_info.get('genres', [])
-            if tmdb_genres is not []:
-                genres = [f"{genre['name'].replace(',', ' ')}" for genre in tmdb_genres]
-            return (', '.join(genres))
-        else:
-            return ''
-
-    def get_directors(self, tmdb_info):
-        if tmdb_info is not None:
-            tmdb_credits = tmdb_info.credits()
-            directors = []
-            if tmdb_credits.get('cast', []) != []:
-                for each in tmdb_credits['cast']:
-                    if each.get('known_for_department', '') == "Directing":
-                        directors.append(each.get('original_name', each.get('name')))
-            return directors
-        else:
-            return ''
-
-    def get_anime(self, response, meta):
-        tmdb_name = meta['title']
-        if meta.get('aka', "") == "":
-            alt_name = ""
-        else:
-            alt_name = meta['aka']
-        anime = False
-        animation = False
-        for each in response['genres']:
-            if each['id'] == 16:
-                animation = True
-        if response['original_language'] == 'ja' and animation is True:
-            romaji, mal_id, eng_title, season_year, episodes = self.get_romaji(tmdb_name, meta.get('mal', None))
-            alt_name = f" AKA {romaji}"
-
-            anime = True
-            # mal = AnimeSearch(romaji)
-            # mal_id = mal.results[0].mal_id
-        else:
-            mal_id = 0
-        if meta.get('mal_id', 0) != 0:
-            mal_id = meta.get('mal_id')
-        if meta.get('mal') is not None:
-            mal_id = meta.get('mal')
-        return mal_id, alt_name, anime
-
-    def get_romaji(self, tmdb_name, mal):
-        if mal is None:
-            mal = 0
-            tmdb_name = tmdb_name.replace('-', "").replace("The Movie", "")
-            tmdb_name = ' '.join(tmdb_name.split())
-            query = '''
-                query ($search: String) {
-                    Page (page: 1) {
-                        pageInfo {
-                            total
-                        }
-                    media (search: $search, type: ANIME, sort: SEARCH_MATCH) {
-                        id
-                        idMal
-                        title {
-                            romaji
-                            english
-                            native
-                        }
-                        seasonYear
-                        episodes
-                    }
-                }
-            }
-            '''
-            # Define our query variables and values that will be used in the query request
-            variables = {
-                'search': tmdb_name
-            }
-        else:
-            query = '''
-                query ($search: Int) {
-                    Page (page: 1) {
-                        pageInfo {
-                            total
-                        }
-                    media (idMal: $search, type: ANIME, sort: SEARCH_MATCH) {
-                        id
-                        idMal
-                        title {
-                            romaji
-                            english
-                            native
-                        }
-                        seasonYear
-                        episodes
-                    }
-                }
-            }
-            '''
-            # Define our query variables and values that will be used in the query request
-            variables = {
-                'search': mal
-            }
-
-        # Make the HTTP Api request
-        url = 'https://graphql.anilist.co'
-        try:
-            response = requests.post(url, json={'query': query, 'variables': variables})
-            json = response.json()
-            media = json['data']['Page']['media']
-        except Exception:
-            console.print('[red]Failed to get anime specific info from anilist. Continuing without it...')
-            media = []
-        if media not in (None, []):
-            result = {'title': {}}
-            difference = 0
-            for anime in media:
-                search_name = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", tmdb_name.lower().replace(' ', ''))
-                for title in anime['title'].values():
-                    if title is not None:
-                        title = re.sub(u'[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]+ (?=[A-Za-z ]+–)', "", title.lower().replace(' ', ''), re.U)
-                        diff = SequenceMatcher(None, title, search_name).ratio()
-                        if diff >= difference:
-                            result = anime
-                            difference = diff
-
-            romaji = result['title'].get('romaji', result['title'].get('english', ""))
-            mal_id = result.get('idMal', 0)
-            eng_title = result['title'].get('english', result['title'].get('romaji', ""))
-            season_year = result.get('season_year', "")
-            episodes = result.get('episodes', 0)
-        else:
-            romaji = eng_title = season_year = ""
-            episodes = mal_id = 0
-        if mal_id in [None, 0]:
-            mal_id = mal
-        if not episodes:
-            episodes = 0
-        return romaji, mal_id, eng_title, season_year, episodes
-
     """
     Mediainfo/Bdinfo > meta
     """
-    def get_audio_v2(self, mi, meta, bdinfo):
+    async def get_audio_v2(self, mi, meta, bdinfo):
         extra = dual = ""
         has_commentary = False
 
@@ -1597,7 +993,7 @@ class Prep():
         audio = ' '.join(audio.split())
         return audio, chan, has_commentary
 
-    def is_3d(self, mi, bdinfo):
+    async def is_3d(self, mi, bdinfo):
         if bdinfo is not None:
             if bdinfo['video'][0]['3d'] != "":
                 return "3D"
@@ -1606,7 +1002,7 @@ class Prep():
         else:
             return ""
 
-    def get_tag(self, video, meta):
+    async def get_tag(self, video, meta):
         try:
             parsed = guessit(video)
             release_group = parsed.get('release_group')
@@ -1629,7 +1025,7 @@ class Prep():
 
         return tag
 
-    def get_source(self, type, video, path, is_disc, meta, folder_id, base_dir):
+    async def get_source(self, type, video, path, is_disc, meta, folder_id, base_dir):
         try:
             with open(f'{base_dir}/tmp/{folder_id}/MediaInfo.json', 'r', encoding='utf-8') as f:
                 mi = json.load(f)
@@ -1704,7 +1100,7 @@ class Prep():
 
         return source, type
 
-    def get_uhd(self, type, guess, resolution, path):
+    async def get_uhd(self, type, guess, resolution, path):
         try:
             source = guess['Source']
             other = guess['Other']
@@ -1724,7 +1120,7 @@ class Prep():
 
         return uhd
 
-    def get_hdr(self, mi, bdinfo):
+    async def get_hdr(self, mi, bdinfo):
         hdr = ""
         dv = ""
         if bdinfo is not None:  # Disks
@@ -1768,81 +1164,7 @@ class Prep():
         hdr = f"{dv} {hdr}".strip()
         return hdr
 
-    def get_region(self, bdinfo, region=None):
-        label = bdinfo.get('label', bdinfo.get('title', bdinfo.get('path', ''))).replace('.', ' ')
-        if region is not None:
-            region = region.upper()
-        else:
-            regions = {
-                'AFG': 'AFG', 'AIA': 'AIA', 'ALA': 'ALA', 'ALG': 'ALG', 'AND': 'AND', 'ANG': 'ANG', 'ARG': 'ARG',
-                'ARM': 'ARM', 'ARU': 'ARU', 'ASA': 'ASA', 'ATA': 'ATA', 'ATF': 'ATF', 'ATG': 'ATG', 'AUS': 'AUS',
-                'AUT': 'AUT', 'AZE': 'AZE', 'BAH': 'BAH', 'BAN': 'BAN', 'BDI': 'BDI', 'BEL': 'BEL', 'BEN': 'BEN',
-                'BER': 'BER', 'BES': 'BES', 'BFA': 'BFA', 'BHR': 'BHR', 'BHU': 'BHU', 'BIH': 'BIH', 'BLM': 'BLM',
-                'BLR': 'BLR', 'BLZ': 'BLZ', 'BOL': 'BOL', 'BOT': 'BOT', 'BRA': 'BRA', 'BRB': 'BRB', 'BRU': 'BRU',
-                'BVT': 'BVT', 'CAM': 'CAM', 'CAN': 'CAN', 'CAY': 'CAY', 'CCK': 'CCK', 'CEE': 'CEE', 'CGO': 'CGO',
-                'CHA': 'CHA', 'CHI': 'CHI', 'CHN': 'CHN', 'CIV': 'CIV', 'CMR': 'CMR', 'COD': 'COD', 'COK': 'COK',
-                'COL': 'COL', 'COM': 'COM', 'CPV': 'CPV', 'CRC': 'CRC', 'CRO': 'CRO', 'CTA': 'CTA', 'CUB': 'CUB',
-                'CUW': 'CUW', 'CXR': 'CXR', 'CYP': 'CYP', 'DJI': 'DJI', 'DMA': 'DMA', 'DOM': 'DOM', 'ECU': 'ECU',
-                'EGY': 'EGY', 'ENG': 'ENG', 'EQG': 'EQG', 'ERI': 'ERI', 'ESH': 'ESH', 'ESP': 'ESP', 'ETH': 'ETH',
-                'FIJ': 'FIJ', 'FLK': 'FLK', 'FRA': 'FRA', 'FRO': 'FRO', 'FSM': 'FSM', 'GAB': 'GAB', 'GAM': 'GAM',
-                'GBR': 'GBR', 'GEO': 'GEO', 'GER': 'GER', 'GGY': 'GGY', 'GHA': 'GHA', 'GIB': 'GIB', 'GLP': 'GLP',
-                'GNB': 'GNB', 'GRE': 'GRE', 'GRL': 'GRL', 'GRN': 'GRN', 'GUA': 'GUA', 'GUF': 'GUF', 'GUI': 'GUI',
-                'GUM': 'GUM', 'GUY': 'GUY', 'HAI': 'HAI', 'HKG': 'HKG', 'HMD': 'HMD', 'HON': 'HON', 'HUN': 'HUN',
-                'IDN': 'IDN', 'IMN': 'IMN', 'IND': 'IND', 'IOT': 'IOT', 'IRL': 'IRL', 'IRN': 'IRN', 'IRQ': 'IRQ',
-                'ISL': 'ISL', 'ISR': 'ISR', 'ITA': 'ITA', 'JAM': 'JAM', 'JEY': 'JEY', 'JOR': 'JOR', 'JPN': 'JPN',
-                'KAZ': 'KAZ', 'KEN': 'KEN', 'KGZ': 'KGZ', 'KIR': 'KIR', 'KNA': 'KNA', 'KOR': 'KOR', 'KSA': 'KSA',
-                'KUW': 'KUW', 'KVX': 'KVX', 'LAO': 'LAO', 'LBN': 'LBN', 'LBR': 'LBR', 'LBY': 'LBY', 'LCA': 'LCA',
-                'LES': 'LES', 'LIE': 'LIE', 'LKA': 'LKA', 'LUX': 'LUX', 'MAC': 'MAC', 'MAD': 'MAD', 'MAF': 'MAF',
-                'MAR': 'MAR', 'MAS': 'MAS', 'MDA': 'MDA', 'MDV': 'MDV', 'MEX': 'MEX', 'MHL': 'MHL', 'MKD': 'MKD',
-                'MLI': 'MLI', 'MLT': 'MLT', 'MNG': 'MNG', 'MNP': 'MNP', 'MON': 'MON', 'MOZ': 'MOZ', 'MRI': 'MRI',
-                'MSR': 'MSR', 'MTN': 'MTN', 'MTQ': 'MTQ', 'MWI': 'MWI', 'MYA': 'MYA', 'MYT': 'MYT', 'NAM': 'NAM',
-                'NCA': 'NCA', 'NCL': 'NCL', 'NEP': 'NEP', 'NFK': 'NFK', 'NIG': 'NIG', 'NIR': 'NIR', 'NIU': 'NIU',
-                'NLD': 'NLD', 'NOR': 'NOR', 'NRU': 'NRU', 'NZL': 'NZL', 'OMA': 'OMA', 'PAK': 'PAK', 'PAN': 'PAN',
-                'PAR': 'PAR', 'PCN': 'PCN', 'PER': 'PER', 'PHI': 'PHI', 'PLE': 'PLE', 'PLW': 'PLW', 'PNG': 'PNG',
-                'POL': 'POL', 'POR': 'POR', 'PRK': 'PRK', 'PUR': 'PUR', 'QAT': 'QAT', 'REU': 'REU', 'ROU': 'ROU',
-                'RSA': 'RSA', 'RUS': 'RUS', 'RWA': 'RWA', 'SAM': 'SAM', 'SCO': 'SCO', 'SDN': 'SDN', 'SEN': 'SEN',
-                'SEY': 'SEY', 'SGS': 'SGS', 'SHN': 'SHN', 'SIN': 'SIN', 'SJM': 'SJM', 'SLE': 'SLE', 'SLV': 'SLV',
-                'SMR': 'SMR', 'SOL': 'SOL', 'SOM': 'SOM', 'SPM': 'SPM', 'SRB': 'SRB', 'SSD': 'SSD', 'STP': 'STP',
-                'SUI': 'SUI', 'SUR': 'SUR', 'SWZ': 'SWZ', 'SXM': 'SXM', 'SYR': 'SYR', 'TAH': 'TAH', 'TAN': 'TAN',
-                'TCA': 'TCA', 'TGA': 'TGA', 'THA': 'THA', 'TJK': 'TJK', 'TKL': 'TKL', 'TKM': 'TKM', 'TLS': 'TLS',
-                'TOG': 'TOG', 'TRI': 'TRI', 'TUN': 'TUN', 'TUR': 'TUR', 'TUV': 'TUV', 'TWN': 'TWN', 'UAE': 'UAE',
-                'UGA': 'UGA', 'UKR': 'UKR', 'UMI': 'UMI', 'URU': 'URU', 'USA': 'USA', 'UZB': 'UZB', 'VAN': 'VAN',
-                'VAT': 'VAT', 'VEN': 'VEN', 'VGB': 'VGB', 'VIE': 'VIE', 'VIN': 'VIN', 'VIR': 'VIR', 'WAL': 'WAL',
-                'WLF': 'WLF', 'YEM': 'YEM', 'ZAM': 'ZAM', 'ZIM': 'ZIM', "EUR": "EUR"
-            }
-            for key, value in regions.items():
-                if f" {key} " in label:
-                    region = value
-
-        if region is None:
-            region = ""
-        return region
-
-    def get_distributor(self, distributor_in):
-        distributor_list = [
-            '01 DISTRIBUTION', '100 DESTINATIONS TRAVEL FILM', '101 FILMS', '1FILMS', '2 ENTERTAIN VIDEO', '20TH CENTURY FOX', '2L', '3D CONTENT HUB', '3D MEDIA', '3L FILM', '4DIGITAL', '4DVD', '4K ULTRA HD MOVIES', '4K UHD', '8-FILMS', '84 ENTERTAINMENT', '88 FILMS', '@ANIME', 'ANIME', 'A CONTRACORRIENTE', 'A CONTRACORRIENTE FILMS', 'A&E HOME VIDEO', 'A&E', 'A&M RECORDS', 'A+E NETWORKS', 'A+R', 'A-FILM', 'AAA', 'AB VIDÉO', 'AB VIDEO', 'ABC - (AUSTRALIAN BROADCASTING CORPORATION)', 'ABC', 'ABKCO', 'ABSOLUT MEDIEN', 'ABSOLUTE', 'ACCENT FILM ENTERTAINMENT', 'ACCENTUS', 'ACORN MEDIA', 'AD VITAM', 'ADA', 'ADITYA VIDEOS', 'ADSO FILMS', 'AFM RECORDS', 'AGFA', 'AIX RECORDS',
-            'ALAMODE FILM', 'ALBA RECORDS', 'ALBANY RECORDS', 'ALBATROS', 'ALCHEMY', 'ALIVE', 'ALL ANIME', 'ALL INTERACTIVE ENTERTAINMENT', 'ALLEGRO', 'ALLIANCE', 'ALPHA MUSIC', 'ALTERDYSTRYBUCJA', 'ALTERED INNOCENCE', 'ALTITUDE FILM DISTRIBUTION', 'ALUCARD RECORDS', 'AMAZING D.C.', 'AMAZING DC', 'AMMO CONTENT', 'AMUSE SOFT ENTERTAINMENT', 'ANCONNECT', 'ANEC', 'ANIMATSU', 'ANIME HOUSE', 'ANIME LTD', 'ANIME WORKS', 'ANIMEIGO', 'ANIPLEX', 'ANOLIS ENTERTAINMENT', 'ANOTHER WORLD ENTERTAINMENT', 'AP INTERNATIONAL', 'APPLE', 'ARA MEDIA', 'ARBELOS', 'ARC ENTERTAINMENT', 'ARP SÉLECTION', 'ARP SELECTION', 'ARROW', 'ART SERVICE', 'ART VISION', 'ARTE ÉDITIONS', 'ARTE EDITIONS', 'ARTE VIDÉO',
-            'ARTE VIDEO', 'ARTHAUS MUSIK', 'ARTIFICIAL EYE', 'ARTSPLOITATION FILMS', 'ARTUS FILMS', 'ASCOT ELITE HOME ENTERTAINMENT', 'ASIA VIDEO', 'ASMIK ACE', 'ASTRO RECORDS & FILMWORKS', 'ASYLUM', 'ATLANTIC FILM', 'ATLANTIC RECORDS', 'ATLAS FILM', 'AUDIO VISUAL ENTERTAINMENT', 'AURO-3D CREATIVE LABEL', 'AURUM', 'AV VISIONEN', 'AV-JET', 'AVALON', 'AVENTI', 'AVEX TRAX', 'AXIOM', 'AXIS RECORDS', 'AYNGARAN', 'BAC FILMS', 'BACH FILMS', 'BANDAI VISUAL', 'BARCLAY', 'BBC', 'BRITISH BROADCASTING CORPORATION', 'BBI FILMS', 'BBI', 'BCI HOME ENTERTAINMENT', 'BEGGARS BANQUET', 'BEL AIR CLASSIQUES', 'BELGA FILMS', 'BELVEDERE', 'BENELUX FILM DISTRIBUTORS', 'BENNETT-WATT MEDIA', 'BERLIN CLASSICS', 'BERLINER PHILHARMONIKER RECORDINGS', 'BEST ENTERTAINMENT', 'BEYOND HOME ENTERTAINMENT', 'BFI VIDEO', 'BFI', 'BRITISH FILM INSTITUTE', 'BFS ENTERTAINMENT', 'BFS', 'BHAVANI', 'BIBER RECORDS', 'BIG HOME VIDEO', 'BILDSTÖRUNG',
-            'BILDSTORUNG', 'BILL ZEBUB', 'BIRNENBLATT', 'BIT WEL', 'BLACK BOX', 'BLACK HILL PICTURES', 'BLACK HILL', 'BLACK HOLE RECORDINGS', 'BLACK HOLE', 'BLAQOUT', 'BLAUFIELD MUSIC', 'BLAUFIELD', 'BLOCKBUSTER ENTERTAINMENT', 'BLOCKBUSTER', 'BLU PHASE MEDIA', 'BLU-RAY ONLY', 'BLU-RAY', 'BLURAY ONLY', 'BLURAY', 'BLUE GENTIAN RECORDS', 'BLUE KINO', 'BLUE UNDERGROUND', 'BMG/ARISTA', 'BMG', 'BMGARISTA', 'BMG ARISTA', 'ARISTA', 'ARISTA/BMG', 'ARISTABMG', 'ARISTA BMG', 'BONTON FILM', 'BONTON', 'BOOMERANG PICTURES', 'BOOMERANG', 'BQHL ÉDITIONS', 'BQHL EDITIONS', 'BQHL', 'BREAKING GLASS', 'BRIDGESTONE', 'BRINK', 'BROAD GREEN PICTURES', 'BROAD GREEN', 'BUSCH MEDIA GROUP', 'BUSCH', 'C MAJOR', 'C.B.S.', 'CAICHANG', 'CALIFÓRNIA FILMES', 'CALIFORNIA FILMES', 'CALIFORNIA', 'CAMEO', 'CAMERA OBSCURA', 'CAMERATA', 'CAMP MOTION PICTURES', 'CAMP MOTION', 'CAPELIGHT PICTURES', 'CAPELIGHT', 'CAPITOL', 'CAPITOL RECORDS', 'CAPRICCI', 'CARGO RECORDS', 'CARLOTTA FILMS', 'CARLOTTA', 'CARLOTA', 'CARMEN FILM', 'CASCADE', 'CATCHPLAY', 'CAULDRON FILMS', 'CAULDRON', 'CBS TELEVISION STUDIOS', 'CBS', 'CCTV', 'CCV ENTERTAINMENT', 'CCV', 'CD BABY', 'CD LAND', 'CECCHI GORI', 'CENTURY MEDIA', 'CHUAN XUN SHI DAI MULTIMEDIA', 'CINE-ASIA', 'CINÉART', 'CINEART', 'CINEDIGM', 'CINEFIL IMAGICA', 'CINEMA EPOCH', 'CINEMA GUILD', 'CINEMA LIBRE STUDIOS', 'CINEMA MONDO', 'CINEMATIC VISION', 'CINEPLOIT RECORDS', 'CINESTRANGE EXTREME', 'CITEL VIDEO', 'CITEL', 'CJ ENTERTAINMENT', 'CJ', 'CLASSIC MEDIA', 'CLASSICFLIX', 'CLASSICLINE', 'CLAUDIO RECORDS', 'CLEAR VISION', 'CLEOPATRA', 'CLOSE UP', 'CMS MEDIA LIMITED', 'CMV LASERVISION', 'CN ENTERTAINMENT', 'CODE RED', 'COHEN MEDIA GROUP', 'COHEN', 'COIN DE MIRE CINÉMA', 'COIN DE MIRE CINEMA', 'COLOSSEO FILM', 'COLUMBIA', 'COLUMBIA PICTURES', 'COLUMBIA/TRI-STAR', 'TRI-STAR', 'COMMERCIAL MARKETING', 'CONCORD MUSIC GROUP', 'CONCORDE VIDEO', 'CONDOR', 'CONSTANTIN FILM', 'CONSTANTIN', 'CONSTANTINO FILMES', 'CONSTANTINO', 'CONSTRUCTIVE MEDIA SERVICE', 'CONSTRUCTIVE', 'CONTENT ZONE', 'CONTENTS GATE', 'COQUEIRO VERDE', 'CORNERSTONE MEDIA', 'CORNERSTONE', 'CP DIGITAL', 'CREST MOVIES', 'CRITERION', 'CRITERION COLLECTION', 'CC', 'CRYSTAL CLASSICS', 'CULT EPICS', 'CULT FILMS', 'CULT VIDEO', 'CURZON FILM WORLD', 'D FILMS', "D'AILLY COMPANY", 'DAILLY COMPANY', 'D AILLY COMPANY', "D'AILLY", 'DAILLY', 'D AILLY', 'DA CAPO', 'DA MUSIC', "DALL'ANGELO PICTURES", 'DALLANGELO PICTURES', "DALL'ANGELO", 'DALL ANGELO PICTURES', 'DALL ANGELO', 'DAREDO', 'DARK FORCE ENTERTAINMENT', 'DARK FORCE', 'DARK SIDE RELEASING', 'DARK SIDE', 'DAZZLER MEDIA', 'DAZZLER', 'DCM PICTURES', 'DCM', 'DEAPLANETA', 'DECCA', 'DEEPJOY', 'DEFIANT SCREEN ENTERTAINMENT', 'DEFIANT SCREEN', 'DEFIANT', 'DELOS', 'DELPHIAN RECORDS', 'DELPHIAN', 'DELTA MUSIC & ENTERTAINMENT', 'DELTA MUSIC AND ENTERTAINMENT', 'DELTA MUSIC ENTERTAINMENT', 'DELTA MUSIC', 'DELTAMAC CO. LTD.', 'DELTAMAC CO LTD', 'DELTAMAC CO', 'DELTAMAC', 'DEMAND MEDIA', 'DEMAND', 'DEP', 'DEUTSCHE GRAMMOPHON', 'DFW', 'DGM', 'DIAPHANA', 'DIGIDREAMS STUDIOS', 'DIGIDREAMS', 'DIGITAL ENVIRONMENTS', 'DIGITAL', 'DISCOTEK MEDIA', 'DISCOVERY CHANNEL', 'DISCOVERY', 'DISK KINO', 'DISNEY / BUENA VISTA', 'DISNEY', 'BUENA VISTA', 'DISNEY BUENA VISTA', 'DISTRIBUTION SELECT', 'DIVISA', 'DNC ENTERTAINMENT', 'DNC', 'DOGWOOF', 'DOLMEN HOME VIDEO', 'DOLMEN', 'DONAU FILM', 'DONAU', 'DORADO FILMS', 'DORADO', 'DRAFTHOUSE FILMS', 'DRAFTHOUSE', 'DRAGON FILM ENTERTAINMENT', 'DRAGON ENTERTAINMENT', 'DRAGON FILM', 'DRAGON', 'DREAMWORKS', 'DRIVE ON RECORDS', 'DRIVE ON', 'DRIVE-ON', 'DRIVEON', 'DS MEDIA', 'DTP ENTERTAINMENT AG', 'DTP ENTERTAINMENT', 'DTP AG', 'DTP', 'DTS ENTERTAINMENT', 'DTS', 'DUKE MARKETING', 'DUKE VIDEO DISTRIBUTION', 'DUKE', 'DUTCH FILMWORKS', 'DUTCH', 'DVD INTERNATIONAL', 'DVD', 'DYBEX', 'DYNAMIC', 'DYNIT', 'E1 ENTERTAINMENT', 'E1', 'EAGLE ENTERTAINMENT', 'EAGLE HOME ENTERTAINMENT PVT.LTD.', 'EAGLE HOME ENTERTAINMENT PVTLTD', 'EAGLE HOME ENTERTAINMENT PVT LTD', 'EAGLE HOME ENTERTAINMENT', 'EAGLE PICTURES', 'EAGLE ROCK ENTERTAINMENT', 'EAGLE ROCK', 'EAGLE VISION MEDIA', 'EAGLE VISION', 'EARMUSIC', 'EARTH ENTERTAINMENT', 'EARTH', 'ECHO BRIDGE ENTERTAINMENT', 'ECHO BRIDGE', 'EDEL GERMANY GMBH', 'EDEL GERMANY', 'EDEL RECORDS', 'EDITION TONFILM', 'EDITIONS MONTPARNASSE', 'EDKO FILMS LTD.', 'EDKO FILMS LTD', 'EDKO FILMS',
-            'EDKO', "EIN'S M&M CO", 'EINS M&M CO', "EIN'S M&M", 'EINS M&M', 'ELEA-MEDIA', 'ELEA MEDIA', 'ELEA', 'ELECTRIC PICTURE', 'ELECTRIC', 'ELEPHANT FILMS', 'ELEPHANT', 'ELEVATION', 'EMI', 'EMON', 'EMS', 'EMYLIA', 'ENE MEDIA', 'ENE', 'ENTERTAINMENT IN VIDEO', 'ENTERTAINMENT IN', 'ENTERTAINMENT ONE', 'ENTERTAINMENT ONE FILMS CANADA INC.', 'ENTERTAINMENT ONE FILMS CANADA INC', 'ENTERTAINMENT ONE FILMS CANADA', 'ENTERTAINMENT ONE CANADA INC', 'ENTERTAINMENT ONE CANADA', 'ENTERTAINMENTONE', 'EONE', 'EOS', 'EPIC PICTURES', 'EPIC', 'EPIC RECORDS', 'ERATO', 'EROS', 'ESC EDITIONS', 'ESCAPI MEDIA BV', 'ESOTERIC RECORDINGS', 'ESPN FILMS', 'EUREKA ENTERTAINMENT', 'EUREKA', 'EURO PICTURES', 'EURO VIDEO', 'EUROARTS', 'EUROPA FILMES', 'EUROPA', 'EUROPACORP', 'EUROZOOM', 'EXCEL', 'EXPLOSIVE MEDIA', 'EXPLOSIVE', 'EXTRALUCID FILMS', 'EXTRALUCID', 'EYE SEE MOVIES', 'EYE SEE', 'EYK MEDIA', 'EYK', 'FABULOUS FILMS', 'FABULOUS', 'FACTORIS FILMS', 'FACTORIS', 'FARAO RECORDS', 'FARBFILM HOME ENTERTAINMENT', 'FARBFILM ENTERTAINMENT', 'FARBFILM HOME', 'FARBFILM', 'FEELGOOD ENTERTAINMENT', 'FEELGOOD', 'FERNSEHJUWELEN', 'FILM CHEST', 'FILM MEDIA', 'FILM MOVEMENT', 'FILM4', 'FILMART', 'FILMAURO', 'FILMAX', 'FILMCONFECT HOME ENTERTAINMENT', 'FILMCONFECT ENTERTAINMENT', 'FILMCONFECT HOME', 'FILMCONFECT', 'FILMEDIA', 'FILMJUWELEN', 'FILMOTEKA NARODAWA', 'FILMRISE', 'FINAL CUT ENTERTAINMENT', 'FINAL CUT', 'FIREHOUSE 12 RECORDS', 'FIREHOUSE 12', 'FIRST INTERNATIONAL PRODUCTION', 'FIRST INTERNATIONAL', 'FIRST LOOK STUDIOS', 'FIRST LOOK', 'FLAGMAN TRADE', 'FLASHSTAR FILMES', 'FLASHSTAR', 'FLICKER ALLEY', 'FNC ADD CULTURE', 'FOCUS FILMES', 'FOCUS', 'FOKUS MEDIA', 'FOKUSA', 'FOX PATHE EUROPA', 'FOX PATHE', 'FOX EUROPA', 'FOX/MGM', 'FOX MGM', 'MGM', 'MGM/FOX', 'FOX', 'FPE', 'FRANCE TÉLÉVISIONS DISTRIBUTION', 'FRANCE TELEVISIONS DISTRIBUTION', 'FRANCE TELEVISIONS', 'FRANCE', 'FREE DOLPHIN ENTERTAINMENT', 'FREE DOLPHIN', 'FREESTYLE DIGITAL MEDIA', 'FREESTYLE DIGITAL', 'FREESTYLE', 'FREMANTLE HOME ENTERTAINMENT', 'FREMANTLE ENTERTAINMENT', 'FREMANTLE HOME', 'FREMANTL', 'FRENETIC FILMS', 'FRENETIC', 'FRONTIER WORKS', 'FRONTIER', 'FRONTIERS MUSIC', 'FRONTIERS RECORDS', 'FS FILM OY', 'FS FILM', 'FULL MOON FEATURES', 'FULL MOON', 'FUN CITY EDITIONS', 'FUN CITY',
-            'FUNIMATION ENTERTAINMENT', 'FUNIMATION', 'FUSION', 'FUTUREFILM', 'G2 PICTURES', 'G2', 'GAGA COMMUNICATIONS', 'GAGA', 'GAIAM', 'GALAPAGOS', 'GAMMA HOME ENTERTAINMENT', 'GAMMA ENTERTAINMENT', 'GAMMA HOME', 'GAMMA', 'GARAGEHOUSE PICTURES', 'GARAGEHOUSE', 'GARAGEPLAY (車庫娛樂)', '車庫娛樂', 'GARAGEPLAY (Che Ku Yu Le )', 'GARAGEPLAY', 'Che Ku Yu Le', 'GAUMONT', 'GEFFEN', 'GENEON ENTERTAINMENT', 'GENEON', 'GENEON UNIVERSAL ENTERTAINMENT', 'GENERAL VIDEO RECORDING', 'GLASS DOLL FILMS', 'GLASS DOLL', 'GLOBE MUSIC MEDIA', 'GLOBE MUSIC', 'GLOBE MEDIA', 'GLOBE', 'GO ENTERTAIN', 'GO', 'GOLDEN HARVEST', 'GOOD!MOVIES', 'GOOD! MOVIES', 'GOOD MOVIES', 'GRAPEVINE VIDEO', 'GRAPEVINE', 'GRASSHOPPER FILM', 'GRASSHOPPER FILMS', 'GRASSHOPPER', 'GRAVITAS VENTURES', 'GRAVITAS', 'GREAT MOVIES', 'GREAT', 'GREEN APPLE ENTERTAINMENT', 'GREEN ENTERTAINMENT', 'GREEN APPLE', 'GREEN', 'GREENNARAE MEDIA', 'GREENNARAE', 'GRINDHOUSE RELEASING', 'GRINDHOUSE', 'GRIND HOUSE', 'GRYPHON ENTERTAINMENT', 'GRYPHON', 'GUNPOWDER & SKY', 'GUNPOWDER AND SKY', 'GUNPOWDER SKY', 'GUNPOWDER + SKY', 'GUNPOWDER', 'HANABEE ENTERTAINMENT', 'HANABEE', 'HANNOVER HOUSE', 'HANNOVER', 'HANSESOUND', 'HANSE SOUND', 'HANSE', 'HAPPINET', 'HARMONIA MUNDI', 'HARMONIA', 'HBO', 'HDC', 'HEC', 'HELL & BACK RECORDINGS', 'HELL AND BACK RECORDINGS', 'HELL & BACK', 'HELL AND BACK', "HEN'S TOOTH VIDEO", 'HENS TOOTH VIDEO', "HEN'S TOOTH", 'HENS TOOTH', 'HIGH FLIERS', 'HIGHLIGHT', 'HILLSONG', 'HISTORY CHANNEL', 'HISTORY', 'HK VIDÉO', 'HK VIDEO', 'HK', 'HMH HAMBURGER MEDIEN HAUS', 'HAMBURGER MEDIEN HAUS', 'HMH HAMBURGER MEDIEN', 'HMH HAMBURGER', 'HMH', 'HOLLYWOOD CLASSIC ENTERTAINMENT', 'HOLLYWOOD CLASSIC', 'HOLLYWOOD PICTURES', 'HOLLYWOOD', 'HOPSCOTCH ENTERTAINMENT', 'HOPSCOTCH', 'HPM', 'HÄNNSLER CLASSIC', 'HANNSLER CLASSIC', 'HANNSLER', 'I-CATCHER', 'I CATCHER', 'ICATCHER', 'I-ON NEW MEDIA', 'I ON NEW MEDIA', 'ION NEW MEDIA', 'ION MEDIA', 'I-ON', 'ION', 'IAN PRODUCTIONS', 'IAN', 'ICESTORM', 'ICON FILM DISTRIBUTION', 'ICON DISTRIBUTION', 'ICON FILM', 'ICON', 'IDEALE AUDIENCE', 'IDEALE', 'IFC FILMS', 'IFC', 'IFILM', 'ILLUSIONS UNLTD.', 'ILLUSIONS UNLTD', 'ILLUSIONS', 'IMAGE ENTERTAINMENT', 'IMAGE', 'IMAGEM FILMES', 'IMAGEM', 'IMOVISION', 'IMPERIAL CINEPIX', 'IMPRINT', 'IMPULS HOME ENTERTAINMENT', 'IMPULS ENTERTAINMENT', 'IMPULS HOME', 'IMPULS', 'IN-AKUSTIK', 'IN AKUSTIK', 'INAKUSTIK', 'INCEPTION MEDIA GROUP', 'INCEPTION MEDIA', 'INCEPTION GROUP', 'INCEPTION', 'INDEPENDENT', 'INDICAN', 'INDIE RIGHTS', 'INDIE', 'INDIGO', 'INFO', 'INJOINGAN', 'INKED PICTURES', 'INKED', 'INSIDE OUT MUSIC', 'INSIDE MUSIC', 'INSIDE OUT', 'INSIDE', 'INTERCOM', 'INTERCONTINENTAL VIDEO', 'INTERCONTINENTAL', 'INTERGROOVE', 'INTERSCOPE', 'INVINCIBLE PICTURES', 'INVINCIBLE', 'ISLAND/MERCURY', 'ISLAND MERCURY', 'ISLANDMERCURY', 'ISLAND & MERCURY', 'ISLAND AND MERCURY', 'ISLAND', 'ITN', 'ITV DVD', 'ITV', 'IVC', 'IVE ENTERTAINMENT', 'IVE', 'J&R ADVENTURES', 'J&R', 'JR', 'JAKOB', 'JONU MEDIA', 'JONU', 'JRB PRODUCTIONS', 'JRB', 'JUST BRIDGE ENTERTAINMENT', 'JUST BRIDGE', 'JUST ENTERTAINMENT', 'JUST', 'KABOOM ENTERTAINMENT', 'KABOOM', 'KADOKAWA ENTERTAINMENT', 'KADOKAWA', 'KAIROS', 'KALEIDOSCOPE ENTERTAINMENT', 'KALEIDOSCOPE', 'KAM & RONSON ENTERPRISES', 'KAM & RONSON', 'KAM&RONSON ENTERPRISES', 'KAM&RONSON', 'KAM AND RONSON ENTERPRISES', 'KAM AND RONSON', 'KANA HOME VIDEO', 'KARMA FILMS', 'KARMA', 'KATZENBERGER', 'KAZE',
-            'KBS MEDIA', 'KBS', 'KD MEDIA', 'KD', 'KING MEDIA', 'KING', 'KING RECORDS', 'KINO LORBER', 'KINO', 'KINO SWIAT', 'KINOKUNIYA', 'KINOWELT HOME ENTERTAINMENT/DVD', 'KINOWELT HOME ENTERTAINMENT', 'KINOWELT ENTERTAINMENT', 'KINOWELT HOME DVD', 'KINOWELT ENTERTAINMENT/DVD', 'KINOWELT DVD', 'KINOWELT', 'KIT PARKER FILMS', 'KIT PARKER', 'KITTY MEDIA', 'KNM HOME ENTERTAINMENT', 'KNM ENTERTAINMENT', 'KNM HOME', 'KNM', 'KOBA FILMS', 'KOBA', 'KOCH ENTERTAINMENT', 'KOCH MEDIA', 'KOCH', 'KRAKEN RELEASING', 'KRAKEN', 'KSCOPE', 'KSM', 'KULTUR', "L'ATELIER D'IMAGES", "LATELIER D'IMAGES", "L'ATELIER DIMAGES", 'LATELIER DIMAGES', "L ATELIER D'IMAGES", "L'ATELIER D IMAGES",
-            'L ATELIER D IMAGES', "L'ATELIER", 'L ATELIER', 'LATELIER', 'LA AVENTURA AUDIOVISUAL', 'LA AVENTURA', 'LACE GROUP', 'LACE', 'LASER PARADISE', 'LAYONS', 'LCJ EDITIONS', 'LCJ', 'LE CHAT QUI FUME', 'LE PACTE', 'LEDICK FILMHANDEL', 'LEGEND', 'LEOMARK STUDIOS', 'LEOMARK', 'LEONINE FILMS', 'LEONINE', 'LICHTUNG MEDIA LTD', 'LICHTUNG LTD', 'LICHTUNG MEDIA LTD.', 'LICHTUNG LTD.', 'LICHTUNG MEDIA', 'LICHTUNG', 'LIGHTHOUSE HOME ENTERTAINMENT', 'LIGHTHOUSE ENTERTAINMENT', 'LIGHTHOUSE HOME', 'LIGHTHOUSE', 'LIGHTYEAR', 'LIONSGATE FILMS', 'LIONSGATE', 'LIZARD CINEMA TRADE', 'LLAMENTOL', 'LOBSTER FILMS', 'LOBSTER', 'LOGON', 'LORBER FILMS', 'LORBER', 'LOS BANDITOS FILMS', 'LOS BANDITOS', 'LOUD & PROUD RECORDS', 'LOUD AND PROUD RECORDS', 'LOUD & PROUD', 'LOUD AND PROUD', 'LSO LIVE', 'LUCASFILM', 'LUCKY RED', 'LUMIÈRE HOME ENTERTAINMENT', 'LUMIERE HOME ENTERTAINMENT', 'LUMIERE ENTERTAINMENT', 'LUMIERE HOME', 'LUMIERE', 'M6 VIDEO', 'M6', 'MAD DIMENSION', 'MADMAN ENTERTAINMENT', 'MADMAN', 'MAGIC BOX', 'MAGIC PLAY', 'MAGNA HOME ENTERTAINMENT', 'MAGNA ENTERTAINMENT', 'MAGNA HOME', 'MAGNA', 'MAGNOLIA PICTURES', 'MAGNOLIA', 'MAIDEN JAPAN', 'MAIDEN', 'MAJENG MEDIA', 'MAJENG', 'MAJESTIC HOME ENTERTAINMENT', 'MAJESTIC ENTERTAINMENT', 'MAJESTIC HOME', 'MAJESTIC', 'MANGA HOME ENTERTAINMENT', 'MANGA ENTERTAINMENT', 'MANGA HOME', 'MANGA', 'MANTA LAB', 'MAPLE STUDIOS', 'MAPLE', 'MARCO POLO PRODUCTION', 'MARCO POLO', 'MARIINSKY', 'MARVEL STUDIOS', 'MARVEL', 'MASCOT RECORDS', 'MASCOT', 'MASSACRE VIDEO', 'MASSACRE', 'MATCHBOX', 'MATRIX D', 'MAXAM', 'MAYA HOME ENTERTAINMENT', 'MAYA ENTERTAINMENT', 'MAYA HOME', 'MAYAT', 'MDG', 'MEDIA BLASTERS', 'MEDIA FACTORY', 'MEDIA TARGET DISTRIBUTION', 'MEDIA TARGET', 'MEDIAINVISION', 'MEDIATOON', 'MEDIATRES ESTUDIO', 'MEDIATRES STUDIO', 'MEDIATRES', 'MEDICI ARTS', 'MEDICI CLASSICS', 'MEDIUMRARE ENTERTAINMENT', 'MEDIUMRARE', 'MEDUSA', 'MEGASTAR', 'MEI AH', 'MELI MÉDIAS', 'MELI MEDIAS', 'MEMENTO FILMS', 'MEMENTO', 'MENEMSHA FILMS', 'MENEMSHA', 'MERCURY', 'MERCURY STUDIOS', 'MERGE SOFT PRODUCTIONS', 'MERGE PRODUCTIONS', 'MERGE SOFT', 'MERGE', 'METAL BLADE RECORDS', 'METAL BLADE', 'METEOR', 'METRO-GOLDWYN-MAYER', 'METRO GOLDWYN MAYER', 'METROGOLDWYNMAYER', 'METRODOME VIDEO', 'METRODOME', 'METROPOLITAN', 'MFA+', 'MFA', 'MIG FILMGROUP', 'MIG', 'MILESTONE', 'MILL CREEK ENTERTAINMENT', 'MILL CREEK', 'MILLENNIUM MEDIA', 'MILLENNIUM', 'MIRAGE ENTERTAINMENT', 'MIRAGE', 'MIRAMAX', 'MISTERIYA ZVUKA', 'MK2', 'MODE RECORDS', 'MODE', 'MOMENTUM PICTURES', 'MONDO HOME ENTERTAINMENT', 'MONDO ENTERTAINMENT', 'MONDO HOME', 'MONDO MACABRO', 'MONGREL MEDIA', 'MONOLIT', 'MONOLITH VIDEO', 'MONOLITH', 'MONSTER PICTURES', 'MONSTER', 'MONTEREY VIDEO', 'MONTEREY', 'MONUMENT RELEASING', 'MONUMENT', 'MORNINGSTAR', 'MORNING STAR', 'MOSERBAER', 'MOVIEMAX', 'MOVINSIDE', 'MPI MEDIA GROUP', 'MPI MEDIA', 'MPI', 'MR. BONGO FILMS', 'MR BONGO FILMS', 'MR BONGO', 'MRG (MERIDIAN)', 'MRG MERIDIAN', 'MRG', 'MERIDIAN', 'MUBI', 'MUG SHOT PRODUCTIONS', 'MUG SHOT', 'MULTIMUSIC', 'MULTI-MUSIC', 'MULTI MUSIC', 'MUSE', 'MUSIC BOX FILMS', 'MUSIC BOX', 'MUSICBOX', 'MUSIC BROKERS', 'MUSIC THEORIES', 'MUSIC VIDEO DISTRIBUTORS', 'MUSIC VIDEO', 'MUSTANG ENTERTAINMENT', 'MUSTANG', 'MVD VISUAL', 'MVD', 'MVD/VSC', 'MVL', 'MVM ENTERTAINMENT', 'MVM', 'MYNDFORM', 'MYSTIC NIGHT PICTURES', 'MYSTIC NIGHT', 'NAMELESS MEDIA', 'NAMELESS', 'NAPALM RECORDS', 'NAPALM', 'NATIONAL ENTERTAINMENT MEDIA', 'NATIONAL ENTERTAINMENT', 'NATIONAL MEDIA', 'NATIONAL FILM ARCHIVE', 'NATIONAL ARCHIVE', 'NATIONAL FILM', 'NATIONAL GEOGRAPHIC', 'NAT GEO TV', 'NAT GEO', 'NGO', 'NAXOS', 'NBCUNIVERSAL ENTERTAINMENT JAPAN', 'NBC UNIVERSAL ENTERTAINMENT JAPAN', 'NBCUNIVERSAL JAPAN', 'NBC UNIVERSAL JAPAN', 'NBC JAPAN', 'NBO ENTERTAINMENT', 'NBO', 'NEOS', 'NETFLIX', 'NETWORK', 'NEW BLOOD', 'NEW DISC', 'NEW KSM', 'NEW LINE CINEMA', 'NEW LINE', 'NEW MOVIE TRADING CO. LTD', 'NEW MOVIE TRADING CO LTD', 'NEW MOVIE TRADING CO', 'NEW MOVIE TRADING', 'NEW WAVE FILMS', 'NEW WAVE', 'NFI', 'NHK', 'NIPPONART', 'NIS AMERICA', 'NJUTAFILMS', 'NOBLE ENTERTAINMENT', 'NOBLE', 'NORDISK FILM', 'NORDISK', 'NORSK FILM', 'NORSK', 'NORTH AMERICAN MOTION PICTURES', 'NOS AUDIOVISUAIS', 'NOTORIOUS PICTURES', 'NOTORIOUS', 'NOVA MEDIA', 'NOVA', 'NOVA SALES AND DISTRIBUTION', 'NOVA SALES & DISTRIBUTION', 'NSM', 'NSM RECORDS', 'NUCLEAR BLAST', 'NUCLEUS FILMS', 'NUCLEUS', 'OBERLIN MUSIC', 'OBERLIN', 'OBRAS-PRIMAS DO CINEMA', 'OBRAS PRIMAS DO CINEMA', 'OBRASPRIMAS DO CINEMA', 'OBRAS-PRIMAS CINEMA', 'OBRAS PRIMAS CINEMA', 'OBRASPRIMAS CINEMA', 'OBRAS-PRIMAS', 'OBRAS PRIMAS', 'OBRASPRIMAS', 'ODEON', 'OFDB FILMWORKS', 'OFDB', 'OLIVE FILMS', 'OLIVE', 'ONDINE', 'ONSCREEN FILMS', 'ONSCREEN', 'OPENING DISTRIBUTION', 'OPERA AUSTRALIA', 'OPTIMUM HOME ENTERTAINMENT', 'OPTIMUM ENTERTAINMENT', 'OPTIMUM HOME', 'OPTIMUM', 'OPUS ARTE', 'ORANGE STUDIO', 'ORANGE', 'ORLANDO EASTWOOD FILMS', 'ORLANDO FILMS', 'ORLANDO EASTWOOD', 'ORLANDO', 'ORUSTAK PICTURES', 'ORUSTAK', 'OSCILLOSCOPE PICTURES', 'OSCILLOSCOPE', 'OUTPLAY', 'PALISADES TARTAN', 'PAN VISION', 'PANVISION', 'PANAMINT CINEMA', 'PANAMINT', 'PANDASTORM ENTERTAINMENT', 'PANDA STORM ENTERTAINMENT', 'PANDASTORM', 'PANDA STORM', 'PANDORA FILM', 'PANDORA', 'PANEGYRIC', 'PANORAMA', 'PARADE DECK FILMS', 'PARADE DECK', 'PARADISE', 'PARADISO FILMS', 'PARADOX', 'PARAMOUNT PICTURES', 'PARAMOUNT', 'PARIS FILMES', 'PARIS FILMS', 'PARIS', 'PARK CIRCUS', 'PARLOPHONE', 'PASSION RIVER', 'PATHE DISTRIBUTION', 'PATHE', 'PBS', 'PEACE ARCH TRINITY', 'PECCADILLO PICTURES', 'PEPPERMINT', 'PHASE 4 FILMS', 'PHASE 4', 'PHILHARMONIA BAROQUE', 'PICTURE HOUSE ENTERTAINMENT', 'PICTURE ENTERTAINMENT', 'PICTURE HOUSE', 'PICTURE', 'PIDAX',
-            'PINK FLOYD RECORDS', 'PINK FLOYD', 'PINNACLE FILMS', 'PINNACLE', 'PLAIN', 'PLATFORM ENTERTAINMENT LIMITED', 'PLATFORM ENTERTAINMENT LTD', 'PLATFORM ENTERTAINMENT LTD.', 'PLATFORM ENTERTAINMENT', 'PLATFORM', 'PLAYARTE', 'PLG UK CLASSICS', 'PLG UK', 'PLG', 'POLYBAND & TOPPIC VIDEO/WVG', 'POLYBAND AND TOPPIC VIDEO/WVG', 'POLYBAND & TOPPIC VIDEO WVG', 'POLYBAND & TOPPIC VIDEO AND WVG', 'POLYBAND & TOPPIC VIDEO & WVG', 'POLYBAND AND TOPPIC VIDEO WVG', 'POLYBAND AND TOPPIC VIDEO AND WVG', 'POLYBAND AND TOPPIC VIDEO & WVG', 'POLYBAND & TOPPIC VIDEO', 'POLYBAND AND TOPPIC VIDEO', 'POLYBAND & TOPPIC', 'POLYBAND AND TOPPIC', 'POLYBAND', 'WVG', 'POLYDOR', 'PONY', 'PONY CANYON', 'POTEMKINE', 'POWERHOUSE FILMS', 'POWERHOUSE', 'POWERSTATIOM', 'PRIDE & JOY', 'PRIDE AND JOY', 'PRINZ MEDIA', 'PRINZ', 'PRIS AUDIOVISUAIS', 'PRO VIDEO', 'PRO-VIDEO', 'PRO-MOTION', 'PRO MOTION', 'PROD. JRB', 'PROD JRB', 'PRODISC', 'PROKINO', 'PROVOGUE RECORDS', 'PROVOGUE', 'PROWARE', 'PULP VIDEO', 'PULP', 'PULSE VIDEO', 'PULSE', 'PURE AUDIO RECORDINGS', 'PURE AUDIO', 'PURE FLIX ENTERTAINMENT', 'PURE FLIX', 'PURE ENTERTAINMENT', 'PYRAMIDE VIDEO', 'PYRAMIDE', 'QUALITY FILMS', 'QUALITY', 'QUARTO VALLEY RECORDS', 'QUARTO VALLEY', 'QUESTAR', 'R SQUARED FILMS', 'R SQUARED', 'RAPID EYE MOVIES', 'RAPID EYE', 'RARO VIDEO', 'RARO', 'RAROVIDEO U.S.', 'RAROVIDEO US', 'RARO VIDEO US', 'RARO VIDEO U.S.', 'RARO U.S.', 'RARO US', 'RAVEN BANNER RELEASING', 'RAVEN BANNER', 'RAVEN', 'RAZOR DIGITAL ENTERTAINMENT', 'RAZOR DIGITAL', 'RCA', 'RCO LIVE', 'RCO', 'RCV', 'REAL GONE MUSIC', 'REAL GONE', 'REANIMEDIA', 'REANI MEDIA', 'REDEMPTION', 'REEL', 'RELIANCE HOME VIDEO & GAMES', 'RELIANCE HOME VIDEO AND GAMES', 'RELIANCE HOME VIDEO', 'RELIANCE VIDEO', 'RELIANCE HOME', 'RELIANCE', 'REM CULTURE', 'REMAIN IN LIGHT', 'REPRISE', 'RESEN', 'RETROMEDIA', 'REVELATION FILMS LTD.', 'REVELATION FILMS LTD', 'REVELATION FILMS', 'REVELATION LTD.', 'REVELATION LTD', 'REVELATION', 'REVOLVER ENTERTAINMENT', 'REVOLVER', 'RHINO MUSIC', 'RHINO', 'RHV', 'RIGHT STUF', 'RIMINI EDITIONS', 'RISING SUN MEDIA', 'RLJ ENTERTAINMENT', 'RLJ', 'ROADRUNNER RECORDS', 'ROADSHOW ENTERTAINMENT', 'ROADSHOW', 'RONE', 'RONIN FLIX', 'ROTANA HOME ENTERTAINMENT', 'ROTANA ENTERTAINMENT', 'ROTANA HOME', 'ROTANA', 'ROUGH TRADE',
-            'ROUNDER', 'SAFFRON HILL FILMS', 'SAFFRON HILL', 'SAFFRON', 'SAMUEL GOLDWYN FILMS', 'SAMUEL GOLDWYN', 'SAN FRANCISCO SYMPHONY', 'SANDREW METRONOME', 'SAPHRANE', 'SAVOR', 'SCANBOX ENTERTAINMENT', 'SCANBOX', 'SCENIC LABS', 'SCHRÖDERMEDIA', 'SCHRODERMEDIA', 'SCHRODER MEDIA', 'SCORPION RELEASING', 'SCORPION', 'SCREAM TEAM RELEASING', 'SCREAM TEAM', 'SCREEN MEDIA', 'SCREEN', 'SCREENBOUND PICTURES', 'SCREENBOUND', 'SCREENWAVE MEDIA', 'SCREENWAVE', 'SECOND RUN', 'SECOND SIGHT', 'SEEDSMAN GROUP', 'SELECT VIDEO', 'SELECTA VISION', 'SENATOR', 'SENTAI FILMWORKS', 'SENTAI', 'SEVEN7', 'SEVERIN FILMS', 'SEVERIN', 'SEVILLE', 'SEYONS ENTERTAINMENT', 'SEYONS', 'SF STUDIOS', 'SGL ENTERTAINMENT', 'SGL', 'SHAMELESS', 'SHAMROCK MEDIA', 'SHAMROCK', 'SHANGHAI EPIC MUSIC ENTERTAINMENT', 'SHANGHAI EPIC ENTERTAINMENT', 'SHANGHAI EPIC MUSIC', 'SHANGHAI MUSIC ENTERTAINMENT', 'SHANGHAI ENTERTAINMENT', 'SHANGHAI MUSIC', 'SHANGHAI', 'SHEMAROO', 'SHOCHIKU', 'SHOCK', 'SHOGAKU KAN', 'SHOUT FACTORY', 'SHOUT! FACTORY', 'SHOUT', 'SHOUT!', 'SHOWBOX', 'SHOWTIME ENTERTAINMENT', 'SHOWTIME', 'SHRIEK SHOW', 'SHUDDER', 'SIDONIS', 'SIDONIS CALYSTA', 'SIGNAL ONE ENTERTAINMENT', 'SIGNAL ONE', 'SIGNATURE ENTERTAINMENT', 'SIGNATURE', 'SILVER VISION', 'SINISTER FILM', 'SINISTER', 'SIREN VISUAL ENTERTAINMENT', 'SIREN VISUAL', 'SIREN ENTERTAINMENT', 'SIREN', 'SKANI', 'SKY DIGI',
-            'SLASHER // VIDEO', 'SLASHER / VIDEO', 'SLASHER VIDEO', 'SLASHER', 'SLOVAK FILM INSTITUTE', 'SLOVAK FILM', 'SFI', 'SM LIFE DESIGN GROUP', 'SMOOTH PICTURES', 'SMOOTH', 'SNAPPER MUSIC', 'SNAPPER', 'SODA PICTURES', 'SODA', 'SONO LUMINUS', 'SONY MUSIC', 'SONY PICTURES', 'SONY', 'SONY PICTURES CLASSICS', 'SONY CLASSICS', 'SOUL MEDIA', 'SOUL', 'SOULFOOD MUSIC DISTRIBUTION', 'SOULFOOD DISTRIBUTION', 'SOULFOOD MUSIC', 'SOULFOOD', 'SOYUZ', 'SPECTRUM', 'SPENTZOS FILM', 'SPENTZOS', 'SPIRIT ENTERTAINMENT', 'SPIRIT', 'SPIRIT MEDIA GMBH', 'SPIRIT MEDIA', 'SPLENDID ENTERTAINMENT', 'SPLENDID FILM', 'SPO', 'SQUARE ENIX', 'SRI BALAJI VIDEO', 'SRI BALAJI', 'SRI', 'SRI VIDEO', 'SRS CINEMA', 'SRS', 'SSO RECORDINGS', 'SSO', 'ST2 MUSIC', 'ST2', 'STAR MEDIA ENTERTAINMENT', 'STAR ENTERTAINMENT', 'STAR MEDIA', 'STAR', 'STARLIGHT', 'STARZ / ANCHOR BAY', 'STARZ ANCHOR BAY', 'STARZ', 'ANCHOR BAY', 'STER KINEKOR', 'STERLING ENTERTAINMENT', 'STERLING', 'STINGRAY', 'STOCKFISCH RECORDS', 'STOCKFISCH', 'STRAND RELEASING', 'STRAND', 'STUDIO 4K', 'STUDIO CANAL', 'STUDIO GHIBLI', 'GHIBLI', 'STUDIO HAMBURG ENTERPRISES', 'HAMBURG ENTERPRISES', 'STUDIO HAMBURG', 'HAMBURG', 'STUDIO S', 'SUBKULTUR ENTERTAINMENT', 'SUBKULTUR', 'SUEVIA FILMS', 'SUEVIA', 'SUMMIT ENTERTAINMENT', 'SUMMIT', 'SUNFILM ENTERTAINMENT', 'SUNFILM', 'SURROUND RECORDS', 'SURROUND', 'SVENSK FILMINDUSTRI', 'SVENSK', 'SWEN FILMES', 'SWEN FILMS', 'SWEN', 'SYNAPSE FILMS', 'SYNAPSE', 'SYNDICADO', 'SYNERGETIC', 'T- SERIES', 'T-SERIES', 'T SERIES', 'TSERIES', 'T.V.P.', 'TVP', 'TACET RECORDS', 'TACET', 'TAI SENG', 'TAI SHENG', 'TAKEONE', 'TAKESHOBO', 'TAMASA DIFFUSION', 'TC ENTERTAINMENT', 'TC', 'TDK', 'TEAM MARKETING', 'TEATRO REAL', 'TEMA DISTRIBUCIONES', 'TEMPE DIGITAL', 'TF1 VIDÉO', 'TF1 VIDEO', 'TF1', 'THE BLU', 'BLU', 'THE ECSTASY OF FILMS', 'THE FILM DETECTIVE', 'FILM DETECTIVE', 'THE JOKERS', 'JOKERS', 'THE ON', 'ON', 'THIMFILM', 'THIM FILM', 'THIM', 'THIRD WINDOW FILMS', 'THIRD WINDOW', '3RD WINDOW FILMS', '3RD WINDOW', 'THUNDERBEAN ANIMATION', 'THUNDERBEAN', 'THUNDERBIRD RELEASING', 'THUNDERBIRD', 'TIBERIUS FILM', 'TIME LIFE', 'TIMELESS MEDIA GROUP', 'TIMELESS MEDIA', 'TIMELESS GROUP', 'TIMELESS', 'TLA RELEASING', 'TLA', 'TOBIS FILM', 'TOBIS', 'TOEI', 'TOHO', 'TOKYO SHOCK', 'TOKYO', 'TONPOOL MEDIEN GMBH', 'TONPOOL MEDIEN', 'TOPICS ENTERTAINMENT', 'TOPICS', 'TOUCHSTONE PICTURES', 'TOUCHSTONE', 'TRANSMISSION FILMS', 'TRANSMISSION', 'TRAVEL VIDEO STORE', 'TRIART', 'TRIGON FILM', 'TRIGON', 'TRINITY HOME ENTERTAINMENT', 'TRINITY ENTERTAINMENT', 'TRINITY HOME', 'TRINITY', 'TRIPICTURES', 'TRI-PICTURES', 'TRI PICTURES', 'TROMA', 'TURBINE MEDIEN', 'TURTLE RECORDS', 'TURTLE', 'TVA FILMS', 'TVA', 'TWILIGHT TIME', 'TWILIGHT', 'TT', 'TWIN CO., LTD.', 'TWIN CO, LTD.', 'TWIN CO., LTD', 'TWIN CO, LTD', 'TWIN CO LTD', 'TWIN LTD', 'TWIN CO.', 'TWIN CO', 'TWIN', 'UCA', 'UDR', 'UEK', 'UFA/DVD', 'UFA DVD', 'UFADVD', 'UGC PH', 'ULTIMATE3DHEAVEN', 'ULTRA', 'UMBRELLA ENTERTAINMENT', 'UMBRELLA', 'UMC', "UNCORK'D ENTERTAINMENT", 'UNCORKD ENTERTAINMENT', 'UNCORK D ENTERTAINMENT', "UNCORK'D", 'UNCORK D', 'UNCORKD', 'UNEARTHED FILMS', 'UNEARTHED', 'UNI DISC', 'UNIMUNDOS', 'UNITEL', 'UNIVERSAL MUSIC', 'UNIVERSAL SONY PICTURES HOME ENTERTAINMENT', 'UNIVERSAL SONY PICTURES ENTERTAINMENT', 'UNIVERSAL SONY PICTURES HOME', 'UNIVERSAL SONY PICTURES', 'UNIVERSAL HOME ENTERTAINMENT', 'UNIVERSAL ENTERTAINMENT',
-            'UNIVERSAL HOME', 'UNIVERSAL STUDIOS', 'UNIVERSAL', 'UNIVERSE LASER & VIDEO CO.', 'UNIVERSE LASER AND VIDEO CO.', 'UNIVERSE LASER & VIDEO CO', 'UNIVERSE LASER AND VIDEO CO', 'UNIVERSE LASER CO.', 'UNIVERSE LASER CO', 'UNIVERSE LASER', 'UNIVERSUM FILM', 'UNIVERSUM', 'UTV', 'VAP', 'VCI', 'VENDETTA FILMS', 'VENDETTA', 'VERSÁTIL HOME VIDEO', 'VERSÁTIL VIDEO', 'VERSÁTIL HOME', 'VERSÁTIL', 'VERSATIL HOME VIDEO', 'VERSATIL VIDEO', 'VERSATIL HOME', 'VERSATIL', 'VERTICAL ENTERTAINMENT', 'VERTICAL', 'VÉRTICE 360º', 'VÉRTICE 360', 'VERTICE 360o', 'VERTICE 360', 'VERTIGO BERLIN', 'VÉRTIGO FILMS', 'VÉRTIGO', 'VERTIGO FILMS', 'VERTIGO', 'VERVE PICTURES', 'VIA VISION ENTERTAINMENT', 'VIA VISION', 'VICOL ENTERTAINMENT', 'VICOL', 'VICOM', 'VICTOR ENTERTAINMENT', 'VICTOR', 'VIDEA CDE', 'VIDEO FILM EXPRESS', 'VIDEO FILM', 'VIDEO EXPRESS', 'VIDEO MUSIC, INC.', 'VIDEO MUSIC, INC', 'VIDEO MUSIC INC.', 'VIDEO MUSIC INC', 'VIDEO MUSIC', 'VIDEO SERVICE CORP.', 'VIDEO SERVICE CORP', 'VIDEO SERVICE', 'VIDEO TRAVEL', 'VIDEOMAX', 'VIDEO MAX', 'VII PILLARS ENTERTAINMENT', 'VII PILLARS', 'VILLAGE FILMS', 'VINEGAR SYNDROME', 'VINEGAR', 'VS', 'VINNY MOVIES', 'VINNY', 'VIRGIL FILMS & ENTERTAINMENT', 'VIRGIL FILMS AND ENTERTAINMENT', 'VIRGIL ENTERTAINMENT', 'VIRGIL FILMS', 'VIRGIL', 'VIRGIN RECORDS', 'VIRGIN', 'VISION FILMS', 'VISION', 'VISUAL ENTERTAINMENT GROUP',
-            'VISUAL GROUP', 'VISUAL ENTERTAINMENT', 'VISUAL', 'VIVENDI VISUAL ENTERTAINMENT', 'VIVENDI VISUAL', 'VIVENDI', 'VIZ PICTURES', 'VIZ', 'VLMEDIA', 'VL MEDIA', 'VL', 'VOLGA', 'VVS FILMS', 'VVS', 'VZ HANDELS GMBH', 'VZ HANDELS', 'WARD RECORDS', 'WARD', 'WARNER BROS.', 'WARNER BROS', 'WARNER ARCHIVE', 'WARNER ARCHIVE COLLECTION', 'WAC', 'WARNER', 'WARNER MUSIC', 'WEA', 'WEINSTEIN COMPANY', 'WEINSTEIN', 'WELL GO USA', 'WELL GO', 'WELTKINO FILMVERLEIH', 'WEST VIDEO', 'WEST', 'WHITE PEARL MOVIES', 'WHITE PEARL', 'WICKED-VISION MEDIA', 'WICKED VISION MEDIA', 'WICKEDVISION MEDIA', 'WICKED-VISION', 'WICKED VISION', 'WICKEDVISION', 'WIENERWORLD', 'WILD BUNCH', 'WILD EYE RELEASING', 'WILD EYE', 'WILD SIDE VIDEO', 'WILD SIDE', 'WME', 'WOLFE VIDEO', 'WOLFE', 'WORD ON FIRE', 'WORKS FILM GROUP', 'WORLD WRESTLING', 'WVG MEDIEN', 'WWE STUDIOS', 'WWE', 'X RATED KULT', 'X-RATED KULT', 'X RATED CULT', 'X-RATED CULT', 'X RATED', 'X-RATED', 'XCESS', 'XLRATOR', 'XT VIDEO', 'XT', 'YAMATO VIDEO', 'YAMATO', 'YASH RAJ FILMS', 'YASH RAJS', 'ZEITGEIST FILMS', 'ZEITGEIST', 'ZENITH PICTURES', 'ZENITH', 'ZIMA', 'ZYLO', 'ZYX MUSIC', 'ZYX',
-            'MASTERS OF CINEMA', 'MOC'
-        ]
-        distributor_out = ""
-        if distributor_in not in [None, "None", ""]:
-            for each in distributor_list:
-                if distributor_in.upper() == each:
-                    distributor_out = each
-        return distributor_out
-
-    def get_video_codec(self, bdinfo):
+    async def get_video_codec(self, bdinfo):
         codecs = {
             "MPEG-2 Video": "MPEG-2",
             "MPEG-4 AVC Video": "AVC",
@@ -1852,7 +1174,7 @@ class Prep():
         codec = codecs.get(bdinfo['video'][0]['codec'], "")
         return codec
 
-    def get_video_encode(self, mi, type, bdinfo):
+    async def get_video_encode(self, mi, type, bdinfo):
         video_encode = ""
         codec = ""
         bit_depth = '0'
@@ -1897,7 +1219,7 @@ class Prep():
             video_codec = f"MPEG-{mi['media']['track'][1].get('Format_Version')}"
         return video_encode, video_codec, has_encode_settings, bit_depth
 
-    def get_edition(self, video, bdinfo, filelist, manual_edition):
+    async def get_edition(self, video, bdinfo, filelist, manual_edition):
         if video.lower().startswith('dc'):
             video = video.replace('dc', '', 1)
 
@@ -2155,7 +1477,7 @@ class Prep():
             new_torrent.metainfo['info']['entropy'] = random.randint(1, 999999)
             Torrent.copy(new_torrent).write(f"{base_dir}/tmp/{uuid}/[RAND-{i}]{manual_name}.torrent", overwrite=True)
 
-    def create_base_from_existing_torrent(self, torrentpath, base_dir, uuid):
+    async def create_base_from_existing_torrent(self, torrentpath, base_dir, uuid):
         if os.path.exists(torrentpath):
             base_torrent = Torrent.read(torrentpath)
             base_torrent.trackers = ['https://fake.tracker']
@@ -2308,301 +1630,17 @@ class Prep():
             exit()
         name_notag = name
         name = name_notag + tag
-        clean_name = self.clean_filename(name)
+        clean_name = await self.clean_filename(name)
         return name_notag, name, clean_name, potential_missing
 
-    async def get_season_episode(self, video, meta):
-        if meta['category'] == 'TV':
-            filelist = meta['filelist']
-            meta['tv_pack'] = 0
-            is_daily = False
-            if meta['anime'] is False:
-                try:
-                    daily_match = re.search(r"\d{4}[-\.]\d{2}[-\.]\d{2}", video)
-                    if meta.get('manual_date') or daily_match:
-                        # Handle daily episodes
-                        # The user either provided the --daily argument or a date was found in the filename
-
-                        if meta.get('manual_date') is None and daily_match is not None:
-                            meta['manual_date'] = daily_match.group().replace('.', '-')
-                        is_daily = True
-                        guess_date = meta.get('manual_date', guessit(video).get('date')) if meta.get('manual_date') else guessit(video).get('date')
-                        season_int, episode_int = self.daily_to_tmdb_season_episode(meta.get('tmdb'), guess_date)
-
-                        season = f"S{str(season_int).zfill(2)}"
-                        episode = f"E{str(episode_int).zfill(2)}"
-                        # For daily shows, pass the supplied date as the episode title
-                        # Season and episode will be stripped later to conform with standard daily episode naming format
-                        meta['episode_title'] = meta.get('manual_date')
-
-                    else:
-                        try:
-                            guess_year = guessit(video)['year']
-                        except Exception:
-                            guess_year = ""
-                        if guessit(video)["season"] == guess_year:
-                            if f"s{guessit(video)['season']}" in video.lower():
-                                season_int = str(guessit(video)["season"])
-                                season = "S" + season_int.zfill(2)
-                            else:
-                                season_int = "1"
-                                season = "S01"
-                        else:
-                            season_int = str(guessit(video)["season"])
-                            season = "S" + season_int.zfill(2)
-
-                except Exception:
-                    console.print_exception()
-                    season_int = "1"
-                    season = "S01"
-
-                try:
-                    if is_daily is not True:
-                        episodes = ""
-                        if len(filelist) == 1:
-                            episodes = guessit(video)['episode']
-                            if isinstance(episodes, list):
-                                episode = ""
-                                for item in guessit(video)["episode"]:
-                                    ep = (str(item).zfill(2))
-                                    episode += f"E{ep}"
-                                episode_int = episodes[0]
-                            else:
-                                episode_int = str(episodes)
-                                episode = "E" + str(episodes).zfill(2)
-                        else:
-                            episode = ""
-                            episode_int = "0"
-                            meta['tv_pack'] = 1
-                except Exception:
-                    episode = ""
-                    episode_int = "0"
-                    meta['tv_pack'] = 1
-
-            else:
-                # If Anime
-                parsed = anitopy.parse(Path(video).name)
-                romaji, mal_id, eng_title, seasonYear, anilist_episodes = self.get_romaji(parsed['anime_title'], meta.get('mal', None))
-                if mal_id:
-                    meta['mal_id'] = mal_id
-                if meta.get('mal') is not None:
-                    mal_id = meta.get('mal')
-                if meta.get('tmdb_manual', None) is None:
-                    year = parsed.get('anime_year', str(seasonYear))
-                    meta = await self.get_tmdb_id(guessit(parsed['anime_title'], {"excludes": ["country", "language"]})['title'], year, meta, meta['category'])
-                meta = await self.tmdb_other_meta(meta)
-                if meta['category'] != "TV":
-                    return meta
-
-                tag = parsed.get('release_group', "")
-                if tag != "":
-                    meta['tag'] = f"-{tag}"
-                if len(filelist) == 1:
-                    try:
-                        episodes = parsed.get('episode_number', guessit(video).get('episode', '1'))
-                        if not isinstance(episodes, list) and not episodes.isnumeric():
-                            episodes = guessit(video)['episode']
-                        if isinstance(episodes, list):
-                            episode_int = int(episodes[0])  # Always convert to integer
-                            episode = "".join([f"E{str(int(item)).zfill(2)}" for item in episodes])
-                        else:
-                            episode_int = int(episodes)  # Convert to integer
-                            episode = f"E{str(episode_int).zfill(2)}"
-                    except Exception:
-                        episode = "E01"
-                        episode_int = 1  # Ensure it's an integer
-                        console.print('[bold yellow]There was an error guessing the episode number. Guessing E01. Use [bold green]--episode #[/bold green] to correct if needed')
-                        await asyncio.sleep(1.5)
-                else:
-                    episode = ""
-                    episode_int = 0  # Ensure it's an integer
-                    meta['tv_pack'] = 1
-
-                try:
-                    if meta.get('season_int'):
-                        season_int = int(meta.get('season_int'))  # Convert to integer
-                    else:
-                        season = parsed.get('anime_season', guessit(video).get('season', '1'))
-                        season_int = int(season)  # Convert to integer
-                    season = f"S{str(season_int).zfill(2)}"
-                except Exception:
-                    try:
-                        if episode_int >= anilist_episodes:
-                            params = {
-                                'id': str(meta['tvdb_id']),
-                                'origin': 'tvdb',
-                                'absolute': str(episode_int),
-                            }
-                            url = "https://thexem.info/map/single"
-                            response = requests.post(url, params=params).json()
-                            if response['result'] == "failure":
-                                raise XEMNotFound  # noqa: F405
-                            if meta['debug']:
-                                console.log(f"[cyan]TheXEM Absolute -> Standard[/cyan]\n{response}")
-                            season_int = int(response['data']['scene']['season'])  # Convert to integer
-                            season = f"S{str(season_int).zfill(2)}"
-                            if len(filelist) == 1:
-                                episode_int = int(response['data']['scene']['episode'])  # Convert to integer
-                                episode = f"E{str(episode_int).zfill(2)}"
-                        else:
-                            season_int = 1  # Default to 1 if error occurs
-                            season = "S01"
-                            names_url = f"https://thexem.info/map/names?origin=tvdb&id={str(meta['tvdb_id'])}"
-                            names_response = requests.get(names_url).json()
-                            if meta['debug']:
-                                console.log(f'[cyan]Matching Season Number from TheXEM\n{names_response}')
-                            difference = 0
-                            if names_response['result'] == "success":
-                                for season_num, values in names_response['data'].items():
-                                    for lang, names in values.items():
-                                        if lang == "jp":
-                                            for name in names:
-                                                romaji_check = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", romaji.lower().replace(' ', ''))
-                                                name_check = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", name.lower().replace(' ', ''))
-                                                diff = SequenceMatcher(None, romaji_check, name_check).ratio()
-                                                if romaji_check in name_check and diff >= difference:
-                                                    season_int = int(season_num) if season_num != "all" else 1  # Convert to integer
-                                                    season = f"S{str(season_int).zfill(2)}"
-                                                    difference = diff
-                                        if lang == "us":
-                                            for name in names:
-                                                eng_check = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", eng_title.lower().replace(' ', ''))
-                                                name_check = re.sub(r"[^0-9a-zA-Z\[\\]]+", "", name.lower().replace(' ', ''))
-                                                diff = SequenceMatcher(None, eng_check, name_check).ratio()
-                                                if eng_check in name_check and diff >= difference:
-                                                    season_int = int(season_num) if season_num != "all" else 1  # Convert to integer
-                                                    season = f"S{str(season_int).zfill(2)}"
-                                                    difference = diff
-                            else:
-                                raise XEMNotFound  # noqa: F405
-                    except Exception:
-                        if meta['debug']:
-                            console.print_exception()
-                        try:
-                            season = guessit(video).get('season', '1')
-                            season_int = int(season)  # Convert to integer
-                        except Exception:
-                            season_int = 1  # Default to 1 if error occurs
-                            season = "S01"
-                        console.print(f"[bold yellow]{meta['title']} does not exist on thexem, guessing {season}")
-                        console.print(f"[bold yellow]If [green]{season}[/green] is incorrect, use --season to correct")
-                        await asyncio.sleep(3)
-
-            if meta.get('manual_season', None) is None:
-                meta['season'] = season
-            else:
-                season_int = meta['manual_season'].lower().replace('s', '')
-                meta['season'] = f"S{meta['manual_season'].lower().replace('s', '').zfill(2)}"
-            if meta.get('manual_episode', None) is None:
-                meta['episode'] = episode
-            else:
-                episode_int = meta['manual_episode'].lower().replace('e', '')
-                meta['episode'] = f"E{meta['manual_episode'].lower().replace('e', '').zfill(2)}"
-                meta['tv_pack'] = 0
-
-            # if " COMPLETE " in Path(video).name.replace('.', ' '):
-            #     meta['season'] = "COMPLETE"
-            meta['season_int'] = season_int
-            meta['episode_int'] = episode_int
-
-            # Manual episode title
-            if 'manual_episode_title' in meta and meta['manual_episode_title'] == "":
-                meta['episode_title_storage'] = meta.get('manual_episode_title')
-            else:
-                meta['episode_title_storage'] = guessit(video, {"excludes": "part"}).get('episode_title', '')
-
-            if meta['season'] == "S00" or meta['episode'] == "E00":
-                meta['episode_title'] = meta['episode_title_storage']
-
-            # Guess the part of the episode (if available)
-            meta['part'] = ""
-            if meta['tv_pack'] == 1:
-                part = guessit(os.path.dirname(video)).get('part')
-                meta['part'] = f"Part {part}" if part else ""
-
-        return meta
-
-    def get_service(self, video=None, tag=None, audio=None, guess_title=None, get_services_only=False):
-        services = {
-            '9NOW': '9NOW', '9Now': '9NOW', 'AE': 'AE', 'A&E': 'AE', 'AJAZ': 'AJAZ', 'Al Jazeera English': 'AJAZ',
-            'ALL4': 'ALL4', 'Channel 4': 'ALL4', 'AMBC': 'AMBC', 'ABC': 'AMBC', 'AMC': 'AMC', 'AMZN': 'AMZN',
-            'Amazon Prime': 'AMZN', 'ANLB': 'ANLB', 'AnimeLab': 'ANLB', 'ANPL': 'ANPL', 'Animal Planet': 'ANPL',
-            'AOL': 'AOL', 'ARD': 'ARD', 'AS': 'AS', 'Adult Swim': 'AS', 'ATK': 'ATK', "America's Test Kitchen": 'ATK',
-            'ATVP': 'ATVP', 'AppleTV': 'ATVP', 'AUBC': 'AUBC', 'ABC Australia': 'AUBC', 'BCORE': 'BCORE', 'BKPL': 'BKPL',
-            'Blackpills': 'BKPL', 'BluTV': 'BLU', 'Binge': 'BNGE', 'BOOM': 'BOOM', 'Boomerang': 'BOOM', 'BRAV': 'BRAV',
-            'BravoTV': 'BRAV', 'CBC': 'CBC', 'CBS': 'CBS', 'CC': 'CC', 'Comedy Central': 'CC', 'CCGC': 'CCGC',
-            'Comedians in Cars Getting Coffee': 'CCGC', 'CHGD': 'CHGD', 'CHRGD': 'CHGD', 'CMAX': 'CMAX', 'Cinemax': 'CMAX',
-            'CMOR': 'CMOR', 'CMT': 'CMT', 'Country Music Television': 'CMT', 'CN': 'CN', 'Cartoon Network': 'CN', 'CNBC': 'CNBC',
-            'CNLP': 'CNLP', 'Canal+': 'CNLP', 'CNGO': 'CNGO', 'Cinego': 'CNGO', 'COOK': 'COOK', 'CORE': 'CORE', 'CR': 'CR',
-            'Crunchy Roll': 'CR', 'Crave': 'CRAV', 'CRIT': 'CRIT', 'Criterion': 'CRIT', 'CRKL': 'CRKL', 'Crackle': 'CRKL',
-            'CSPN': 'CSPN', 'CSpan': 'CSPN', 'CTV': 'CTV', 'CUR': 'CUR', 'CuriosityStream': 'CUR', 'CW': 'CW', 'The CW': 'CW',
-            'CWS': 'CWS', 'CWSeed': 'CWS', 'DAZN': 'DAZN', 'DCU': 'DCU', 'DC Universe': 'DCU', 'DDY': 'DDY',
-            'Digiturk Diledigin Yerde': 'DDY', 'DEST': 'DEST', 'DramaFever': 'DF', 'DHF': 'DHF', 'Deadhouse Films': 'DHF',
-            'DISC': 'DISC', 'Discovery': 'DISC', 'DIY': 'DIY', 'DIY Network': 'DIY', 'DOCC': 'DOCC', 'Doc Club': 'DOCC',
-            'DPLY': 'DPLY', 'DPlay': 'DPLY', 'DRPO': 'DRPO', 'Discovery Plus': 'DSCP', 'DSKI': 'DSKI', 'Daisuki': 'DSKI',
-            'DSNP': 'DSNP', 'Disney+': 'DSNP', 'DSNY': 'DSNY', 'Disney': 'DSNY', 'DTV': 'DTV', 'EPIX': 'EPIX', 'ePix': 'EPIX',
-            'ESPN': 'ESPN', 'ESQ': 'ESQ', 'Esquire': 'ESQ', 'ETTV': 'ETTV', 'El Trece': 'ETTV', 'ETV': 'ETV', 'E!': 'ETV',
-            'FAM': 'FAM', 'Fandor': 'FANDOR', 'Facebook Watch': 'FBWatch', 'FJR': 'FJR', 'Family Jr': 'FJR', 'FMIO': 'FMIO',
-            'Filmio': 'FMIO', 'FOOD': 'FOOD', 'Food Network': 'FOOD', 'FOX': 'FOX', 'Fox': 'FOX', 'Fox Premium': 'FOXP',
-            'UFC Fight Pass': 'FP', 'FPT': 'FPT', 'FREE': 'FREE', 'Freeform': 'FREE', 'FTV': 'FTV', 'FUNI': 'FUNI', 'FUNi': 'FUNI',
-            'Foxtel': 'FXTL', 'FYI': 'FYI', 'FYI Network': 'FYI', 'GC': 'GC', 'NHL GameCenter': 'GC', 'GLBL': 'GLBL',
-            'Global': 'GLBL', 'GLOB': 'GLOB', 'GloboSat Play': 'GLOB', 'GO90': 'GO90', 'GagaOOLala': 'Gaga', 'HBO': 'HBO',
-            'HBO Go': 'HBO', 'HGTV': 'HGTV', 'HIDI': 'HIDI', 'HIST': 'HIST', 'History': 'HIST', 'HLMK': 'HLMK', 'Hallmark': 'HLMK',
-            'HMAX': 'HMAX', 'HBO Max': 'HMAX', 'HS': 'HTSR', 'HTSR': 'HTSR', 'HSTR': 'Hotstar', 'HULU': 'HULU', 'Hulu': 'HULU',
-            'hoichoi': 'HoiChoi', 'ID': 'ID', 'Investigation Discovery': 'ID', 'IFC': 'IFC', 'iflix': 'IFX',
-            'National Audiovisual Institute': 'INA', 'ITV': 'ITV', 'JOYN': 'JOYN', 'KAYO': 'KAYO', 'KNOW': 'KNOW', 'Knowledge Network': 'KNOW',
-            'KNPY': 'KNPY', 'Kanopy': 'KNPY', 'LIFE': 'LIFE', 'Lifetime': 'LIFE', 'LN': 'LN', 'MA': 'MA', 'Movies Anywhere': 'MA',
-            'MAX': 'MAX', 'MBC': 'MBC', 'MNBC': 'MNBC', 'MSNBC': 'MNBC', 'MTOD': 'MTOD', 'Motor Trend OnDemand': 'MTOD', 'MTV': 'MTV',
-            'MUBI': 'MUBI', 'NATG': 'NATG', 'National Geographic': 'NATG', 'NBA': 'NBA', 'NBA TV': 'NBA', 'NBC': 'NBC', 'NF': 'NF',
-            'Netflix': 'NF', 'National Film Board': 'NFB', 'NFL': 'NFL', 'NFLN': 'NFLN', 'NFL Now': 'NFLN', 'NICK': 'NICK',
-            'Nickelodeon': 'NICK', 'NOW': 'NOW', 'NRK': 'NRK', 'Norsk Rikskringkasting': 'NRK', 'OnDemandKorea': 'ODK', 'Opto': 'OPTO',
-            'ORF': 'ORF', 'ORF ON': 'ORF', 'Oprah Winfrey Network': 'OWN', 'PA': 'PA', 'PBS': 'PBS', 'PBSK': 'PBSK', 'PBS Kids': 'PBSK',
-            'PCOK': 'PCOK', 'Peacock': 'PCOK', 'PLAY': 'PLAY', 'PLUZ': 'PLUZ', 'Pluzz': 'PLUZ', 'PMNP': 'PMNP', 'PMNT': 'PMNT',
-            'PMTP': 'PMTP', 'POGO': 'POGO', 'PokerGO': 'POGO', 'PSN': 'PSN', 'Playstation Network': 'PSN', 'PUHU': 'PUHU', 'QIBI': 'QIBI',
-            'RED': 'RED', 'YouTube Red': 'RED', 'RKTN': 'RKTN', 'Rakuten TV': 'RKTN', 'The Roku Channel': 'ROKU', 'RNET': 'RNET',
-            'OBB Railnet': 'RNET', 'RSTR': 'RSTR', 'RTE': 'RTE', 'RTE One': 'RTE', 'RTLP': 'RTLP', 'RTL+': 'RTLP', 'RUUTU': 'RUUTU',
-            'SBS': 'SBS', 'Science Channel': 'SCI', 'SESO': 'SESO', 'SeeSo': 'SESO', 'SHMI': 'SHMI', 'Shomi': 'SHMI', 'SKST': 'SKST',
-            'SkyShowtime': 'SKST', 'SHO': 'SHO', 'Showtime': 'SHO', 'SNET': 'SNET', 'Sportsnet': 'SNET', 'Sony': 'SONY', 'SPIK': 'SPIK',
-            'Spike': 'SPIK', 'Spike TV': 'SPKE', 'SPRT': 'SPRT', 'Sprout': 'SPRT', 'STAN': 'STAN', 'Stan': 'STAN', 'STARZ': 'STARZ',
-            'STRP': 'STRP', 'Star+': 'STRP', 'STZ': 'STZ', 'Starz': 'STZ', 'SVT': 'SVT', 'Sveriges Television': 'SVT', 'SWER': 'SWER',
-            'SwearNet': 'SWER', 'SYFY': 'SYFY', 'Syfy': 'SYFY', 'TBS': 'TBS', 'TEN': 'TEN', 'TIMV': 'TIMV', 'TIMvision': 'TIMV',
-            'TFOU': 'TFOU', 'TFou': 'TFOU', 'TIMV': 'TIMV', 'TLC': 'TLC', 'TOU': 'TOU', 'TRVL': 'TRVL', 'TUBI': 'TUBI', 'TubiTV': 'TUBI',
-            'TV3': 'TV3', 'TV3 Ireland': 'TV3', 'TV4': 'TV4', 'TV4 Sweeden': 'TV4', 'TVING': 'TVING', 'TVL': 'TVL', 'TV Land': 'TVL',
-            'TVNZ': 'TVNZ', 'UFC': 'UFC', 'UKTV': 'UKTV', 'UNIV': 'UNIV', 'Univision': 'UNIV', 'USAN': 'USAN', 'USA Network': 'USAN',
-            'VH1': 'VH1', 'VIAP': 'VIAP', 'VICE': 'VICE', 'Viceland': 'VICE', 'Viki': 'VIKI', 'VIMEO': 'VIMEO', 'VLCT': 'VLCT',
-            'Velocity': 'VLCT', 'VMEO': 'VMEO', 'Vimeo': 'VMEO', 'VRV': 'VRV', 'VUDU': 'VUDU', 'WME': 'WME', 'WatchMe': 'WME', 'WNET': 'WNET',
-            'W Network': 'WNET', 'WWEN': 'WWEN', 'WWE Network': 'WWEN', 'XBOX': 'XBOX', 'Xbox Video': 'XBOX', 'YHOO': 'YHOO', 'Yahoo': 'YHOO',
-            'YT': 'YT', 'ZDF': 'ZDF', 'iP': 'iP', 'BBC iPlayer': 'iP', 'iQIYI': 'iQIYI', 'iT': 'iT', 'iTunes': 'iT'
-        }
-
-        if get_services_only:
-            return services
-        service = guessit(video).get('streaming_service', "")
-
-        video_name = re.sub(r"[.()]", " ", video.replace(tag, '').replace(guess_title, ''))
-        if "DTS-HD MA" in audio:
-            video_name = video_name.replace("DTS-HD.MA.", "").replace("DTS-HD MA ", "")
-        for key, value in services.items():
-            if (' ' + key + ' ') in video_name and key not in guessit(video, {"excludes": ["country", "language"]}).get('title', ''):
-                service = value
-            elif key == service:
-                service = value
-        service_longname = service
-        for key, value in services.items():
-            if value == service and len(key) > len(service_longname):
-                service_longname = key
-        if service_longname == "Amazon Prime":
-            service_longname = "Amazon"
-        return service, service_longname
-
-    def stream_optimized(self, stream_opt):
+    async def stream_optimized(self, stream_opt):
         if stream_opt is True:
             stream = 1
         else:
             stream = 0
         return stream
 
-    def is_anon(self, anon_in):
+    async def is_anon(self, anon_in):
         anon = self.config['DEFAULT'].get("Anon", "False")
         if anon.lower() == "true":
             console.print("[bold red]Global ANON has been removed in favor of per-tracker settings. Please update your config accordingly.")
@@ -2631,7 +1669,7 @@ class Prep():
                 response = await resp.json()
                 return response
 
-    def clean_filename(self, name):
+    async def clean_filename(self, name):
         invalid = '<>:"/\\|?*'
         for char in invalid:
             name = name.replace(char, '-')
@@ -2785,37 +1823,3 @@ class Prep():
             compact = str(manual_dvds)
 
         return compact
-
-    def get_tmdb_imdb_from_mediainfo(self, mediainfo, category, is_disc, tmdbid, imdbid):
-        if not is_disc:
-            if mediainfo['media']['track'][0].get('extra'):
-                extra = mediainfo['media']['track'][0]['extra']
-                for each in extra:
-                    if each.lower().startswith('tmdb'):
-                        parser = Args(config=self.config)
-                        category, tmdbid = parser.parse_tmdb_id(id=extra[each], category=category)
-                    if each.lower().startswith('imdb'):
-                        try:
-                            imdbid = str(int(extra[each].replace('tt', ''))).zfill(7)
-                        except Exception:
-                            pass
-        return category, tmdbid, imdbid
-
-    def daily_to_tmdb_season_episode(self, tmdbid, date):
-        show = tmdb.TV(tmdbid)
-        seasons = show.info().get('seasons')
-        season = 1
-        episode = 1
-        date = datetime.fromisoformat(str(date))
-        for each in seasons:
-            air_date = datetime.fromisoformat(each['air_date'])
-            if air_date <= date:
-                season = int(each['season_number'])
-        season_info = tmdb.TV_Seasons(tmdbid, season).info().get('episodes')
-        for each in season_info:
-            if str(each['air_date']) == str(date.date()):
-                episode = int(each['episode_number'])
-                break
-        else:
-            console.print(f"[yellow]Unable to map the date ([bold yellow]{str(date)}[/bold yellow]) to a Season/Episode number")
-        return season, episode

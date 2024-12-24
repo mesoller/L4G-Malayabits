@@ -69,7 +69,7 @@ async def resolve_queue_with_glob_or_split(path, paths, allowed_extensions=None)
         await display_queue(queue)
     elif not os.path.exists(os.path.dirname(path)):
         queue = [
-            file for file in resolve_split_path(path)  # noqa F8221
+            file for file in resolve_split_path(path)  # noqa F821
             if os.path.isdir(file) or (os.path.isfile(file) and (allowed_extensions is None or file.lower().endswith(tuple(allowed_extensions))))
         ]
         await display_queue(queue)

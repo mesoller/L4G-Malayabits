@@ -31,7 +31,7 @@ if int(tone_task_limit) > 0:
     tone_task_limit = tone_task_limit
 
 
-async def sanitize_filename(self, filename):
+async def sanitize_filename(filename):
     # Replace invalid characters like colons with an underscore
     return re.sub(r'[<>:"/\\|?*]', '_', filename)
 
