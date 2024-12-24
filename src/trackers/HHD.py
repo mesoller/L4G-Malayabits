@@ -27,13 +27,6 @@ class HHD():
         category_id = {
             'MOVIE': '1', 
             'TV': '2',
-            'Anime':'8',
-            'Music':'7',
-            'Manga':'10',
-            'XXX':'11',
-            'Books/E-Learning':'9',
-            'Apps':'6',
-            'Games':'4'
             }.get(category_name, '0')
         return category_id
 
@@ -41,36 +34,27 @@ class HHD():
         type_id = {
             'DISC': '1',
             'REMUX': '2',
+            'ENCODE': '3',
             'WEBDL': '4',
             'WEBRIP': '5',
-            'ENCODE': '3',
             'HDTV': '6',
-            'FLAC':'9',
-            'ALAC':'10',
-            'AC3':'11',
-            'AAC':'12',
-            'MP3':'13',
-            'Linux':'16",
-            'Windows':'15',
-            'Mac':'14',
-            'Other':'7'
             }.get(type, '0')
         return type_id
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '8640p': '8',
-            '4320p': '10',
-            '2160p': '1',
-            '1440p': '2',
-            '1080p': '2',
-            '1080i': '11',
+            '4320p': '1',
+            '2160p': '2',
+            '1440p': '3',
+            '1080p': '3',
+            '1080i': '4',
             '720p': '5',
             '576p': '6',
             '576i': '7',
-            '480p': '4',
-            '480i': '9'
-        }.get(resolution, '8')
+            '480p': '8',
+            '480i': '9',
+            'Other':'10'
+        }.get(resolution, '10')
         return resolution_id
 
     async def upload(self, meta, disctype):
