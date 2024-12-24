@@ -41,7 +41,7 @@ class COMMON():
 
     async def unit3d_edit_desc(self, meta, tracker, signature, comparison=False, desc_header=""):
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r', encoding='utf8').read()
-        multi_screens = int(self.config['DEFAULT'].get('multiScreens', 2))
+        multi_screens = max(1, int(self.config['DEFAULT'].get('multiScreens', 2)) - 1)
         char_limit = int(self.config['DEFAULT'].get('charLimit', 14000))
         file_limit = int(self.config['DEFAULT'].get('fileLimit', 5))
         thumb_size = int(self.config['DEFAULT'].get('pack_thumb_size', '300'))
