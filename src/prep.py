@@ -425,8 +425,11 @@ class Prep():
         task_limit = self.config['DEFAULT'].get('task_limit', "0")
         if int(task_limit) > 0:
             meta['task_limit'] = task_limit
+        meta['tone_map'] = self.config['DEFAULT'].get('tone_map', False)
+        tone_task_limit = self.config['DEFAULT'].get('tone_task_limit', "0")
+        if int(tone_task_limit) > 0:
+            meta['tone_task_limit'] = tone_task_limit
         meta['mode'] = mode
-        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
         meta['isdir'] = os.path.isdir(meta['path'])
         base_dir = meta['base_dir']
         meta['saved_description'] = False
@@ -711,8 +714,18 @@ class Prep():
             console.print(f"Metadata processed in {meta_finish_time - meta_start_time:.2f} seconds")
         parser = Args(config)
         helper = UploadHelper()
+        common = COMMON(config=config)
+        tracker_setup = TRACKER_SETUP(config=config)
+        enabled_trackers = tracker_setup.trackers_enabled(meta)
+        if "saved_trackers" not in meta:
+            meta['trackers'] = enabled_trackers
+        else:
+            meta['trackers'] = meta['saved_trackers']
         confirm = helper.get_confirmation(meta)
         while confirm is False:
+            with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
+                json.dump(meta, f, indent=4)
+            meta['saved_trackers'] = meta['trackers']
             editargs = cli_ui.ask_string("Input args that need correction e.g. (--tag NTb --category tv --tmdb 12345)")
             editargs = (meta['path'],) + tuple(editargs.split())
             if meta.get('debug', False):
@@ -720,19 +733,13 @@ class Prep():
             meta, help, before_args = parser.parse(editargs, meta)
             meta['edit'] = True
             meta = await self.gather_prep(meta=meta, mode='cli')
-            with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
-                json.dump(meta, f, indent=4)
             meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await self.get_name(meta)
             confirm = helper.get_confirmation(meta)
-
-        common = COMMON(config=config)
-        tracker_setup = TRACKER_SETUP(config=config)
-        enabled_trackers = tracker_setup.trackers_enabled(meta)
 
         tracker_status = {}
         successful_trackers = 0
 
-        for tracker_name in enabled_trackers:
+        for tracker_name in meta['trackers']:
             disctype = meta.get('disctype', None)
             tracker_name = tracker_name.replace(" ", "").upper().strip()
 
@@ -773,9 +780,10 @@ class Prep():
                     dupes = await ptp.search_existing(groupID, meta, disctype)
                 if 'skipping' not in meta or meta['skipping'] is None:
                     dupes = await common.filter_dupes(dupes, meta)
-                    meta, is_dupe = helper.dupe_check(dupes, meta)
+                    meta, is_dupe = helper.dupe_check(dupes, meta, tracker_name)
                     if is_dupe:
-                        console.print(f"[yellow]Tracker '{tracker_name}' has confirmed dupes.[/yellow]")
+                        console.print(f"[red]Skipping upload on {tracker_name}[/red]")
+                        print()
                         tracker_status[tracker_name]['dupe'] = True
                 elif meta['skipping']:
                     tracker_status[tracker_name]['skipped'] = True
@@ -805,19 +813,22 @@ class Prep():
                 if meta.get('skipping') is None and not is_dupe and tracker_name == "PTP":
                     if meta.get('imdb_info', {}) == {}:
                         meta['imdb_info'] = self.get_imdb_info_api(meta['imdb_id'], meta)
-
-                if not tracker_status[tracker_name]['banned'] and not tracker_status[tracker_name]['skipped'] and not tracker_status[tracker_name]['dupe']:
-                    console.print(f"[green]Tracker '{tracker_name}' passed all checks.[/green]")
-                    if not meta['unattended'] or (meta['unattended'] and meta.get('unattended-confirm', False)):
-                        edit_choice = input("Enter 'y' to upload, or press Enter to skip uploading:")
-                        if edit_choice.lower() == 'y':
+                if not meta['debug']:
+                    if not tracker_status[tracker_name]['banned'] and not tracker_status[tracker_name]['skipped'] and not tracker_status[tracker_name]['dupe']:
+                        console.print(f"[bold yellow]Tracker '{tracker_name}' passed all checks.")
+                        if not meta['unattended'] or (meta['unattended'] and meta.get('unattended-confirm', False)):
+                            edit_choice = input("Enter 'y' to upload, or press enter to skip uploading:")
+                            if edit_choice.lower() == 'y':
+                                tracker_status[tracker_name]['upload'] = True
+                                successful_trackers += 1
+                            else:
+                                tracker_status[tracker_name]['upload'] = False
+                        else:
                             tracker_status[tracker_name]['upload'] = True
                             successful_trackers += 1
-                        else:
-                            tracker_status[tracker_name]['upload'] = False
-                    else:
-                        tracker_status[tracker_name]['upload'] = True
-                        successful_trackers += 1
+                else:
+                    tracker_status[tracker_name]['upload'] = True
+                    successful_trackers += 1
                 meta['skipping'] = None
         else:
             if tracker_name == "MANUAL":
@@ -838,9 +849,10 @@ class Prep():
             console.print(f"\n[bold]Trackers Passed all Checks:[/bold] {successful_trackers}")
 
         meta['skip_uploading'] = int(self.config['DEFAULT'].get('tracker_pass_checks', 1))
-        if successful_trackers < meta['skip_uploading']:
-            console.print(f"[red]Not enough successful trackers ({successful_trackers}/{meta['skip_uploading']}). EXITING........[/red]")
-            return
+        if not meta['debug']:
+            if successful_trackers < meta['skip_uploading']:
+                console.print(f"[red]Not enough successful trackers ({successful_trackers}/{meta['skip_uploading']}). EXITING........[/red]")
+                return
 
         meta['we_are_uploading'] = True
 
@@ -1299,60 +1311,60 @@ class Prep():
         base = os.path.splitext(base)[0]
         base = urllib.parse.quote(base)
         url = f"https://api.srrdb.com/v1/search/r:{base}"
+        if 'scene' not in meta:
+            try:
+                response = requests.get(url, timeout=30)
+                response_json = response.json()
 
-        try:
-            response = requests.get(url, timeout=30)
-            response_json = response.json()
+                if int(response_json.get('resultsCount', 0)) > 0:
+                    first_result = response_json['results'][0]
+                    meta['scene_name'] = first_result['release']
+                    video = f"{first_result['release']}.mkv"
+                    scene = True
+                    if scene and meta.get('isdir', False) and meta.get('queue') is not None:
+                        meta['keep_folder'] = True
 
-            if int(response_json.get('resultsCount', 0)) > 0:
-                first_result = response_json['results'][0]
-                meta['scene_name'] = first_result['release']
-                video = f"{first_result['release']}.mkv"
-                scene = True
-                if scene and meta.get('isdir', False) and meta.get('queue') is not None:
-                    meta['keep_folder'] = True
+                    # NFO Download Handling
+                    if first_result.get("hasNFO") == "yes":
+                        try:
+                            release = first_result['release']
+                            release_lower = release.lower()
+                            nfo_url = f"https://www.srrdb.com/download/file/{release}/{release_lower}.nfo"
 
-                # NFO Download Handling
-                if first_result.get("hasNFO") == "yes":
+                            # Define path and create directory
+                            save_path = os.path.join(meta['base_dir'], 'tmp', meta['uuid'])
+                            os.makedirs(save_path, exist_ok=True)
+                            nfo_file_path = os.path.join(save_path, f"{release_lower}.nfo")
+
+                            # Download the NFO file
+                            nfo_response = requests.get(nfo_url, timeout=30)
+                            if nfo_response.status_code == 200:
+                                with open(nfo_file_path, 'wb') as f:
+                                    f.write(nfo_response.content)
+                                    meta['nfo'] = True
+                                    meta['auto_nfo'] = True
+                                console.print(f"[green]NFO downloaded to {nfo_file_path}")
+                            else:
+                                console.print("[yellow]NFO file not available for download.")
+                        except Exception as e:
+                            console.print("[yellow]Failed to download NFO file:", e)
+
+                    # IMDb Handling
                     try:
-                        release = first_result['release']
-                        release_lower = release.lower()
-                        nfo_url = f"https://www.srrdb.com/download/file/{release}/{release_lower}.nfo"
+                        r = requests.get(f"https://api.srrdb.com/v1/imdb/{base}")
+                        r = r.json()
 
-                        # Define path and create directory
-                        save_path = os.path.join(meta['base_dir'], 'tmp', meta['uuid'])
-                        os.makedirs(save_path, exist_ok=True)
-                        nfo_file_path = os.path.join(save_path, f"{release_lower}.nfo")
-
-                        # Download the NFO file
-                        nfo_response = requests.get(nfo_url, timeout=30)
-                        if nfo_response.status_code == 200:
-                            with open(nfo_file_path, 'wb') as f:
-                                f.write(nfo_response.content)
-                                meta['nfo'] = True
-                                meta['auto_nfo'] = True
-                            console.print(f"[green]NFO downloaded to {nfo_file_path}")
-                        else:
-                            console.print("[yellow]NFO file not available for download.")
+                        if r['releases'] != [] and imdb is None:
+                            imdb = r['releases'][0].get('imdb', imdb) if r['releases'][0].get('imdb') is not None else imdb
+                        console.print(f"[green]SRRDB: Matched to {first_result['release']}")
                     except Exception as e:
-                        console.print("[yellow]Failed to download NFO file:", e)
+                        console.print("[yellow]Failed to fetch IMDb information:", e)
 
-                # IMDb Handling
-                try:
-                    r = requests.get(f"https://api.srrdb.com/v1/imdb/{base}")
-                    r = r.json()
+                else:
+                    console.print("[yellow]SRRDB: No match found")
 
-                    if r['releases'] != [] and imdb is None:
-                        imdb = r['releases'][0].get('imdb', imdb) if r['releases'][0].get('imdb') is not None else imdb
-                    console.print(f"[green]SRRDB: Matched to {first_result['release']}")
-                except Exception as e:
-                    console.print("[yellow]Failed to fetch IMDb information:", e)
-
-            else:
-                console.print("[yellow]SRRDB: No match found")
-
-        except Exception as e:
-            console.print("[yellow]SRRDB: No match found, or request has timed out", e)
+            except Exception as e:
+                console.print("[yellow]SRRDB: No match found, or request has timed out", e)
 
         return video, scene, imdb
 
@@ -1380,6 +1392,7 @@ class Prep():
         sanitized_filename = self.sanitize_filename(filename)
         length = 0
         file = None
+        frame_rate = None
         for each in bdinfo['files']:
             int_length = sum(int(float(x)) * 60 ** i for i, x in enumerate(reversed(each['length'].split(':'))))
             if int_length > length:
@@ -1388,6 +1401,14 @@ class Prep():
                     for name in files:
                         if name.lower() == each['file'].lower():
                             file = os.path.join(root, name)
+
+        if 'video' in bdinfo and bdinfo['video']:
+            fps_string = bdinfo['video'][0].get('fps', None)
+            if fps_string:
+                try:
+                    frame_rate = float(fps_string.split(' ')[0])  # Extract and convert to float
+                except ValueError:
+                    console.print("[red]Error: Unable to parse frame rate from bdinfo['video'][0]['fps']")
 
         keyframe = 'nokey' if "VC-1" in bdinfo['video'][0]['codec'] or bdinfo['video'][0]['hdr_dv'] != "" else 'none'
 
@@ -1405,9 +1426,19 @@ class Prep():
 
         if meta['debug'] and not force_screenshots:
             console.print(f"[bold yellow]Saving Screens... Total needed: {self.screens}, Existing: {total_existing}, To capture: {num_screens}")
-        capture_results = []
+
+        tone_map = meta.get('tone_map', False)
+        if tone_map and "HDR" in meta['hdr']:
+            hdr_tonemap = True
+        else:
+            hdr_tonemap = False
+
         capture_tasks = []
-        task_limit = int(meta.get('task_limit', os.cpu_count()))
+        capture_results = []
+        if hdr_tonemap:
+            task_limit = int(meta.get('tone_task_limit'))
+        else:
+            task_limit = int(meta.get('task_limit', os.cpu_count()))
 
         if use_vs:
             from src.vs import vs_screengn
@@ -1418,7 +1449,7 @@ class Prep():
             else:
                 loglevel = 'quiet'
 
-            ss_times = self.valid_ss_time([], num_screens + 1, length)
+            ss_times = self.valid_ss_time([], num_screens + 1, length, frame_rate)
             existing_indices = {int(p.split('-')[-1].split('.')[0]) for p in existing_screens}
             capture_tasks = [
                 (
@@ -1426,7 +1457,8 @@ class Prep():
                     ss_times[i],
                     os.path.abspath(f"{base_dir}/tmp/{folder_id}/{sanitized_filename}-{len(existing_indices) + i}.png"),
                     keyframe,
-                    loglevel
+                    loglevel,
+                    hdr_tonemap
                 )
                 for i in range(num_screens + 1)
             ]
@@ -1501,7 +1533,7 @@ class Prep():
                         try:
                             os.remove(image_path)
                             random_time = random.uniform(0, length)
-                            self.capture_disc_task((file, random_time, image_path, keyframe, loglevel))
+                            self.capture_disc_task((file, random_time, image_path, keyframe, loglevel, hdr_tonemap))
                             self.optimize_image_task((image_path, config))
                             new_size = os.path.getsize(image_path)
                             valid_image = False
@@ -1543,17 +1575,33 @@ class Prep():
         console.print(f"[green]Successfully captured {len(valid_results)} screenshots.")
 
     def capture_disc_task(self, task):
-        file, ss_time, image_path, keyframe, loglevel = task
+        file, ss_time, image_path, keyframe, loglevel, hdr_tonemap = task
         try:
-            (
-                ffmpeg
-                .input(file, ss=ss_time, skip_frame=keyframe)
+            ff = ffmpeg.input(file, ss=ss_time, skip_frame=keyframe)
+
+            if hdr_tonemap:
+                ff = (
+                    ff
+                    .filter('zscale', transfer='linear')
+                    .filter('tonemap', tonemap='mobius', desat=8.0)
+                    .filter('zscale', transfer='bt709')
+                    .filter('format', 'rgb24')
+                )
+
+            command = (
+                ff
                 .output(image_path, vframes=1, pix_fmt="rgb24")
                 .overwrite_output()
                 .global_args('-loglevel', loglevel)
-                .run()
             )
+
+            command.run(capture_stdout=True, capture_stderr=True)
+
             return image_path
+        except ffmpeg.Error as e:
+            error_output = e.stderr.decode('utf-8')
+            console.print(f"[red]FFmpeg error capturing screenshot: {error_output}[/red]")
+            return None
         except Exception as e:
             console.print(f"[red]Error capturing screenshot: {e}[/red]")
             return None
@@ -1591,6 +1639,7 @@ class Prep():
                 dar = float(track.display_aspect_ratio)
                 width = float(track.width)
                 height = float(track.height)
+                frame_rate = float(track.frame_rate)
         if par < 1:
             new_height = dar * height
             sar = width / new_height
@@ -1641,7 +1690,7 @@ class Prep():
         main_set = meta['discs'][disc_num]['main_set'][1:] if len(meta['discs'][disc_num]['main_set']) > 1 else meta['discs'][disc_num]['main_set']
         os.chdir(f"{meta['base_dir']}/tmp/{meta['uuid']}")
         voblength, n = _is_vob_good(0, 0, num_screens)
-        ss_times = self.valid_ss_time([], num_screens + 1, voblength)
+        ss_times = self.valid_ss_time([], num_screens + 1, voblength, frame_rate)
         tasks = []
         task_limit = int(meta.get('task_limit', os.cpu_count()))
         for i in range(num_screens + 1):
@@ -1833,18 +1882,35 @@ class Prep():
         os.chdir(f"{base_dir}/tmp/{folder_id}")
 
         if manual_frames:
-            manual_frames = [int(frame) for frame in manual_frames]
+            if meta['debug']:
+                console.print(f"[yellow]Using manual frames: {manual_frames}")
+            manual_frames = [int(frame) for frame in manual_frames.split(',')]
             ss_times = [frame / frame_rate for frame in manual_frames]
-
-            if len(ss_times) < num_screens:
-                random_times = self.valid_ss_time(ss_times, num_screens - len(ss_times), length)
-                ss_times.extend(random_times)
         else:
-            ss_times = self.valid_ss_time([], num_screens + 1, length)
+            ss_times = []
+
+        ss_times = self.valid_ss_time(
+            ss_times,
+            num_screens,
+            length,
+            frame_rate,
+            exclusion_zone=500
+        )
+        if meta['debug']:
+            console.print(f"[green]Final list of frames for screenshots: {ss_times}")
+
+        tone_map = meta.get('tone_map', False)
+        if tone_map and "HDR" in meta['hdr']:
+            hdr_tonemap = True
+        else:
+            hdr_tonemap = False
 
         capture_tasks = []
         capture_results = []
-        task_limit = int(meta.get('task_limit', os.cpu_count()))
+        if hdr_tonemap:
+            task_limit = int(meta.get('tone_task_limit'))
+        else:
+            task_limit = int(meta.get('task_limit', os.cpu_count()))
 
         existing_images = 0
         for i in range(num_screens):
@@ -1858,7 +1924,7 @@ class Prep():
             for i in range(num_screens + 1):
                 image_path = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
                 if not os.path.exists(image_path) or meta.get('retake', False):
-                    capture_tasks.append((path, ss_times[i], image_path, width, height, w_sar, h_sar, loglevel))
+                    capture_tasks.append((path, ss_times[i], image_path, width, height, w_sar, h_sar, loglevel, hdr_tonemap))
                 elif meta['debug']:
                     console.print(f"[yellow]Skipping existing screenshot: {image_path}")
 
@@ -1870,7 +1936,10 @@ class Prep():
                         with get_context("spawn").Pool(processes=min(len(capture_tasks), task_limit)) as pool:
                             try:
                                 for result in pool.imap_unordered(self.capture_screenshot, capture_tasks):
-                                    capture_results.append(result)
+                                    if isinstance(result, str) and result.startswith("Error:"):
+                                        console.print(f"[red]Capture Error: {result}")
+                                    else:
+                                        capture_results.append(result)
                                     pbar.update(1)
                             finally:
                                 pool.close()
@@ -1948,7 +2017,7 @@ class Prep():
                     try:
                         os.remove(image_path)
                         random_time = random.uniform(0, length)
-                        self.capture_screenshot((path, random_time, image_path, width, height, w_sar, h_sar, loglevel))
+                        self.capture_screenshot((path, random_time, image_path, width, height, w_sar, h_sar, loglevel, hdr_tonemap))
                         self.optimize_image_task((image_path, config))
                         new_size = os.path.getsize(image_path)
                         valid_image = False
@@ -1993,30 +2062,42 @@ class Prep():
             finish_time = time.time()
             console.print(f"Screenshots processed in {finish_time - start_time:.4f} seconds")
 
-    def valid_ss_time(self, ss_times, num_screens, length, manual_frames=None):
-        if manual_frames:
-            ss_times.extend(manual_frames[:num_screens])  # Use only as many as needed
-            console.print(f"[green]Using provided manual frame numbers for screenshots: {ss_times}")
-            return ss_times
+    def valid_ss_time(self, ss_times, num_screens, length, frame_rate, exclusion_zone=None):
+        total_screens = num_screens + 1
 
-        # Generate random times if manual frames are not provided
-        while len(ss_times) < num_screens:
-            valid_time = True
-            sst = random.randint(round(length / 5), round(4 * length / 5))  # Adjust range for more spread out times
-            for each in ss_times:
-                tolerance = length / 10 / num_screens
-                if abs(sst - each) <= tolerance:
-                    valid_time = False
-                    break
-            if valid_time:
-                ss_times.append(sst)
+        if exclusion_zone is None:
+            exclusion_zone = max(length / (3 * total_screens), length / 15)
 
-        return ss_times
+        result_times = ss_times.copy()
+        section_size = (round(4 * length / 5) - round(length / 5)) / total_screens * 1.3
+        section_starts = [round(length / 5) + i * (section_size * 0.9) for i in range(total_screens)]
+
+        for section_index in range(total_screens):
+            valid_time = False
+            attempts = 0
+            start_frame = round(section_starts[section_index] * frame_rate)
+            end_frame = round((section_starts[section_index] + section_size) * frame_rate)
+
+            while not valid_time and attempts < 50:
+                attempts += 1
+                frame = random.randint(start_frame, end_frame)
+                time = frame / frame_rate
+
+                if all(abs(frame - existing_time * frame_rate) > exclusion_zone * frame_rate for existing_time in result_times):
+                    result_times.append(time)
+                    valid_time = True
+
+            if not valid_time:
+                midpoint_frame = (start_frame + end_frame) // 2
+                result_times.append(midpoint_frame / frame_rate)
+
+        result_times = sorted(result_times)
+
+        return result_times
 
     def capture_screenshot(self, args):
-        path, ss_time, image_path, width, height, w_sar, h_sar, loglevel = args
+        path, ss_time, image_path, width, height, w_sar, h_sar, loglevel, hdr_tonemap = args
         try:
-            # Validate inputs
             if width <= 0 or height <= 0:
                 return "Error: Invalid width or height for scaling"
 
@@ -2027,14 +2108,31 @@ class Prep():
             if w_sar != 1 or h_sar != 1:
                 ff = ff.filter('scale', int(round(width * w_sar)), int(round(height * h_sar)))
 
+            if hdr_tonemap:
+                ff = (
+                    ff
+                    .filter('zscale', transfer='linear')
+                    .filter('tonemap', tonemap='mobius', desat=8.0)
+                    .filter('zscale', transfer='bt709')
+                    .filter('format', 'rgb24')
+                )
+
             command = (
                 ff
-                .output(image_path, vframes=1, pix_fmt="rgb24")
+                .output(
+                    image_path,
+                    vframes=1,
+                    pix_fmt="rgb24"
+                )
                 .overwrite_output()
                 .global_args('-loglevel', loglevel)
             )
 
-            command.run()
+            try:
+                command.run(capture_stdout=True, capture_stderr=True)
+            except ffmpeg.Error as e:
+                error_output = e.stderr.decode('utf-8')
+                return f"Error: {error_output}"
 
             if not os.path.exists(image_path) or os.path.getsize(image_path) == 0:
                 return f"Error: Screenshot not generated or is empty at {image_path}"
@@ -2699,7 +2797,6 @@ class Prep():
         except Exception:
             if meta['debug']:
                 console.print("No mediainfo.json")
-        resolution = meta['resolution']
         try:
             try:
                 source = guessit(video)['source']
@@ -2733,10 +2830,10 @@ class Prep():
                             system = "NTSC"
                     except Exception:
                         system = ""
-                    if system == "":
+                    if system == "" or system is None:
                         try:
                             framerate = mi['media']['track'][1].get('FrameRate', '')
-                            if framerate == "25":
+                            if '25' in framerate or '50' in framerate:
                                 system = "PAL"
                             elif framerate:
                                 system = "NTSC"
@@ -2762,11 +2859,6 @@ class Prep():
                 source = "Web"
             if source == "Ultra HDTV":
                 source = "UHDTV"
-            if type == "DVDRIP":
-                if resolution in [540, 576]:
-                    source = "PAL"
-                else:
-                    source = "NTSC"
         except Exception:
             console.print(traceback.format_exc())
             source = "BluRay"
@@ -3314,7 +3406,7 @@ class Prep():
                         console.print("[yellow]imgbb failed, trying next image host")
                         return {'status': 'failed', 'reason': 'imgbb upload failed'}
 
-                    img_url = response_data['data']['medium']['url']
+                    img_url = response_data['data'].get('medium', {}).get('url') or response_data['data']['thumb']['url']
                     raw_url = response_data['data']['image']['url']
                     web_url = response_data['data']['url_viewer']
 
@@ -3665,7 +3757,7 @@ class Prep():
             console.log(f"CATEGORY: {meta['category']}")
             console.log(f"TYPE: {meta['type']}")
             console.log("[cyan]get_name meta:")
-            console.log(meta)
+            # console.log(meta)
 
         # YAY NAMING FUN
         if meta['category'] == "MOVIE":  # MOVIE SPECIFIC
@@ -4409,16 +4501,36 @@ class Prep():
             console.print(f"[yellow]Unable to map the date ([bold yellow]{str(date)}[/bold yellow]) to a Season/Episode number")
         return season, episode
 
+    def safe_get(self, data, path, default=None):
+        for key in path:
+            if isinstance(data, dict):
+                data = data.get(key, default)
+            else:
+                return default
+        return data
+
     async def get_imdb_info_api(self, imdbID, meta):
-        imdb_info = {}
+        imdb_info = {
+            'title': meta['title'],
+            'year': meta['year'],
+            'aka': '',
+            'type': None,
+            'runtime': meta.get('runtime', '60'),
+            'cover': meta.get('poster'),
+        }
+        if len(meta.get('tmdb_directors', [])) >= 1:
+            imdb_info['directors'] = meta['tmdb_directors']
 
         if imdbID == "0":
-            return "", None
+            return imdb_info
         else:
-            if not imdbID.startswith("tt"):
-                imdbIDtt = f"tt{imdbID}"
-            else:
-                imdbIDtt = imdbID
+            try:
+                if not imdbID.startswith("tt"):
+                    imdbIDtt = f"tt{imdbID}"
+                else:
+                    imdbIDtt = imdbID
+            except Exception:
+                return imdb_info
             query = {
                 "query": f"""
                 query GetTitleInfo {{
@@ -4489,62 +4601,42 @@ class Prep():
             response = requests.post(url, json=query, headers=headers)
             data = response.json()
 
-        title_data = data.get("data", {}).get("title", {})
-        if not title_data:
-            return meta
+        if response.status_code != 200:
+            return imdb_info
+
+        title_data = self.safe_get(data, ["data", "title"], {})
+        if not data or "data" not in data or "title" not in data["data"]:
+            return imdb_info
+
         imdb_info['imdbID'] = imdbID
-        imdb_info['title'] = title_data.get('titleText', {}).get('text', '') or ''
-        imdb_info['year'] = title_data.get('releaseYear', {}).get('year', '') or ''
-        original_title = title_data.get('originalTitleText', {}).get('text', '')
-        if not original_title or original_title == imdb_info['title']:
-            original_title = imdb_info['title']
-        imdb_info['aka'] = original_title
-        imdb_info['type'] = title_data.get('titleType', {}).get('id', '') or ''
-        runtime_data = title_data.get('runtime', {})
-        if runtime_data and isinstance(runtime_data, dict):
-            runtime_seconds = runtime_data.get('seconds', 0)
-            runtime_minutes = runtime_seconds // 60 if runtime_seconds else 0
-        else:
-            runtime_seconds = 0
-            runtime_minutes = 0
-        imdb_info['runtime'] = str(runtime_minutes)
-        imdb_info['cover'] = title_data.get('primaryImage', {}).get('url', '') or meta.get('poster', '') or ''
-        imdb_info['plot'] = title_data.get('plot', {}).get('plotText', {}).get('plainText', '') or 'No plot available'
-        title_genres = title_data.get('titleGenres')
-        if title_genres and isinstance(title_genres, dict):
-            genres = title_genres.get('genres', [])
-        else:
-            genres = []
-        genre_list = [g.get('genre', {}).get('text', '') for g in genres if g.get('genre', {}).get('text')]
-        imdb_info['genres'] = ', '.join(genre_list) or ''
-        imdb_info['rating'] = title_data.get('ratingsSummary', {}).get('aggregateRating', 'N/A') or ''
+        imdb_info['title'] = self.safe_get(title_data, ['titleText', 'text'], meta['title'])
+        imdb_info['year'] = self.safe_get(title_data, ['releaseYear', 'year'], meta['year'])
+        original_title = self.safe_get(title_data, ['originalTitleText', 'text'], '')
+        imdb_info['aka'] = original_title if original_title and original_title != imdb_info['title'] else imdb_info['title']
+        imdb_info['type'] = self.safe_get(title_data, ['titleType', 'id'], None)
+        runtime_seconds = self.safe_get(title_data, ['runtime', 'seconds'], 0)
+        imdb_info['runtime'] = str(runtime_seconds // 60 if runtime_seconds else 60)
+        imdb_info['cover'] = self.safe_get(title_data, ['primaryImage', 'url'], meta.get('poster', ''))
+        imdb_info['plot'] = self.safe_get(title_data, ['plot', 'plotText', 'plainText'], 'No plot available')
+        genres = self.safe_get(title_data, ['titleGenres', 'genres'], [])
+        genre_list = [self.safe_get(g, ['genre', 'text'], '') for g in genres]
+        imdb_info['genres'] = ', '.join(filter(None, genre_list))
+        imdb_info['rating'] = self.safe_get(title_data, ['ratingsSummary', 'aggregateRating'], 'N/A')
         imdb_info['directors'] = []
-        principal_credits = title_data.get('principalCredits', [])
-        if principal_credits and isinstance(principal_credits, list):
+        principal_credits = self.safe_get(title_data, ['principalCredits'], [])
+        if isinstance(principal_credits, list):
             for pc in principal_credits:
-                category_text = pc.get('category', {}).get('text', '')
+                category_text = self.safe_get(pc, ['category', 'text'], '')
                 if 'Direct' in category_text:
-                    credits = pc.get('credits', [])
-                    if credits and isinstance(credits, list):
-                        for c in credits:
-                            name_id = c.get('name', {}).get('id', '')
-                            if name_id and name_id.startswith('nm'):
-                                imdb_info['directors'].append(name_id)
+                    credits = self.safe_get(pc, ['credits'], [])
+                    for c in credits:
+                        name_id = self.safe_get(c, ['name', 'id'], '')
+                        if name_id.startswith('nm'):
+                            imdb_info['directors'].append(name_id)
                     break
             if meta.get('manual_language'):
                 imdb_info['original_langauge'] = meta.get('manual_language')
 
-        if not title_data:
-            imdb_info = {
-                'title': meta['title'],
-                'year': meta['year'],
-                'aka': '',
-                'type': None,
-                'runtime': meta.get('runtime', '60'),
-                'cover': meta.get('poster'),
-            }
-            if len(meta.get('tmdb_directors', [])) >= 1:
-                imdb_info['directors'] = meta['tmdb_directors']
         return imdb_info
 
     async def get_imdb_info(self, imdbID, meta):
@@ -4621,82 +4713,96 @@ class Prep():
             print(f"Error: tvdbID is not a valid integer. Received: {tvdbID}")
             tvdbID = 0
 
-        tvmazeID = 0
-        results = []
-
-        if imdbID is None:
-            imdbID = '0'
-
-        if int(tvdbID) != 0:
-            tvdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"thetvdb": tvdbID}, meta)
-            if tvdb_resp:
-                results.append(tvdb_resp)
-        if int(imdbID) != 0:
-            imdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"imdb": f"tt{imdbID}"}, meta)
-            if imdb_resp:
-                results.append(imdb_resp)
-        search_resp = self._make_tvmaze_request("https://api.tvmaze.com/search/shows", {"q": filename}, meta)
-        if search_resp:
-            if isinstance(search_resp, list):
-                results.extend([each['show'] for each in search_resp if 'show' in each])
-            else:
-                results.append(search_resp)
-
-        if year not in (None, ''):
-            results = [show for show in results if str(show.get('premiered', '')).startswith(str(year))]
-
-        seen = set()
-        unique_results = []
-        for show in results:
-            if show['id'] not in seen:
-                seen.add(show['id'])
-                unique_results.append(show)
-        results = unique_results
-
-        if not results:
-            if meta['debug']:
-                print("No results found.")
-            return tvmazeID, imdbID, tvdbID
-
         if meta.get('tvmaze_manual'):
-            tvmaze_manual_id = int(meta['tvmaze_manual'])
-            selected_show = next((show for show in results if show['id'] == tvmaze_manual_id), None)
-            if selected_show:
-                tvmazeID = selected_show['id']
-                print(f"Selected manual show: {selected_show.get('name')} (TVmaze ID: {tvmazeID})")
-            else:
-                print(f"Manual TVmaze ID {tvmaze_manual_id} not found in results.")
-        elif meta['manual_date'] is not None:
-            print("Search results:")
-            for idx, show in enumerate(results):
-                console.print(f"[bold red]{idx + 1}[/bold red]. [green]{show.get('name', 'Unknown')} (TVmaze ID:[/green] [bold red]{show['id']}[/bold red])")
-                console.print(f"[yellow]   Premiered: {show.get('premiered', 'Unknown')}[/yellow]")
-                console.print(f"   Externals: {json.dumps(show.get('externals', {}), indent=2)}")
-
-            while True:
-                try:
-                    choice = int(input(f"Enter the number of the correct show (1-{len(results)}) or 0 to skip: "))
-                    if choice == 0:
-                        print("Skipping selection.")
-                        break
-                    if 1 <= choice <= len(results):
-                        selected_show = results[choice - 1]
-                        tvmazeID = selected_show['id']
-                        print(f"Selected show: {selected_show.get('name')} (TVmaze ID: {tvmazeID})")
-                        break
-                    else:
-                        print(f"Invalid choice. Please choose a number between 1 and {len(results)}, or 0 to skip.")
-                except ValueError:
-                    print("Invalid input. Please enter a number.")
+            tvmazeID = int(meta['tvmaze_manual'])
+            return tvmazeID, imdbID, tvdbID
         else:
-            selected_show = results[0]
-            tvmazeID = selected_show['id']
-            if meta['debug']:
-                print(f"Automatically selected show: {selected_show.get('name')} (TVmaze ID: {tvmazeID})")
+            tvmazeID = 0
+            results = []
 
-        if meta['debug']:
-            print(f"Returning results - TVmaze ID: {tvmazeID}, IMDb ID: {imdbID}, TVDB ID: {tvdbID}")
-        return tvmazeID, imdbID, tvdbID
+            if imdbID is None:
+                imdbID = '0'
+
+            if meta['manual_date'] is None:
+                if int(tvdbID) != 0:
+                    tvdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"thetvdb": tvdbID}, meta)
+                    if tvdb_resp:
+                        results.append(tvdb_resp)
+                    else:
+                        if int(imdbID) != 0:
+                            imdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"imdb": f"tt{imdbID}"}, meta)
+                            if imdb_resp:
+                                results.append(imdb_resp)
+                            else:
+                                search_resp = self._make_tvmaze_request("https://api.tvmaze.com/search/shows", {"q": filename}, meta)
+                                if search_resp:
+                                    if isinstance(search_resp, list):
+                                        results.extend([each['show'] for each in search_resp if 'show' in each])
+                                    else:
+                                        results.append(search_resp)
+            else:
+                if int(tvdbID) != 0:
+                    tvdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"thetvdb": tvdbID}, meta)
+                    if tvdb_resp:
+                        results.append(tvdb_resp)
+                if int(imdbID) != 0:
+                    imdb_resp = self._make_tvmaze_request("https://api.tvmaze.com/lookup/shows", {"imdb": f"tt{imdbID}"}, meta)
+                    if imdb_resp:
+                        results.append(imdb_resp)
+                search_resp = self._make_tvmaze_request("https://api.tvmaze.com/search/shows", {"q": filename}, meta)
+                if search_resp:
+                    if isinstance(search_resp, list):
+                        results.extend([each['show'] for each in search_resp if 'show' in each])
+                    else:
+                        results.append(search_resp)
+
+            if year not in (None, ''):
+                results = [show for show in results if str(show.get('premiered', '')).startswith(str(year))]
+
+            seen = set()
+            unique_results = []
+            for show in results:
+                if show['id'] not in seen:
+                    seen.add(show['id'])
+                    unique_results.append(show)
+            results = unique_results
+
+            if not results:
+                if meta['debug']:
+                    print("No results found.")
+                return tvmazeID, imdbID, tvdbID
+
+            if meta['manual_date'] is not None:
+                print("Search results:")
+                for idx, show in enumerate(results):
+                    console.print(f"[bold red]{idx + 1}[/bold red]. [green]{show.get('name', 'Unknown')} (TVmaze ID:[/green] [bold red]{show['id']}[/bold red])")
+                    console.print(f"[yellow]   Premiered: {show.get('premiered', 'Unknown')}[/yellow]")
+                    console.print(f"   Externals: {json.dumps(show.get('externals', {}), indent=2)}")
+
+                while True:
+                    try:
+                        choice = int(input(f"Enter the number of the correct show (1-{len(results)}) or 0 to skip: "))
+                        if choice == 0:
+                            print("Skipping selection.")
+                            break
+                        if 1 <= choice <= len(results):
+                            selected_show = results[choice - 1]
+                            tvmazeID = selected_show['id']
+                            print(f"Selected show: {selected_show.get('name')} (TVmaze ID: {tvmazeID})")
+                            break
+                        else:
+                            print(f"Invalid choice. Please choose a number between 1 and {len(results)}, or 0 to skip.")
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+            else:
+                selected_show = results[0]
+                tvmazeID = selected_show['id']
+                if meta['debug']:
+                    print(f"Automatically selected show: {selected_show.get('name')} (TVmaze ID: {tvmazeID})")
+
+            if meta['debug']:
+                print(f"Returning results - TVmaze ID: {tvmazeID}, IMDb ID: {imdbID}, TVDB ID: {tvdbID}")
+            return tvmazeID, imdbID, tvdbID
 
     def _make_tvmaze_request(self, url, params, meta):
         if meta['debug']:

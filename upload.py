@@ -26,7 +26,7 @@ from rich.markdown import Markdown
 from rich.style import Style
 
 
-cli_ui.setup(color='always', title="L4G's Upload Assistant")
+cli_ui.setup(color='always', title="Audionut's Upload Assistant")
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -161,7 +161,7 @@ def merge_meta(meta, saved_meta, path):
             'trackers', 'dupe', 'debug', 'anon', 'category', 'type', 'screens', 'nohash', 'manual_edition', 'imdb', 'tmdb_manual', 'mal', 'manual',
             'hdb', 'ptp', 'blu', 'no_season', 'no_aka', 'no_year', 'no_dub', 'no_tag', 'no_seed', 'client', 'desclink', 'descfile', 'desc', 'draft',
             'modq', 'region', 'freeleech', 'personalrelease', 'unattended', 'manual_season', 'manual_episode', 'torrent_creation', 'qbit_tag', 'qbit_cat',
-            'skip_imghost_upload', 'imghost', 'manual_source', 'webdv', 'hardcoded-subs', 'dual_audio', 'manual_type'
+            'skip_imghost_upload', 'imghost', 'manual_source', 'webdv', 'hardcoded-subs', 'dual_audio', 'manual_type', 'tvmaze_manual'
         ]
         sanitized_saved_meta = {}
         for key, value in saved_meta.items():
@@ -211,7 +211,7 @@ async def process_meta(meta, base_dir):
         if str(ua).lower() == "true":
             meta['unattended'] = True
             console.print("[yellow]Running in Auto Mode")
-
+    meta['base_dir'] = base_dir
     prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=config)
     meta = await prep.gather_prep(meta=meta, mode='cli')
     if not meta:
@@ -518,7 +518,7 @@ async def do_the_thing(base_dir):
                     tracker_class = tracker_class_map[tracker](config=config)
                     tracker_status = meta.get('tracker_status', {})
                     upload_status = tracker_status.get(tracker, {}).get('upload', False)
-                    console.print(f"[red]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/red]")
+                    console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
 
                     if upload_status:
                         modq, draft = await check_mod_q_and_draft(tracker_class, meta, debug, disctype)
@@ -565,7 +565,7 @@ async def do_the_thing(base_dir):
                     tracker_class = tracker_class_map[tracker](config=config)
                     tracker_status = meta.get('tracker_status', {})
                     upload_status = tracker_status.get(tracker, {}).get('upload', False)
-                    console.print(f"[blue]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/blue]")
+                    console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
 
                     if upload_status:
                         console.print(f"Uploading to {tracker}")
@@ -599,7 +599,7 @@ async def do_the_thing(base_dir):
                 if tracker == "THR":
                     tracker_status = meta.get('tracker_status', {})
                     upload_status = tracker_status.get(tracker, {}).get('upload', False)
-                    print(f"Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}")
+                    print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
 
                     if upload_status:
                         thr = THR(config=config)
@@ -616,7 +616,7 @@ async def do_the_thing(base_dir):
                 if tracker == "PTP":
                     tracker_status = meta.get('tracker_status', {})
                     upload_status = tracker_status.get(tracker, {}).get('upload', False)
-                    print(f"Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}")
+                    print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[yellow]")
 
                     if upload_status:
                         ptp = PTP(config=config)

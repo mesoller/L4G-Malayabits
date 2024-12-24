@@ -641,8 +641,9 @@ class COMMON():
         target_season = meta.get("season")
         target_episode = meta.get("episode")
         target_resolution = meta.get("resolution")
-        tag = meta.get("tag").lower()
+        tag = meta.get("tag").lower().replace("-", " ")
         is_dvd = meta['is_disc'] == "DVD"
+        web_dl = meta.get('type') == "WEBDL"
 
         attribute_checks = [
             {
@@ -662,12 +663,6 @@ class COMMON():
                 "uuid_flag": "uhd" in meta.get('name', '').lower(),
                 "condition": lambda each: "uhd" in each.lower(),
                 "exclude_msg": lambda each: f"Excluding result due to 'UHD' mismatch: {each}"
-            },
-            {
-                "key": "webdl",
-                "uuid_flag": "web-dl" in meta.get('name', '').lower(),
-                "condition": lambda each: "webdl" in each.lower() or "web-dl" in each.lower(),
-                "exclude_msg": lambda each: f"Excluding result due to 'WEBDL' mismatch: {each}"
             },
             {
                 "key": "hdtv",
@@ -700,6 +695,7 @@ class COMMON():
                 console.log(f"  'repack' in each.lower(): {'repack' in each.lower()}")
                 console.log(f"[debug] meta['uuid']: {meta.get('uuid', '')}")
                 console.log(f"[debug] meta['tag']: {meta.get('tag', '').lower()}")
+                console.log(f"[debug] normalized encoder: {normalized_encoder}")
 
             if has_is_disc and each.lower().endswith(".m2ts"):
                 return False
@@ -741,9 +737,12 @@ class COMMON():
                 return True
 
             if not is_dvd:
-                if normalized_encoder and normalized_encoder in normalized:
+                if normalized_encoder and normalized_encoder in each:
                     log_exclusion(f"Encoder '{has_encoder_in_name}' mismatch", each)
                     return False
+
+            if web_dl and ("web-dl" in normalized or "webdl" in normalized or "web dl" in normalized):
+                return False
 
             console.log(f"[debug] Passed all checks: {each}")
             return False
@@ -763,7 +762,7 @@ class COMMON():
         Normalize a filename for easier matching.
         Retain season/episode information in the format SxxExx.
         """
-        normalized = filename.lower().replace("-", " -").replace(" ", " ").replace(".", " ")
+        normalized = filename.lower().replace("-", " ").replace(" ", " ").replace(".", " ")
 
         return normalized
 
@@ -819,6 +818,11 @@ class COMMON():
 
         file_hdr_simple = simplify_hdr(file_hdr)
         target_hdr_simple = simplify_hdr(target_hdr)
+
+        if file_hdr_simple == {"DV", "HDR"} or file_hdr_simple == {"HDR", "DV"}:
+            file_hdr_simple = {"HDR"}
+            if target_hdr_simple == {"DV", "HDR"} or target_hdr_simple == {"HDR", "DV"}:
+                target_hdr_simple = {"HDR"}
 
         return file_hdr_simple == target_hdr_simple
 
