@@ -219,7 +219,7 @@ def upload_image_task(args):
         }
 
 
-async def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_list, return_dict, retry_mode=False, max_retries=3):
+def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_list, return_dict, retry_mode=False, max_retries=3):
     def use_tqdm():
         """Check if the environment supports TTY (interactive progress bar)."""
         return sys.stdout.isatty()
@@ -311,7 +311,7 @@ async def upload_screens(meta, screens, img_host_num, i, total_screens, custom_i
         if f'img_host_{img_host_num}' in config['DEFAULT']:
             meta['imghost'] = config['DEFAULT'][f'img_host_{img_host_num}']
             console.print(f"[cyan]Switching to the next image host: {meta['imghost']}")
-            return await upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_list, return_dict, retry_mode=True)
+            return upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_list, return_dict, retry_mode=True)
         else:
             console.print("[red]No more image hosts available. Aborting upload process.")
             return meta['image_list'], len(meta['image_list'])

@@ -417,7 +417,6 @@ class Prep():
                 if tracker_setup.check_banned_group(tracker_class.tracker, tracker_class.banned_groups, meta):
                     console.print(f"[red]Tracker '{tracker_name}' is banned. Skipping.[/red]")
                     tracker_status[tracker_name]['banned'] = True
-                    continue
 
                 if tracker_name not in {"THR", "PTP", "TL"}:
                     dupes = await tracker_class.search_existing(meta, disctype)
@@ -512,7 +511,7 @@ class Prep():
             if not meta.get('edit', False):
                 use_vs = meta.get('vapoursynth', False)
                 try:
-                    await disc_screenshots(
+                    disc_screenshots(
                         meta, filename, bdinfo, meta['uuid'], base_dir, use_vs,
                         meta.get('image_list', []), meta.get('ffdebug', False), None
                     )
@@ -522,7 +521,7 @@ class Prep():
         elif meta['is_disc'] == "DVD":
             if not meta.get('edit', False):
                 try:
-                    await dvd_screenshots(
+                    dvd_screenshots(
                         meta, 0, None, None
                     )
                 except Exception as e:
@@ -531,7 +530,7 @@ class Prep():
         else:
             if not meta.get('edit', False):
                 try:
-                    await screenshots(
+                    screenshots(
                         videopath, filename, meta['uuid'], base_dir, meta,
                         manual_frames=manual_frames  # Pass additional kwargs directly
                     )
@@ -1640,7 +1639,7 @@ class Prep():
             stream = 0
         return stream
 
-    async def is_anon(self, anon_in):
+    def is_anon(self, anon_in):
         anon = self.config['DEFAULT'].get("Anon", "False")
         if anon.lower() == "true":
             console.print("[bold red]Global ANON has been removed in favor of per-tracker settings. Please update your config accordingly.")

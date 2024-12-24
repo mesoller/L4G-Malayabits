@@ -87,7 +87,7 @@ async def process_meta(meta, base_dir):
             if 'image_list' not in meta:
                 meta['image_list'] = []
             return_dict = {}
-            new_images, dummy_var = await upload_screens(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict=return_dict)
+            new_images, dummy_var = upload_screens(meta, meta['screens'], 1, 0, meta['screens'], [], return_dict=return_dict)
 
         elif meta.get('skip_imghost_upload', False) is True and meta.get('image_list', False) is False:
             meta['image_list'] = []
@@ -98,7 +98,7 @@ async def process_meta(meta, base_dir):
             if meta.get('rehash', False) is False:
                 reuse_torrent = await client.find_existing_torrent(meta)
                 if reuse_torrent is not None:
-                    prep.create_base_from_existing_torrent(reuse_torrent, meta['base_dir'], meta['uuid'])
+                    await prep.create_base_from_existing_torrent(reuse_torrent, meta['base_dir'], meta['uuid'])
 
             if meta['nohash'] is False and reuse_torrent is None:
                 prep.create_torrent(meta, Path(meta['path']), "BASE")

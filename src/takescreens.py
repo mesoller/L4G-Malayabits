@@ -1,19 +1,19 @@
-import multiprocessing
-from multiprocessing import get_context
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 import os
 import re
 import glob
 import time
 import ffmpeg
-import asyncio
 import random
 import json
 import sys
 import platform
 from pymediainfo import MediaInfo
 from src.console import console
-from data.config import config
+
+from data.config import config  # Import here to avoid dependency issues
 
 img_host = [
     config["DEFAULT"][key].lower()
@@ -31,14 +31,16 @@ if int(tone_task_limit) > 0:
     tone_task_limit = tone_task_limit
 
 
-async def sanitize_filename(filename):
+def sanitize_filename(filename):
     # Replace invalid characters like colons with an underscore
     return re.sub(r'[<>:"/\\|?*]', '_', filename)
 
 
-async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, image_list, ffdebug, num_screens=None, force_screenshots=False):
-    if 'saved_images' not in meta:
-        meta['saved_images'] = []
+def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, image_list, ffdebug, num_screens=None, force_screenshots=False):
+    if meta['debug']:
+        start_time = time.time()
+    if 'image_list' not in meta:
+        meta['image_list'] = []
     existing_images = [img for img in meta['image_list'] if isinstance(img, dict) and img.get('img_url', '').startswith('http')]
 
     if len(existing_images) >= meta.get('cutoff') and not force_screenshots:
@@ -50,7 +52,7 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
     if num_screens == 0 or len(image_list) >= num_screens:
         return
 
-    sanitized_filename = await sanitize_filename(filename)
+    sanitized_filename = sanitize_filename(filename)
     length = 0
     file = None
     frame_rate = None
@@ -99,11 +101,6 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
 
     capture_tasks = []
     capture_results = []
-    if hdr_tonemap:
-        task_limit = int(meta.get('tone_task_limit'))
-    else:
-        task_limit = int(meta.get('task_limit', os.cpu_count()))
-
     if use_vs:
         from src.vs import vs_screengn
         vs_screengn(source=file, encode=None, filter_b_frames=False, num=num_screens, dir=f"{base_dir}/tmp/{folder_id}/")
@@ -113,7 +110,7 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
         else:
             loglevel = 'quiet'
 
-        ss_times = await valid_ss_time([], num_screens + 1, length, frame_rate)
+        ss_times = valid_ss_time([], num_screens + 1, length, frame_rate)
         existing_indices = {int(p.split('-')[-1].split('.')[0]) for p in existing_screens}
         capture_tasks = [
             (
@@ -127,44 +124,67 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
             for i in range(num_screens + 1)
         ]
 
-        with get_context("spawn").Pool(processes=min(len(capture_tasks), task_limit)) as pool:
-            try:
-                capture_results = list(
-                    tqdm(
-                        pool.imap_unordered(capture_disc_task, capture_tasks),
-                        total=len(capture_tasks),
-                        desc="Capturing Screenshots",
-                        ascii=True,
-                        dynamic_ncols=False
-                    )
-                )
-            finally:
-                pool.close()
-                pool.join()
+        max_workers = min(len(capture_tasks), int(meta.get('task_limit', os.cpu_count())))
 
-        if capture_results:
-            if len(capture_tasks) > num_screens:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_task = {executor.submit(capture_disc_task, task): task for task in capture_tasks}
+
+            if sys.stdout.isatty():  # Check if running in terminal
+                with tqdm(total=len(capture_tasks), desc="Capturing Screenshots", ascii=True) as pbar:
+                    for future in as_completed(future_to_task):
+                        result = future.result()
+                        if not isinstance(result, str) or not result.startswith("Error"):
+                            capture_results.append(result)
+                        else:
+                            console.print(f"[red]{result}")
+                        pbar.update(1)
+            else:
+                for future in as_completed(future_to_task):
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
+                        capture_results.append(result)
+                    else:
+                        console.print(f"[red]{result}")
+
+        if capture_results and len(capture_results) > num_screens and not force_screenshots:
+            try:
                 smallest = min(capture_results, key=os.path.getsize)
                 if meta['debug']:
-                    console.print(f"[yellow]Removing smallest image: {smallest} ({os.path.getsize(smallest)} bytes)[/yellow]")
+                    console.print(f"[yellow]Removing smallest image: {smallest} ({os.path.getsize(smallest)} bytes)")
                 os.remove(smallest)
                 capture_results.remove(smallest)
+            except Exception as e:
+                console.print(f"[red]Error removing smallest image: {str(e)}")
+
         optimized_results = []
         optimize_tasks = [(result, config) for result in capture_results if result and os.path.exists(result)]
-        with get_context("spawn").Pool(processes=min(len(optimize_tasks), task_limit)) as pool:
-            try:
-                optimized_results = list(
-                    tqdm(
-                        pool.imap_unordered(optimize_image_task, optimize_tasks),
-                        total=len(optimize_tasks),
-                        desc="Optimizing Images",
-                        ascii=True,
-                        dynamic_ncols=False
-                    )
-                )
-            finally:
-                pool.close()
-                pool.join()
+        max_workers = min(len(optimize_tasks), int(meta.get('task_limit', os.cpu_count())))
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_task = {executor.submit(optimize_image_task, task): task for task in optimize_tasks}
+
+            if sys.stdout.isatty():
+                with tqdm(total=len(optimize_tasks), desc="Optimizing Images", ascii=True) as pbar:
+                    for future in as_completed(future_to_task):
+                        try:
+                            result = future.result()
+                            if not isinstance(result, str) or not result.startswith("Error"):
+                                optimized_results.append(result)
+                            else:
+                                console.print(f"[red]{result}")
+                        except Exception as e:
+                            console.print(f"[red]Error in optimization task: {str(e)}")
+                        pbar.update(1)
+            else:
+                for future in as_completed(future_to_task):
+                    try:
+                        result = future.result()
+                        if not isinstance(result, str) or not result.startswith("Error"):
+                            optimized_results.append(result)
+                        else:
+                            console.print(f"[red]{result}")
+                    except Exception as e:
+                        console.print(f"[red]Error in optimization task: {str(e)}")
 
         valid_results = []
         remaining_retakes = []
@@ -178,17 +198,18 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
             if image_size <= 75000:
                 console.print(f"[yellow]Image {image_path} is incredibly small, retaking.")
                 retake = True
-                await asyncio.sleep(1)
-            elif image_size <= 31000000 and img_host == "imgbb" and not retake:
-                pass
-            elif image_size <= 10000000 and img_host in ["imgbox", "pixhost"] and not retake:
-                pass
-            elif img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"] and not retake:
-                pass
-            elif not retake:
-                console.print("[red]Image too large for your image host, retaking.")
+            elif "imgbb" in img_host and image_size <= 31000000:
+                if meta['debug']:
+                    console.print(f"[green]Image {image_path} meets size requirements for imgbb.[/green]")
+            elif any(host in ["imgbox", "pixhost"] for host in img_host) and image_size <= 10000000:
+                if meta['debug']:
+                    console.print(f"[green]Image {image_path} meets size requirements for {img_host}.[/green]")
+            elif any(host in ["ptpimg", "lensdump", "ptscreens", "oeimg"] for host in img_host):
+                if meta['debug']:
+                    console.print(f"[green]Image {image_path} meets size requirements for {img_host}.[/green]")
+            else:
+                console.print("[red]Image size does not meet requirements for your image host, retaking.")
                 retake = True
-                await asyncio.sleep(1)
 
             if retake:
                 retry_attempts = 3
@@ -202,13 +223,13 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
                         new_size = os.path.getsize(image_path)
                         valid_image = False
 
-                        if new_size > 75000 and new_size <= 31000000 and img_host == "imgbb":
+                        if "imgbb" in img_host and new_size > 75000 and new_size <= 31000000:
                             console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                             valid_image = True
-                        elif new_size > 75000 and new_size <= 10000000 and img_host in ["imgbox", "pixhost"]:
+                        elif new_size > 75000 and new_size <= 10000000 and any(host in ["imgbox", "pixhost"] for host in img_host):
                             console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                             valid_image = True
-                        elif new_size > 75000 and img_host in ["ptpimg", "lensdump", "ptscreens", "oeimg"]:
+                        elif new_size > 75000 and any(host in ["ptpimg", "lensdump", "ptscreens", "oeimg"] for host in img_host):
                             console.print(f"[green]Successfully retaken screenshot for: {image_path} ({new_size} bytes)[/green]")
                             valid_image = True
 
@@ -230,32 +251,30 @@ async def disc_screenshots(meta, filename, bdinfo, folder_id, base_dir, use_vs, 
 
     console.print(f"[green]Successfully captured {len(valid_results)} screenshots.")
 
+    if meta['debug']:
+        finish_time = time.time()
+        console.print(f"Screenshots processed in {finish_time - start_time:.4f} seconds")
+
 
 def capture_disc_task(task):
     file, ss_time, image_path, keyframe, loglevel, hdr_tonemap = task
     try:
-        # Prepare the FFmpeg input
         ff = ffmpeg.input(file, ss=ss_time, skip_frame=keyframe)
-
-        # Apply tone mapping if required
         if hdr_tonemap:
             ff = (
                 ff
-                .filter('zscale', transfer='linear')         # Convert HDR to linear light
-                .filter('tonemap', tonemap='mobius', desat=8.0)  # Use Mobius tone mapping with desaturation
-                .filter('zscale', transfer='bt709')          # Convert to SDR color space
-                .filter('format', 'rgb24')                  # Explicit format conversion
+                .filter('zscale', transfer='linear')
+                .filter('tonemap', tonemap='mobius', desat=8.0)
+                .filter('zscale', transfer='bt709')
+                .filter('format', 'rgb24')
             )
 
-        # Set the output options
         command = (
             ff
-            .output(image_path, vframes=1, pix_fmt="rgb24")  # Single frame, RGB format
+            .output(image_path, vframes=1, pix_fmt="rgb24")
             .overwrite_output()
-            .global_args('-loglevel', loglevel)             # Set log level
+            .global_args('-loglevel', loglevel)
         )
-
-        # Run the FFmpeg command
         command.run(capture_stdout=True, capture_stderr=True)
 
         return image_path
@@ -268,7 +287,7 @@ def capture_disc_task(task):
         return None
 
 
-async def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
+def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
     if 'image_list' not in meta:
         meta['image_list'] = []
     existing_images = [img for img in meta['image_list'] if isinstance(img, dict) and img.get('img_url', '').startswith('http')]
@@ -312,7 +331,7 @@ async def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
         w_sar = sar
         h_sar = 1
 
-    async def _is_vob_good(n, loops, num_screens):
+    def _is_vob_good(n, loops, num_screens):
         max_loops = 6
         fallback_duration = 300
         valid_tracks = []
@@ -351,8 +370,8 @@ async def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
 
     main_set = meta['discs'][disc_num]['main_set'][1:] if len(meta['discs'][disc_num]['main_set']) > 1 else meta['discs'][disc_num]['main_set']
     os.chdir(f"{meta['base_dir']}/tmp/{meta['uuid']}")
-    voblength, n = await _is_vob_good(0, 0, num_screens)
-    ss_times = await valid_ss_time([], num_screens + 1, voblength, frame_rate)
+    voblength, n = _is_vob_good(0, 0, num_screens)
+    ss_times = valid_ss_time([], num_screens + 1, voblength, frame_rate)
     tasks = []
     task_limit = int(meta.get('task_limit', os.cpu_count()))
     for i in range(num_screens + 1):
@@ -416,7 +435,6 @@ async def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
         if image_size <= 120000:
             console.print(f"[yellow]Image {image} is incredibly small, retaking.")
             retry_cap = True
-            await asyncio.sleep(1)
 
         if retry_cap:
             for attempt in range(1, retry_attempts + 1):
@@ -487,11 +505,8 @@ def capture_dvd_screenshot(task):
         return None
 
 
-async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=None, force_screenshots=False, manual_frames=None):
-    def use_tqdm():
-        """Check if the environment supports TTY (interactive progress bar)."""
-        return sys.stdout.isatty()
-
+def screenshots(path, filename, folder_id, base_dir, meta, num_screens=None, force_screenshots=False, manual_frames=None):
+    """Screenshot capture function using concurrent.futures"""
     if meta['debug']:
         start_time = time.time()
     if 'image_list' not in meta:
@@ -512,7 +527,7 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
         with open(f"{base_dir}/tmp/{folder_id}/MediaInfo.json", encoding='utf-8') as f:
             mi = json.load(f)
             video_track = mi['media']['track'][1]
-            length = video_track.get('Duration', mi['media']['track'][0]['Duration'])
+            length = float(video_track.get('Duration', mi['media']['track'][0]['Duration']))
             width = float(video_track.get('Width'))
             height = float(video_track.get('Height'))
             par = float(video_track.get('PixelAspectRatio', 1))
@@ -529,8 +544,7 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
             else:
                 sar = w_sar = par
                 h_sar = 1
-            length = round(float(length))
-    except (FileNotFoundError, KeyError, ValueError) as e:
+    except Exception as e:
         console.print(f"[red]Error processing MediaInfo.json: {e}")
         return
 
@@ -543,17 +557,21 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
         manual_frames = [int(frame) for frame in manual_frames.split(',')]
         ss_times = [frame / frame_rate for frame in manual_frames]
     else:
-        ss_times = []
+        ss_times = valid_ss_time([], num_screens + 1, length, frame_rate, exclusion_zone=500)
 
-    ss_times = await valid_ss_time(
-        ss_times,
-        num_screens,
-        length,
-        frame_rate,
-        exclusion_zone=500
-    )
     if meta['debug']:
         console.print(f"[green]Final list of frames for screenshots: {ss_times}")
+
+    existing_images = 0
+    existing_image_paths = []
+    for i in range(num_screens + 1):
+        image_path = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
+        if os.path.exists(image_path) and not meta.get('retake', False):
+            existing_images += 1
+            existing_image_paths.append(image_path)
+
+    if meta['debug']:
+        console.print(f"Found {existing_images} existing screenshots")
 
     tone_map = meta.get('tone_map', False)
     if tone_map and "HDR" in meta['hdr']:
@@ -562,88 +580,79 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
         hdr_tonemap = False
 
     capture_tasks = []
-    capture_results = []
-    if hdr_tonemap:
-        task_limit = int(meta.get('tone_task_limit'))
-    else:
-        task_limit = int(meta.get('task_limit', os.cpu_count()))
-
-    existing_images = 0
-    existing_image_paths = []
-    for i in range(num_screens + 1):
-        image_path = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
-        if os.path.exists(image_path) and not meta.get('retake', False):
-            console.print(f"[yellow]Existing images: {image_path}")
-            existing_images += 1
-            existing_image_paths.append(image_path)
-    console.print(f"Existing Images: {existing_images}")
-
     if existing_images == num_screens and not meta.get('retake', False):
         console.print("[yellow]The correct number of screenshots already exists. Skipping capture process.")
+        capture_results = existing_image_paths
+        return
     else:
         for i in range(num_screens + 1):
             image_path = os.path.abspath(f"{base_dir}/tmp/{folder_id}/{filename}-{i}.png")
             if not os.path.exists(image_path) or meta.get('retake', False):
                 capture_tasks.append((path, ss_times[i], image_path, width, height, w_sar, h_sar, loglevel, hdr_tonemap))
-            elif meta['debug']:
-                console.print(f"[yellow]Skipping existing screenshot: {image_path}")
 
-        if not capture_tasks:
-            console.print("[yellow]All screenshots already exist. Skipping capture process.")
-        else:
-            if use_tqdm():
-                with tqdm(total=len(capture_tasks), desc="Capturing Screenshots", ascii=True, dynamic_ncols=False) as pbar:
-                    with get_context("spawn").Pool(processes=min(len(capture_tasks), task_limit)) as pool:
-                        try:
-                            for result in pool.imap_unordered(capture_screenshot, capture_tasks):
-                                if isinstance(result, str) and result.startswith("Error:"):
-                                    console.print(f"[red]Capture Error: {result}")
-                                else:
-                                    capture_results.append(result)
-                                pbar.update(1)
-                        finally:
-                            pool.close()
-                            pool.join()
-            else:
-                console.print("[blue]Non-TTY environment detected. Progress bar disabled.")
-                with get_context("spawn").Pool(processes=min(len(capture_tasks), task_limit)) as pool:
-                    try:
-                        for i, result in enumerate(pool.imap_unordered(capture_screenshot, capture_tasks), 1):
+        capture_results = []
+        max_workers = min(len(capture_tasks), int(meta.get('task_limit', os.cpu_count())))
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_task = {executor.submit(capture_screenshot, task): task for task in capture_tasks}
+
+            if sys.stdout.isatty():  # Check if running in terminal
+                with tqdm(total=len(capture_tasks), desc="Capturing Screenshots", ascii=True) as pbar:
+                    for future in as_completed(future_to_task):
+                        result = future.result()
+                        if not isinstance(result, str) or not result.startswith("Error"):
                             capture_results.append(result)
-                            console.print(f"Processed {i}/{len(capture_tasks)} screenshots")
-                    finally:
-                        pool.close()
-                        pool.join()
+                        else:
+                            console.print(f"[red]{result}")
+                        pbar.update(1)
+            else:
+                for future in as_completed(future_to_task):
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
+                        capture_results.append(result)
+                    else:
+                        console.print(f"[red]{result}")
 
-            if capture_results and (len(capture_results) + existing_images) > num_screens and not force_screenshots:
-                smallest = min(capture_results, key=os.path.getsize)
-                if meta['debug']:
-                    console.print(f"[yellow]Removing smallest image: {smallest} ({os.path.getsize(smallest)} bytes)[/yellow]")
-                os.remove(smallest)
-                capture_results.remove(smallest)
+    if capture_results and len(capture_results) > num_screens and not force_screenshots:
+        try:
+            smallest = min(capture_results, key=os.path.getsize)
+            if meta['debug']:
+                console.print(f"[yellow]Removing smallest image: {smallest} ({os.path.getsize(smallest)} bytes)")
+            os.remove(smallest)
+            capture_results.remove(smallest)
+        except Exception as e:
+            console.print(f"[red]Error removing smallest image: {str(e)}")
 
-    optimize_tasks = [(result, config) for result in capture_results if "Error" not in result]
+    # Optimize images using ThreadPoolExecutor
     optimize_results = []
-    if optimize_tasks:
-        if use_tqdm():
-            with tqdm(total=len(optimize_tasks), desc="Optimizing Images", ascii=True, dynamic_ncols=False) as pbar:
-                with get_context("spawn").Pool(processes=min(len(optimize_tasks), task_limit)) as pool:
+    optimize_tasks = [(result, config) for result in capture_results if result and os.path.exists(result)]
+    max_workers = min(len(optimize_tasks), int(meta.get('task_limit', os.cpu_count())))
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        future_to_task = {executor.submit(optimize_image_task, task): task for task in optimize_tasks}
+
+        if sys.stdout.isatty():
+            with tqdm(total=len(optimize_tasks), desc="Optimizing Images", ascii=True) as pbar:
+                for future in as_completed(future_to_task):
                     try:
-                        for result in pool.imap_unordered(optimize_image_task, optimize_tasks):
+                        result = future.result()
+                        if not isinstance(result, str) or not result.startswith("Error"):
                             optimize_results.append(result)
-                            pbar.update(1)
-                    finally:
-                        pool.close()
-                        pool.join()
+                        else:
+                            console.print(f"[red]{result}")
+                    except Exception as e:
+                        console.print(f"[red]Error in optimization task: {str(e)}")
+                    pbar.update(1)
         else:
-            with get_context("spawn").Pool(processes=min(len(optimize_tasks), task_limit)) as pool:
+            for future in as_completed(future_to_task):
                 try:
-                    for i, result in enumerate(pool.imap_unordered(optimize_image_task, optimize_tasks), 1):
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
                         optimize_results.append(result)
-                        console.print(f"Optimized {i}/{len(optimize_tasks)} images")
-                finally:
-                    pool.close()
-                    pool.join()
+                    else:
+                        console.print(f"[red]{result}")
+                except Exception as e:
+                    console.print(f"[red]Error in optimization task: {str(e)}")
 
     valid_results = []
     remaining_retakes = []
@@ -658,7 +667,6 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
             if image_size <= 75000:
                 console.print(f"[yellow]Image {image_path} is incredibly small, retaking.")
                 retake = True
-                await asyncio.sleep(1)
             elif "imgbb" in img_host and image_size <= 31000000:
                 if meta['debug']:
                     console.print(f"[green]Image {image_path} meets size requirements for imgbb.[/green]")
@@ -671,7 +679,6 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
             else:
                 console.print("[red]Image size does not meet requirements for your image host, retaking.")
                 retake = True
-                await asyncio.sleep(1)
 
         if retake:
             retry_attempts = 3
@@ -718,7 +725,7 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
         console.print(f"Screenshots processed in {finish_time - start_time:.4f} seconds")
 
 
-async def valid_ss_time(ss_times, num_screens, length, frame_rate, exclusion_zone=None):
+def valid_ss_time(ss_times, num_screens, length, frame_rate, exclusion_zone=None):
     total_screens = num_screens + 1
 
     if exclusion_zone is None:
@@ -809,8 +816,8 @@ def optimize_image_task(args):
         if optimize_images:
             if shared_seedbox:
                 # Limit the number of threads for oxipng
-                num_cores = multiprocessing.cpu_count()
-                max_threads = num_cores // 2
+                num_cores = os.cpu_count()
+                max_threads = max(1, num_cores // 2)  # Ensure at least 1 thread
                 os.environ['RAYON_NUM_THREADS'] = str(max_threads)
 
             if os.path.exists(image):
