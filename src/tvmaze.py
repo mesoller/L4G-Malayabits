@@ -53,9 +53,6 @@ async def search_tvmaze(filename, year, imdbID, tvdbID, meta):
                 else:
                     results.append(search_resp)
 
-        if year not in (None, ''):
-            results = [show for show in results if str(show.get('premiered', '')).startswith(str(year))]
-
         seen = set()
         unique_results = []
         for show in results:

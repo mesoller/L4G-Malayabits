@@ -34,9 +34,9 @@ config = {
         "cutoff_screens": "3",
 
         # multi processing task limit
-        # When capturing/optimizing images, limit to this many concurrent tasks
-        # defaults to os.cpu_count() if thiss value not set
-        "task_limit": "1",
+        # When capturing/optimizing/uploading images, limit to this many concurrent tasks
+        # defaults to os.cpu_count() if this value not set
+        # "task_limit": "1",
 
         # Providing the option to change the size of the screenshot thumbnails where supported.
         # Default is 350, ie [img=350]
