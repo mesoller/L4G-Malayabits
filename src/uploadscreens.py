@@ -7,9 +7,9 @@ import requests
 import glob
 import base64
 import time
-from multiprocessing import get_context
 from tqdm import tqdm
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def upload_image_task(args):
@@ -270,33 +270,29 @@ def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_lis
     }
     default_pool_size = int(meta.get('task_limit', os.cpu_count()))
     pool_size = host_limits.get(img_host, default_pool_size)
+    results = []
+    max_workers = min(len(upload_tasks), pool_size, os.cpu_count())
 
-    try:
-        with get_context("spawn").Pool(processes=max(1, min(len(upload_tasks), pool_size))) as pool:
-            if use_tqdm():
-                try:
-                    results = list(
-                        tqdm(
-                            pool.imap_unordered(upload_image_task, upload_tasks),
-                            total=len(upload_tasks),
-                            desc=f"Uploading Images to {img_host}",
-                            ascii=True,
-                            dynamic_ncols=False
-                        )
-                    )
-                finally:
-                    pool.close()
-                    pool.join()
-            else:
-                console.print(f"[blue]Non-TTY environment detected. Progress bar disabled. Uploading images to {img_host}.")
-                results = []
-                for i, result in enumerate(pool.imap_unordered(upload_image_task, upload_tasks), 1):
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_task = {executor.submit(upload_image_task, task): task for task in upload_tasks}
+
+        if sys.stdout.isatty():  # Check if running in terminal
+            with tqdm(total=len(upload_tasks), desc="Uploading Screenshots", ascii=True) as pbar:
+                for future in as_completed(future_to_task):
+                    result = future.result()
+                    if not isinstance(result, str) or not result.startswith("Error"):
+                        results.append(result)
+                    else:
+                        console.print(f"[red]{result}")
+                    pbar.update(1)
+        else:
+            for future in as_completed(future_to_task):
+                result = future.result()
+                if not isinstance(result, str) or not result.startswith("Error"):
                     results.append(result)
-                    console.print(f"Uploaded {i}/{len(upload_tasks)} images to {img_host}")
-    except KeyboardInterrupt:
-        console.print("[red]Upload process interrupted by user. Exiting...")
-        pool.terminate()
-        pool.join()
+                else:
+                    console.print(f"[red]{result}")
+
         return meta['image_list'], len(meta['image_list'])
 
     successfully_uploaded = []

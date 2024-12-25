@@ -277,7 +277,6 @@ class BBCODE:
             "https://i.ibb.co/2NVWb0c/uploadrr.webp",
             "https://blutopia/favicon.ico",
             "https://ptpimg.me/606tk4.png",
-            "https://github.com/edge20200/Only-Uploader"
             # Add any other known bot image URLs here
         ]
         imagelist = [
@@ -310,7 +309,9 @@ class BBCODE:
             Auto\sUploader\[\/b\]\s*\[img=\d+\]https:\/\/blutopia\.xyz\/favicon\.ico\[\/img\]\s*\[\/center\]|
             \[center\]\s*\[b\]Uploaded\sUsing\s\[url=https:\/\/github\.com\/HDInnovations\/UNIT3D\]UNIT3D\[\/url\]
             \sAuto\sUploader\[\/b\]\s*\[\/center\]|
-            \[center\]\[url=https:\/\/github\.com\/z-ink\/uploadrr\]\[img=\d+\]https:\/\/i\.ibb\.co\/2NVWb0c\/uploadrr\.webp\[\/img\]\[\/url\]\[\/center\]
+            \[center\]\[url=https:\/\/github\.com\/z-ink\/uploadrr\]\[img=\d+\]https:\/\/i\.ibb\.co\/2NVWb0c\/uploadrr\.webp\[\/img\]\[\/url\]\[\/center\]|
+            \n\[center\]\[url=https:\/\/github\.com\/edge20200\/Only-Uploader\]Powered\sby\s
+            Only-Uploader\[\/url\]\[\/center\]
         """
         desc = re.sub(bot_signature_regex, "", desc, flags=re.IGNORECASE | re.VERBOSE)
         desc = re.sub(r"\[center\].*Created by L4G's Upload Assistant.*\[\/center\]", "", desc, flags=re.IGNORECASE)

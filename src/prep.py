@@ -225,7 +225,7 @@ class Prep():
                     'oe': 'OE',
                     'tik': 'TIK',
                 }
-                specific_tracker = next((tracker_keys[key] for key in tracker_keys if meta.get(key)), None)
+                specific_tracker = next((tracker_keys[key] for key in tracker_keys if meta.get(key) is not None), None)
 
                 async def process_tracker(tracker_name, meta):
                     nonlocal found_match
