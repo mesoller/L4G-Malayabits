@@ -38,9 +38,8 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
     common = COMMON(config=config)
     tracker_setup = TRACKER_SETUP(config=config)
     enabled_trackers = tracker_setup.trackers_enabled(meta)
-    for tracker in enabled_trackers:
-        disctype = meta.get('disctype', None)
-        tracker = tracker.replace(" ", "").upper().strip()
+
+    async def process_single_tracker(tracker):
         if meta['name'].endswith('DUPE?'):
             meta['name'] = meta['name'].replace(' DUPE?', '')
 
@@ -48,41 +47,35 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
             debug = "(DEBUG)"
         else:
             debug = ""
+        disctype = meta.get('disctype', None)
+        tracker = tracker.replace(" ", "").upper().strip()
 
         if tracker in api_trackers:
             tracker_class = tracker_class_map[tracker](config=config)
             tracker_status = meta.get('tracker_status', {})
             upload_status = tracker_status.get(tracker, {}).get('upload', False)
             console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
-
             if upload_status:
                 modq, draft = await check_mod_q_and_draft(tracker_class, meta, debug, disctype)
-
                 if modq is not None:
                     console.print(f"(modq: {modq})")
                 if draft is not None:
                     console.print(f"(draft: {draft})")
-
                 console.print(f"Uploading to {tracker_class.tracker}")
                 await tracker_class.upload(meta, disctype)
-                await asyncio.sleep(0.5)
                 perm = config['DEFAULT'].get('get_permalink', False)
                 if perm:
-                    # need a wait so we don't race the api
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(5)  # Avoid racing the API
                     await tracker_class.search_torrent_page(meta, disctype)
-                    await asyncio.sleep(0.5)
                 await client.add_to_client(meta, tracker_class.tracker)
 
-        if tracker in other_api_trackers:
+        elif tracker in other_api_trackers:
             tracker_class = tracker_class_map[tracker](config=config)
             tracker_status = meta.get('tracker_status', {})
             upload_status = tracker_status.get(tracker, {}).get('upload', False)
             console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
-
             if upload_status:
                 console.print(f"Uploading to {tracker_class.tracker}")
-
                 if tracker != "TL":
                     if tracker == "RTF":
                         await tracker_class.api_test(meta)
@@ -90,24 +83,19 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                         await tracker_class.upload(meta, disctype)
                         if tracker == 'SN':
                             await asyncio.sleep(16)
-                        await asyncio.sleep(0.5)
                         await client.add_to_client(meta, tracker_class.tracker)
 
-        if tracker in http_trackers:
+        elif tracker in http_trackers:
             tracker_class = tracker_class_map[tracker](config=config)
             tracker_status = meta.get('tracker_status', {})
             upload_status = tracker_status.get(tracker, {}).get('upload', False)
-            console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
-
             if upload_status:
                 console.print(f"Uploading to {tracker}")
-
                 if await tracker_class.validate_credentials(meta) is True:
                     await tracker_class.upload(meta, disctype)
-                    await asyncio.sleep(0.5)
                     await client.add_to_client(meta, tracker_class.tracker)
 
-        if tracker == "MANUAL":
+        elif tracker == "MANUAL":
             if meta['unattended']:
                 do_manual = True
             else:
@@ -128,11 +116,10 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                     console.print(f"[green]{meta['name']}")
                     console.print(f"[green]Files can be found at: [yellow]{url}[/yellow]")
 
-        if tracker == "THR":
+        elif tracker == "THR":
             tracker_status = meta.get('tracker_status', {})
             upload_status = tracker_status.get(tracker, {}).get('upload', False)
-            print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
-
+            console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
             if upload_status:
                 thr = THR(config=config)
                 try:
@@ -140,20 +127,21 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                         console.print("[yellow]Logging in to THR")
                         session = thr.login(session)
                         await thr.upload(session, meta, disctype)
-                        await asyncio.sleep(0.5)
                         await client.add_to_client(meta, "THR")
                 except Exception:
                     console.print(traceback.format_exc())
 
-        if tracker == "PTP":
+        elif tracker == "PTP":
             tracker_status = meta.get('tracker_status', {})
             upload_status = tracker_status.get(tracker, {}).get('upload', False)
-            print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[yellow]")
-
+            console.print(f"[yellow]Tracker: {tracker}, Upload: {'Yes' if upload_status else 'No'}[/yellow]")
             if upload_status:
                 ptp = PTP(config=config)
-                groupID = meta['ptp_groupID']
+                groupID = meta.get('ptp_groupID', None)
                 ptpUrl, ptpData = await ptp.fill_upload_form(groupID, meta)
                 await ptp.upload(meta, ptpUrl, ptpData, disctype)
-                await asyncio.sleep(5)
                 await client.add_to_client(meta, "PTP")
+
+    # Process all trackers concurrently
+    tasks = [process_single_tracker(tracker) for tracker in enabled_trackers]
+    await asyncio.gather(*tasks)

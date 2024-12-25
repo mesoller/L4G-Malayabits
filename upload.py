@@ -12,6 +12,7 @@ import platform
 import shutil
 import cli_ui
 import traceback
+import time
 
 from src.trackersetup import tracker_class_map, api_trackers, other_api_trackers, http_trackers
 from src.trackerhandle import process_trackers
@@ -191,6 +192,8 @@ async def do_the_thing(base_dir):
 
         except Exception as e:
             console.print(f"[red]Failed to load metadata for path '{path}': {e}")
+        if meta['debug']:
+            start_time = time.time()
         console.print(f"[green]Gathering info for {os.path.basename(path)}")
         await process_meta(meta, base_dir)
         if 'we_are_uploading' not in meta:
@@ -210,6 +213,9 @@ async def do_the_thing(base_dir):
                 if not meta['debug']:
                     if log_file:
                         await save_processed_file(log_file, path)
+        if meta['debug']:
+            finish_time = time.time()
+            console.print(f"Uploads processed in {finish_time - start_time:.4f} seconds")
 
 
 if __name__ == '__main__':

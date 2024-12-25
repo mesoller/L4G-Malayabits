@@ -2,8 +2,6 @@
 from src.args import Args
 from src.console import console
 from src.exceptions import *  # noqa: F403
-from src.trackers.PTP import PTP
-from src.trackers.COMMON import COMMON
 from src.clients import Clients
 from data.config import config
 from src.uphelper import UploadHelper
@@ -16,6 +14,7 @@ from src.tmdb import tmdb_other_meta, get_tmdb_imdb_from_mediainfo, get_tmdb_fro
 from src.region import get_region, get_distributor, get_service
 from src.exportmi import exportInfo, mi_resolution
 from src.getseasonep import get_season_episode
+from src.trackerstatus import process_all_trackers
 
 try:
     import traceback
@@ -208,7 +207,6 @@ class Prep():
         client = Clients(config=config)
         if meta.get('infohash') is not None:
             meta = await client.get_ptp_from_hash(meta)
-        common = COMMON(config=config)
         tracker_setup = TRACKER_SETUP(config=config)
         if not meta.get('image_list'):
             # Reuse information from trackers with fallback
@@ -225,6 +223,7 @@ class Prep():
                     'oe': 'OE',
                     'tik': 'TIK',
                 }
+
                 specific_tracker = next((tracker_keys[key] for key in tracker_keys if meta.get(key) is not None), None)
 
                 async def process_tracker(tracker_name, meta):
@@ -364,7 +363,7 @@ class Prep():
             meta['trackers'] = enabled_trackers
         else:
             meta['trackers'] = meta['saved_trackers']
-        confirm = helper.get_confirmation(meta)
+        confirm = await helper.get_confirmation(meta)
         while confirm is False:
             with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
                 json.dump(meta, f, indent=4)
@@ -377,118 +376,9 @@ class Prep():
             meta['edit'] = True
             meta = await self.gather_prep(meta=meta, mode='cli')
             meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await self.get_name(meta)
-            confirm = helper.get_confirmation(meta)
+            confirm = await helper.get_confirmation(meta)
 
-        tracker_status = {}
-        successful_trackers = 0
-
-        for tracker_name in meta['trackers']:
-            disctype = meta.get('disctype', None)
-            tracker_name = tracker_name.replace(" ", "").upper().strip()
-
-            if meta['name'].endswith('DUPE?'):
-                meta['name'] = meta['name'].replace(' DUPE?', '')
-
-            if tracker_name in tracker_class_map:
-                tracker_class = tracker_class_map[tracker_name](config=config)
-                tracker_status[tracker_name] = {'banned': False, 'skipped': False, 'dupe': False, 'upload': False}
-
-                if tracker_name in {"THR", "PTP"}:
-                    if meta.get('imdb_id', '0') == '0':
-                        imdb_id = cli_ui.ask_string("Unable to find IMDB id, please enter e.g.(tt1234567)")
-                        meta['imdb_id'] = imdb_id.replace('tt', '').zfill(7)
-                if tracker_name == "PTP":
-                    console.print("[yellow]Searching for Group ID")
-                    ptp = PTP(config=config)
-                    groupID = await ptp.get_group_by_imdb(meta['imdb_id'])
-                    if groupID is None:
-                        console.print("[yellow]No Existing Group found")
-                        if meta.get('youtube', None) is None or "youtube" not in str(meta.get('youtube', '')):
-                            youtube = cli_ui.ask_string("Unable to find youtube trailer, please link one e.g.(https://www.youtube.com/watch?v=dQw4w9WgXcQ)", default="")
-                            meta['youtube'] = youtube
-                    meta['ptp_groupID'] = groupID
-
-                if tracker_name == "THR":
-                    youtube = cli_ui.ask_string("Unable to find youtube trailer, please link one e.g.(https://www.youtube.com/watch?v=dQw4w9WgXcQ)")
-                    meta['youtube'] = youtube
-
-                if tracker_setup.check_banned_group(tracker_class.tracker, tracker_class.banned_groups, meta):
-                    console.print(f"[red]Tracker '{tracker_name}' is banned. Skipping.[/red]")
-                    tracker_status[tracker_name]['banned'] = True
-
-                if tracker_name not in {"THR", "PTP", "TL"}:
-                    dupes = await tracker_class.search_existing(meta, disctype)
-                elif tracker_name == "PTP":
-                    dupes = await ptp.search_existing(groupID, meta, disctype)
-                if 'skipping' not in meta or meta['skipping'] is None:
-                    dupes = await common.filter_dupes(dupes, meta)
-                    meta, is_dupe = helper.dupe_check(dupes, meta, tracker_name)
-                    if is_dupe:
-                        console.print(f"[red]Skipping upload on {tracker_name}[/red]")
-                        print()
-                        tracker_status[tracker_name]['dupe'] = True
-                elif meta['skipping']:
-                    tracker_status[tracker_name]['skipped'] = True
-                if tracker_name == "MTV":
-                    if not tracker_status[tracker_name]['banned'] and not tracker_status[tracker_name]['skipped'] and not tracker_status[tracker_name]['dupe']:
-                        tracker_config = self.config['TRACKERS'].get(tracker_name, {})
-                        if str(tracker_config.get('prefer_mtv_torrent', 'false')).lower() == "true":
-                            meta['prefer_small_pieces'] = True
-                        else:
-                            meta['prefer_small_pieces'] = False
-                        if str(tracker_config.get('skip_if_rehash', 'false')).lower() == "true":
-                            torrent_path = os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")
-                            if not os.path.exists(torrent_path):
-                                check_torrent = await client.find_existing_torrent(meta)
-                                if check_torrent:
-                                    console.print(f"[yellow]Existing torrent found on {check_torrent}[/yellow]")
-                                    await self.create_base_from_existing_torrent(check_torrent, meta['base_dir'], meta['uuid'])
-                                    torrent = Torrent.read(torrent_path)
-                                    if torrent.piece_size > 8388608:
-                                        console.print("[yellow]No existing torrent found with piece size lesser than 8MB[/yellow]")
-                                        tracker_status[tracker_name]['skipped'] = True
-                            elif os.path.exists(torrent_path):
-                                torrent = Torrent.read(torrent_path)
-                                if torrent.piece_size > 8388608:
-                                    console.print("[yellow]Existing torrent found with piece size greater than 8MB[/yellow]")
-                                    tracker_status[tracker_name]['skipped'] = True
-                if meta.get('skipping') is None and not is_dupe and tracker_name == "PTP":
-                    if meta.get('imdb_info', {}) == {}:
-                        meta['imdb_info'] = get_imdb_info_api(meta['imdb_id'], meta)
-                if not meta['debug']:
-                    if not tracker_status[tracker_name]['banned'] and not tracker_status[tracker_name]['skipped'] and not tracker_status[tracker_name]['dupe']:
-                        console.print(f"[bold yellow]Tracker '{tracker_name}' passed all checks.")
-                        if not meta['unattended'] or (meta['unattended'] and meta.get('unattended-confirm', False)):
-                            edit_choice = input("Enter 'y' to upload, or press enter to skip uploading:")
-                            if edit_choice.lower() == 'y':
-                                tracker_status[tracker_name]['upload'] = True
-                                successful_trackers += 1
-                            else:
-                                tracker_status[tracker_name]['upload'] = False
-                        else:
-                            tracker_status[tracker_name]['upload'] = True
-                            successful_trackers += 1
-                else:
-                    tracker_status[tracker_name]['upload'] = True
-                    successful_trackers += 1
-                meta['skipping'] = None
-        else:
-            if tracker_name == "MANUAL":
-                successful_trackers += 1
-
-        meta['tracker_status'] = tracker_status
-
-        if meta['debug']:
-            console.print("\n[bold]Tracker Processing Summary:[/bold]")
-        for t_name, status in tracker_status.items():
-            banned_status = 'Yes' if status['banned'] else 'No'
-            skipped_status = 'Yes' if status['skipped'] else 'No'
-            dupe_status = 'Yes' if status['dupe'] else 'No'
-            upload_status = 'Yes' if status['upload'] else 'No'
-            if meta['debug']:
-                console.print(f"Tracker: {t_name} | Banned: {banned_status} | Skipped: {skipped_status} | Dupe: {dupe_status} | [yellow]Upload:[/yellow] {upload_status}")
-        if meta['debug']:
-            console.print(f"\n[bold]Trackers Passed all Checks:[/bold] {successful_trackers}")
+        successful_trackers = await process_all_trackers(meta)
 
         meta['skip_uploading'] = int(self.config['DEFAULT'].get('tracker_pass_checks', 1))
         if not meta['debug']:

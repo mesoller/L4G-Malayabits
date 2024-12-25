@@ -419,7 +419,7 @@ def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
                 else:
                     console.print(f"[red]{result}")
 
-    if capture_results and len(capture_results) > num_screens and not retry_cap:
+    if capture_results and len(capture_results) > num_screens:
         smallest = None
         smallest_size = float('inf')
         for screens in glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}/", f"{meta['discs'][disc_num]['name']}-*"):

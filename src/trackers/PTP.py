@@ -7,7 +7,6 @@ from pathlib import Path
 from str2bool import str2bool
 import json
 import glob
-import multiprocessing
 import platform
 import pickle
 import click
@@ -18,6 +17,8 @@ from src.exceptions import *  # noqa F403
 from src.console import console
 from torf import Torrent
 from datetime import datetime
+from src.takescreens import disc_screenshots, dvd_screenshots, screenshots
+from src.uploadscreens import upload_screens
 
 
 class PTP():
@@ -615,8 +616,6 @@ class PTP():
         return desc
 
     async def edit_desc(self, meta):
-        from src.prep import Prep
-        prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
         base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r', encoding="utf-8").read()
         multi_screens = int(self.config['DEFAULT'].get('multiScreens', 2))
 
@@ -688,14 +687,13 @@ class PTP():
                                 meta[new_images_key] = []
                                 new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                                 if not new_screens:
-                                    use_vs = meta.get('vapoursynth', False)
-                                    ds = multiprocessing.Process(target=prep.disc_screenshots, args=(meta, f"FILE_{i}", each['bdinfo'], meta['uuid'], meta['base_dir'], use_vs, [], meta.get('ffdebug', False), multi_screens, True))
-                                    ds.start()
-                                    while ds.is_alive() is True:
-                                        await asyncio.sleep(1)
+                                    try:
+                                        disc_screenshots(meta, f"FILE_{i}", each['bdinfo'], meta['uuid'], meta['base_dir'], meta.get('vapoursynth', False), [], meta.get('ffdebug', False), multi_screens, True)
+                                    except Exception as e:
+                                        print(f"Error during BDMV screenshot capture: {e}")
                                     new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                                 if new_screens:
-                                    uploaded_images, _ = prep.upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
+                                    uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                     for img in uploaded_images:
                                         meta[new_images_key].append({
                                             'img_url': img['img_url'],
@@ -741,13 +739,15 @@ class PTP():
                                 meta[new_images_key] = []
                                 new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
                                 if not new_screens:
-                                    ds = multiprocessing.Process(target=prep.dvd_screenshots, args=(meta, i, multi_screens, True))
-                                    ds.start()
-                                    while ds.is_alive() is True:
-                                        await asyncio.sleep(1)
+                                    try:
+                                        dvd_screenshots(
+                                            meta, i, multi_screens, True
+                                        )
+                                    except Exception as e:
+                                        print(f"Error during DVD screenshot capture: {e}")
                                     new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
                                 if new_screens:
-                                    uploaded_images, _ = prep.upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
+                                    uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                     for img in uploaded_images:
                                         meta[new_images_key].append({
                                             'img_url': img['img_url'],
@@ -807,13 +807,14 @@ class PTP():
                             meta[new_images_key] = []
                             new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                             if not new_screens:
-                                s = multiprocessing.Process(target=prep.screenshots, args=(file, f"FILE_{i}", meta['uuid'], meta['base_dir'], meta, multi_screens, True, None))
-                                s.start()
-                                while s.is_alive() is True:
-                                    await asyncio.sleep(3)
+                                try:
+                                    screenshots(
+                                        file, f"FILE_{i}", meta['uuid'], meta['base_dir'], meta, multi_screens, True, None)
+                                except Exception as e:
+                                    print(f"Error during generic screenshot capture: {e}")
                                 new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                             if new_screens:
-                                uploaded_images, _ = prep.upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
+                                uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                 for img in uploaded_images:
                                     meta[new_images_key].append({
                                         'img_url': img['img_url'],
