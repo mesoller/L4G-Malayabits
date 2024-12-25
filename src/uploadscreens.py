@@ -279,11 +279,14 @@ def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_lis
         if sys.stdout.isatty():  # Check if running in terminal
             with tqdm(total=len(upload_tasks), desc="Uploading Screenshots", ascii=True) as pbar:
                 for future in as_completed(future_to_task):
-                    result = future.result()
-                    if not isinstance(result, str) or not result.startswith("Error"):
-                        results.append(result)
-                    else:
-                        console.print(f"[red]{result}")
+                    try:
+                        result = future.result()
+                        if result.get('status') == 'success':
+                            results.append(result)
+                        else:
+                            console.print(f"[red]{result}")
+                    except Exception as e:
+                        console.print(f"[red]Error during upload: {str(e)}")
                     pbar.update(1)
         else:
             for future in as_completed(future_to_task):
@@ -293,7 +296,7 @@ def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_lis
                 else:
                     console.print(f"[red]{result}")
 
-        return meta['image_list'], len(meta['image_list'])
+        # return meta['image_list'], len(meta['image_list'])
 
     successfully_uploaded = []
     for result in results:
