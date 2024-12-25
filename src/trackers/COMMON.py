@@ -631,11 +631,11 @@ class COMMON():
         video_encode = meta.get("video_encode")
         if video_encode is not None:
             has_encoder_in_name = video_encode.lower()
-            normalized_encoder = self.normalize_filename(has_encoder_in_name)
+            normalized_encoder = await self.normalize_filename(has_encoder_in_name)
         else:
             normalized_encoder = False
         has_is_disc = bool(meta.get('is_disc', False))
-        target_hdr = self.refine_hdr_terms(meta.get("hdr"))
+        target_hdr = await self.refine_hdr_terms(meta.get("hdr"))
         target_season = meta.get("season")
         target_episode = meta.get("episode")
         target_resolution = meta.get("resolution")
@@ -670,17 +670,17 @@ class COMMON():
             },
         ]
 
-        def log_exclusion(reason, item):
+        async def log_exclusion(reason, item):
             if meta['debug']:
                 console.log(f"[yellow]Excluding result due to {reason}: {item}")
 
-        def process_exclusion(each):
+        async def process_exclusion(each):
             """
             Determine if an entry should be excluded.
             Returns True if the entry should be excluded, otherwise allowed as dupe.
             """
-            normalized = self.normalize_filename(each)
-            file_hdr = self.refine_hdr_terms(normalized)
+            normalized = await self.normalize_filename(each)
+            file_hdr = await self.refine_hdr_terms(normalized)
 
             if meta['debug']:
                 console.log(f"[debug] Evaluating dupe: {each}")
@@ -699,44 +699,44 @@ class COMMON():
                 return False
 
             if has_is_disc and re.search(r'\.\w{2,4}$', each):
-                log_exclusion("file extension mismatch (is_disc=True)", each)
+                await log_exclusion("file extension mismatch (is_disc=True)", each)
                 return True
 
             if not is_dvd:
                 if target_resolution and target_resolution not in each:
-                    log_exclusion(f"resolution '{target_resolution}' mismatch", each)
+                    await log_exclusion(f"resolution '{target_resolution}' mismatch", each)
                     return True
 
             if is_dvd:
                 if any(str(res) in each for res in [1080, 720, 2160]):
-                    log_exclusion(f"resolution '{target_resolution}' mismatch", each)
+                    await log_exclusion(f"resolution '{target_resolution}' mismatch", each)
                     return True
 
             for check in attribute_checks:
                 if check["key"] == "repack":
                     if has_repack_in_uuid and "repack" not in normalized:
                         if tag and tag in normalized:
-                            log_exclusion("missing 'repack'", each)
+                            await log_exclusion("missing 'repack'", each)
                             return True
                 elif check["uuid_flag"] != check["condition"](each):
-                    log_exclusion(f"{check['key']} mismatch", each)
+                    await log_exclusion(f"{check['key']} mismatch", each)
                     return True
 
             if not is_dvd:
-                if not self.has_matching_hdr(file_hdr, target_hdr, meta):
-                    log_exclusion(f"HDR mismatch: Expected {target_hdr}, got {file_hdr}", each)
+                if not await self.has_matching_hdr(file_hdr, target_hdr, meta):
+                    await log_exclusion(f"HDR mismatch: Expected {target_hdr}, got {file_hdr}", each)
                     return True
 
-            season_episode_match = self.is_season_episode_match(normalized, target_season, target_episode)
+            season_episode_match = await self.is_season_episode_match(normalized, target_season, target_episode)
             if meta['debug']:
                 console.log(f"[debug] Season/Episode match result: {season_episode_match}")
             if not season_episode_match:
-                log_exclusion("season/episode mismatch", each)
+                await log_exclusion("season/episode mismatch", each)
                 return True
 
             if not is_dvd:
                 if normalized_encoder and normalized_encoder in each:
-                    log_exclusion(f"Encoder '{has_encoder_in_name}' mismatch", each)
+                    await log_exclusion(f"Encoder '{has_encoder_in_name}' mismatch", each)
                     return False
 
             if web_dl and ("web-dl" in normalized or "webdl" in normalized or "web dl" in normalized):
@@ -747,7 +747,7 @@ class COMMON():
 
         for each in dupes:
             console.log(f"[debug] Evaluating dupe: {each}")
-            if not process_exclusion(each):
+            if not await process_exclusion(each):
                 new_dupes.append(each)
 
         if meta['debug']:
@@ -755,7 +755,7 @@ class COMMON():
 
         return new_dupes
 
-    def normalize_filename(self, filename):
+    async def normalize_filename(self, filename):
         """
         Normalize a filename for easier matching.
         Retain season/episode information in the format SxxExx.
@@ -764,7 +764,7 @@ class COMMON():
 
         return normalized
 
-    def is_season_episode_match(self, filename, target_season, target_episode):
+    async def is_season_episode_match(self, filename, target_season, target_episode):
         """
         Check if the filename matches the given season and episode.
         """
@@ -784,7 +784,7 @@ class COMMON():
             return episode_pattern in filename
         return True
 
-    def refine_hdr_terms(self, hdr):
+    async def refine_hdr_terms(self, hdr):
         """
         Normalize HDR terms for consistent comparison.
         Simplifies all HDR entries to 'HDR' and DV entries to 'DV'.
@@ -799,7 +799,7 @@ class COMMON():
             terms.add("HDR")
         return terms
 
-    def has_matching_hdr(self, file_hdr, target_hdr, meta):
+    async def has_matching_hdr(self, file_hdr, target_hdr, meta):
         """
         Check if the HDR terms match or are compatible.
         """
