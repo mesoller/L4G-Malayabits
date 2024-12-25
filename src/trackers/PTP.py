@@ -19,6 +19,7 @@ from torf import Torrent
 from datetime import datetime
 from src.takescreens import disc_screenshots, dvd_screenshots, screenshots
 from src.uploadscreens import upload_screens
+from src.torrentcreate import CustomTorrent, torf_cb
 
 
 class PTP():
@@ -230,8 +231,9 @@ class PTP():
                 meta['description'] = ptp_desc
                 meta['saved_description'] = True
         else:
-            meta['description'] = ptp_desc
-            meta['saved_description'] = True
+            if not meta['is_disc']:
+                meta['description'] = ptp_desc
+                meta['saved_description'] = True
 
         return desc, imagelist
 
@@ -975,10 +977,6 @@ class PTP():
         if torrent.piece_size > 16777216:  # 16 MiB in bytes
             console.print("[red]Piece size is OVER 16M and does not work on PTP. Generating a new .torrent")
 
-            # Import Prep and regenerate the torrent with 16 MiB piece size limit
-            from src.prep import Prep
-            prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
-
             if meta['is_disc']:
                 include = []
                 exclude = []
@@ -986,10 +984,7 @@ class PTP():
                 include = ["*.mkv", "*.mp4", "*.ts"]
                 exclude = ["*.*", "*sample.mkv", "!sample*.*"]
 
-            # Create a new torrent with piece size explicitly set to 8 MiB
-            from src.prep import Prep
-            prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
-            new_torrent = prep.CustomTorrent(
+            new_torrent = CustomTorrent(
                 meta=meta,
                 path=Path(meta['path']),
                 trackers=[self.announce_url],
@@ -1008,7 +1003,7 @@ class PTP():
 
             # Validate and write the new torrent
             new_torrent.validate_piece_size()
-            new_torrent.generate(callback=prep.torf_cb, interval=5)
+            new_torrent.generate(callback=torf_cb, interval=5)
             new_torrent.write(torrent_path, overwrite=True)
 
         # Proceed with the upload process

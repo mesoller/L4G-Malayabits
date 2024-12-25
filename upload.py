@@ -18,6 +18,7 @@ from src.trackersetup import tracker_class_map, api_trackers, other_api_trackers
 from src.trackerhandle import process_trackers
 from src.queuemanage import handle_queue
 from src.console import console
+from src.torrentcreate import create_torrent, create_random_torrents, create_base_from_existing_torrent
 
 cli_ui.setup(color='always', title="Audionut's Upload Assistant")
 
@@ -93,24 +94,27 @@ async def process_meta(meta, base_dir):
         elif meta.get('skip_imghost_upload', False) is True and meta.get('image_list', False) is False:
             meta['image_list'] = []
 
+        with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
+            json.dump(meta, f, indent=4)
+
         torrent_path = os.path.abspath(f"{meta['base_dir']}/tmp/{meta['uuid']}/BASE.torrent")
         if not os.path.exists(torrent_path):
             reuse_torrent = None
             if meta.get('rehash', False) is False:
                 reuse_torrent = await client.find_existing_torrent(meta)
                 if reuse_torrent is not None:
-                    await prep.create_base_from_existing_torrent(reuse_torrent, meta['base_dir'], meta['uuid'])
+                    await create_base_from_existing_torrent(reuse_torrent, meta['base_dir'], meta['uuid'])
 
             if meta['nohash'] is False and reuse_torrent is None:
-                prep.create_torrent(meta, Path(meta['path']), "BASE")
+                create_torrent(meta, Path(meta['path']), "BASE")
             if meta['nohash']:
                 meta['client'] = "none"
 
         elif os.path.exists(torrent_path) and meta.get('rehash', False) is True and meta['nohash'] is False:
-            prep.create_torrent(meta, Path(meta['path']), "BASE")
+            create_torrent(meta, Path(meta['path']), "BASE")
 
         if int(meta.get('randomized', 0)) >= 1:
-            prep.create_random_torrents(meta['base_dir'], meta['uuid'], meta['randomized'], meta['path'])
+            create_random_torrents(meta['base_dir'], meta['uuid'], meta['randomized'], meta['path'])
 
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
             json.dump(meta, f, indent=4)
@@ -138,7 +142,7 @@ async def save_processed_file(log_file, file_path):
     """
     Adds a processed file to the log.
     """
-    processed_files = load_processed_files(log_file)
+    processed_files = await load_processed_files(log_file)
     processed_files.add(file_path)
     with open(log_file, "w") as f:
         json.dump(list(processed_files), f, indent=4)

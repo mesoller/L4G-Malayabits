@@ -481,7 +481,7 @@ def dvd_screenshots(meta, disc_num, num_screens=None, retry_cap=None):
         image_size = os.path.getsize(image)
         if image_size <= 120000:
             console.print(f"[yellow]Image {image} is incredibly small, retaking.")
-            retry_cap = True
+            retake = True
 
         if retake:
             retry_attempts = 3

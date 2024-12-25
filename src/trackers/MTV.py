@@ -15,6 +15,7 @@ from datetime import datetime
 import glob
 import multiprocessing
 from urllib.parse import urlparse
+from src.torrentcreate import CustomTorrent, torf_cb
 
 
 class MTV():
@@ -71,9 +72,7 @@ class MTV():
                         include = ["*.mkv", "*.mp4", "*.ts"]
                         exclude = ["*.*", "*sample.mkv", "!sample*.*"]
 
-                    from src.prep import Prep
-                    prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
-                    new_torrent = prep.CustomTorrent(
+                    new_torrent = CustomTorrent(
                         meta=meta,
                         path=Path(meta['path']),
                         trackers=["https://fake.tracker"],
@@ -88,7 +87,7 @@ class MTV():
 
                     new_torrent.piece_size = 8 * 1024 * 1024
                     new_torrent.validate_piece_size()
-                    new_torrent.generate(callback=prep.torf_cb, interval=5)
+                    new_torrent.generate(callback=torf_cb, interval=5)
                     new_torrent.write(f"{meta['base_dir']}/tmp/{meta['uuid']}/MTV.torrent", overwrite=True)
 
                     torrent_filename = "MTV"

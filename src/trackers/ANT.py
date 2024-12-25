@@ -9,6 +9,7 @@ from pymediainfo import MediaInfo
 from pathlib import Path
 from src.trackers.COMMON import COMMON
 from src.console import console
+from src.torrentcreate import create_torrent
 
 
 class ANT():
@@ -69,11 +70,8 @@ class ANT():
         # Trigger regeneration automatically if size constraints aren't met
         if torrent_file_size_kib > 250:  # 250 KiB
             console.print("[yellow]Existing .torrent exceeds 250 KiB and will be regenerated to fit constraints.")
-
-            from src.prep import Prep
-            prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
             meta['max_piece_size'] = '256'  # 256 MiB
-            prep.create_torrent(meta, Path(meta['path']), "ANT")
+            create_torrent(meta, Path(meta['path']), "ANT")
             torrent_filename = "ANT"
 
         await common.edit_torrent(meta, self.tracker, self.source_flag, torrent_filename=torrent_filename)
