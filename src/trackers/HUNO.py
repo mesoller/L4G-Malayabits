@@ -8,6 +8,7 @@ import re
 import platform
 import bencodepy
 import cli_ui
+import httpx
 
 from src.trackers.COMMON import COMMON
 from src.console import console
@@ -307,19 +308,22 @@ class HUNO():
         if meta.get('edition', "") != "":
             params['name'] + meta['edition']
         try:
-            response = requests.get(url=self.search_url, params=params, timeout=8)
-            response = response.json()
-            for each in response['data']:
-                result = [each][0]['attributes']['name']
-                dupes.append(result)
-        except requests.exceptions.Timeout:
-            console.print('[bold red]Request timed out while searching for existing torrents on site.')
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url=self.search_url, params=params)
+                if response.status_code == 200:
+                    data = response.json()
+                    for each in data['data']:
+                        result = [each][0]['attributes']['name']
+                        dupes.append(result)
+                else:
+                    console.print(f"[bold red]Failed to search torrents. HTTP Status: {response.status_code}")
+        except httpx.TimeoutException:
+            console.print("[bold red]Request timed out after 5 seconds")
+        except httpx.RequestError as e:
+            console.print(f"[bold red]Unable to search for existing torrents: {e}")
         except Exception as e:
-            meta['skipping'] = "HUNO"
-            console.print('[bold red]Unable to search for existing torrents on site. Either the site is down or your API key is incorrect.')
-            console.print(f'[bold red]{e}')
-        finally:
-            await asyncio.sleep(1)
+            console.print(f"[bold red]Unexpected error: {e}")
+            await asyncio.sleep(5)
 
         return dupes
 
