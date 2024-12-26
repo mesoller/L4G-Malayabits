@@ -7,58 +7,45 @@ import platform
 import bencodepy
 import os
 import glob
-import httpx
 
 from src.trackers.COMMON import COMMON
 from src.console import console
 
 
-class OTW():
-    """
-    Edit for Tracker:
-        Edit BASE.torrent with announce and source
-        Check for duplicates
-        Set type/category IDs
-        Upload
-    """
-
+class HHD():
     def __init__(self, config):
         self.config = config
-        self.tracker = 'OTW'
-        self.source_flag = 'OLD'
-        self.upload_url = 'https://oldtoons.world/api/torrents/upload'
-        self.search_url = 'https://oldtoons.world/api/torrents/filter'
+        self.tracker = 'HHD'
+        self.source_flag = 'HHD'
+        self.upload_url = 'https://homiehelpdesk.net/api/torrents/upload'
+        self.search_url = 'https://homiehelpdesk.net/api/torrents/filter'
         self.signature = "\n[center][url=https://github.com/Audionut/Upload-Assistant]Created by Audionut's Upload Assistant[/url][/center]"
         self.banned_groups = [
-            '[Oj]', '3LTON', '4yEo', 'ADE', 'AFG', 'AniHLS', 'AnimeRG', 'AniURL', 'AROMA', 'aXXo', 'Brrip', 'CHD', 'CM8', 'CrEwSaDe', 'd3g', 'DeadFish', 'DNL', 'ELiTE', 'eSc', 'FaNGDiNG0', 'FGT', 'Flights',
-            'FRDS', 'FUM', 'HAiKU', 'HD2DVD', 'HDS', 'HDTime', 'Hi10', 'ION10', 'iPlanet', 'JIVE', 'KiNGDOM', 'Leffe', 'LEGi0N', 'LOAD', 'MeGusta', 'mHD', 'mSD', 'NhaNc3', 'nHD', 'nikt0', 'NOIVTC', 'OFT',
-            'nSD', 'PiRaTeS', 'playBD', 'PlaySD', 'playXD', 'PRODJi', 'RAPiDCOWS', 'RARBG', 'RetroPeeps', 'RDN', 'REsuRRecTioN', 'RMTeam', 'SANTi', 'SicFoI', 'SPASM', 'SPDVD', 'STUTTERSHIT', 'Telly', 'TM',
-            'TRiToN', 'UPiNSMOKE', 'URANiME', 'WAF', 'x0r', 'xRed', 'XS', 'YIFY', 'ZKBL', 'ZmN', 'ZMNT', 'AOC',
-            ['EVO', 'Raw Content Only'], ['TERMiNAL', 'Raw Content Only'], ['ViSION', 'Note the capitalization and characters used'], ['CMRG', 'Raw Content Only']
-        ]
+            'aXXo', 'BONE', 'BRrip', 'CM8', 'CrEwSaDe', 'CTFOH', 'dAV1nci', 'd3g', 'DNL', 'FaNGDiNG0', 'GalaxyTV', 'HD2DVD', 'HDTime', 'iHYTECH', 'ION10',
+            'iPlanet', 'KiNGDOM', 'LAMA', 'MeGusta', 'mHD', 'mSD', 'NaNi', 'NhaNc3', 'nHD', 'nikt0', 'nSD', 'OFT', 'PRODJi', 'RARBG', 'Rifftrax', 'SANTi', 'SasukeducK',
+            'ShAaNiG', 'Sicario', 'STUTTERSHIT', 'TGALAXY', 'TORRENTGALAXY', 'TSP', 'TSPxL', 'ViSION', 'VXT', 'WAF', 'WKS', 'x0r', 'YAWNiX', 'YIFY', 'YTS', 'PSA']
         pass
 
     async def get_cat_id(self, category_name):
         category_id = {
             'MOVIE': '1',
             'TV': '2',
-        }.get(category_name, '0')
+            }.get(category_name, '0')
         return category_id
 
     async def get_type_id(self, type):
         type_id = {
             'DISC': '1',
             'REMUX': '2',
+            'ENCODE': '3',
             'WEBDL': '4',
             'WEBRIP': '5',
             'HDTV': '6',
-            'ENCODE': '3'
-        }.get(type, '0')
+            }.get(type, '0')
         return type_id
 
     async def get_res_id(self, resolution):
         resolution_id = {
-            '8640p': '10',
             '4320p': '1',
             '2160p': '2',
             '1440p': '3',
@@ -68,7 +55,8 @@ class OTW():
             '576p': '6',
             '576i': '7',
             '480p': '8',
-            '480i': '9'
+            '480i': '9',
+            'Other': '10'
         }.get(resolution, '10')
         return resolution_id
 
@@ -161,7 +149,7 @@ class OTW():
 
     async def search_existing(self, meta, disctype):
         dupes = []
-        console.print("[yellow]Searching for existing torrents on OTW...")
+        console.print("[yellow]Searching for existing torrents on FNP...")
         params = {
             'api_token': self.config['TRACKERS'][self.tracker]['api_key'].strip(),
             'tmdbId': meta['tmdb'],
@@ -173,30 +161,20 @@ class OTW():
         if meta.get('edition', "") != "":
             params['name'] = params['name'] + f" {meta['edition']}"
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(url=self.search_url, params=params)
-                if response.status_code == 200:
-                    data = response.json()
-                    for each in data['data']:
-                        result = [each][0]['attributes']['name']
-                        dupes.append(result)
-                else:
-                    console.print(f"[bold red]Failed to search torrents. HTTP Status: {response.status_code}")
-        except httpx.TimeoutException:
-            console.print("[bold red]Request timed out after 5 seconds")
-        except httpx.RequestError as e:
-            console.print(f"[bold red]Unable to search for existing torrents: {e}")
-        except Exception as e:
-            console.print(f"[bold red]Unexpected error: {e}")
+            response = requests.get(url=self.search_url, params=params)
+            response = response.json()
+            for each in response['data']:
+                result = [each][0]['attributes']['name']
+                # difference = SequenceMatcher(None, meta['clean_name'], result).ratio()
+                # if difference >= 0.05:
+                dupes.append(result)
+        except Exception:
+            console.print('[bold red]Unable to search for existing torrents on site. Either the site is down or your API key is incorrect')
             await asyncio.sleep(5)
 
         return dupes
 
     async def search_torrent_page(self, meta, disctype):
-        if not any(genre in meta['genres'] for genre in ['Animation', 'Family']):
-            console.print('[bold red]Content not allowed.')
-            meta['skipping'] = "OTW"
-            return
         torrent_file_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
         Name = meta['name']
         quoted_name = f'"{Name}"'
