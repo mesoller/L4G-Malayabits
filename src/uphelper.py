@@ -26,10 +26,10 @@ class UploadHelper:
                     upload = True
             else:
                 if meta.get('dupe', False) is False:
-                    console.print("[red]Found potential dupes. Aborting. If this is not a dupe, or you would like to upload anyways, pass --skip-dupe-check")
+                    console.print(f"[red]Found potential dupes on {tracker_name}. Aborting. If this is not a dupe, or you would like to upload anyways, pass --skip-dupe-check")
                     upload = False
                 else:
-                    console.print("[yellow]Found potential dupes. --skip-dupe-check was passed. Uploading anyways")
+                    console.print(f"[yellow]Found potential dupes on {tracker_name}. --skip-dupe-check was passed. Uploading anyways")
                     upload = True
 
             console.print()

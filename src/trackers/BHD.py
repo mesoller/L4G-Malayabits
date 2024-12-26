@@ -457,7 +457,7 @@ class BHD():
         url = f"https://beyond-hd.me/api/torrents/{self.config['TRACKERS']['BHD']['api_key'].strip()}"
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(url, params=data)
+                response = await client.post(url, params=data)
                 if response.status_code == 200:
                     data = response.json()
                     if data.get('status_code') == 1:

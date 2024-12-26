@@ -61,7 +61,7 @@ async def process_all_trackers(meta):
                 dupes = await ptp.search_existing(groupID, local_meta, disctype)
 
             if 'skipping' not in local_meta or local_meta['skipping'] is None:
-                dupes = await common.filter_dupes(dupes, local_meta)
+                dupes = await common.filter_dupes(dupes, local_meta, tracker_name)
                 local_meta, is_dupe = await helper.dupe_check(dupes, local_meta, tracker_name)
                 if is_dupe:
                     console.print(f"[red]Skipping upload on {tracker_name}[/red]")

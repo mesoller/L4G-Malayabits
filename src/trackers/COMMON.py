@@ -616,13 +616,13 @@ class COMMON():
             return ""
         return ptgen
 
-    async def filter_dupes(self, dupes, meta):
+    async def filter_dupes(self, dupes, meta, tracker_name):
         """
         Filter duplicates by applying exclusion rules. Only non-excluded entries are returned.
         Everything is a dupe, until it matches a criteria to be excluded.
         """
         if meta['debug']:
-            console.log("[cyan]Pre-filtered dupes")
+            console.log(f"[cyan]Pre-filtered dupes from {tracker_name}")
             console.log(dupes)
 
         new_dupes = []
@@ -727,12 +727,13 @@ class COMMON():
                     await log_exclusion(f"HDR mismatch: Expected {target_hdr}, got {file_hdr}", each)
                     return True
 
-            season_episode_match = await self.is_season_episode_match(normalized, target_season, target_episode)
-            if meta['debug']:
-                console.log(f"[debug] Season/Episode match result: {season_episode_match}")
-            if not season_episode_match:
-                await log_exclusion("season/episode mismatch", each)
-                return True
+            if meta.get('category') == "TV":
+                season_episode_match = await self.is_season_episode_match(normalized, target_season, target_episode)
+                if meta['debug']:
+                    console.log(f"[debug] Season/Episode match result: {season_episode_match}")
+                if not season_episode_match:
+                    await log_exclusion("season/episode mismatch", each)
+                    return True
 
             if not is_dvd:
                 if normalized_encoder and normalized_encoder in each:
@@ -742,16 +743,16 @@ class COMMON():
             if web_dl and ("web-dl" in normalized or "webdl" in normalized or "web dl" in normalized):
                 return False
 
-            console.log(f"[debug] Passed all checks: {each}")
+            if meta['debug']:
+                console.log(f"[debug] Passed all checks: {each}")
             return False
 
         for each in dupes:
-            console.log(f"[debug] Evaluating dupe: {each}")
             if not await process_exclusion(each):
                 new_dupes.append(each)
 
         if meta['debug']:
-            console.log(f"[cyan]Final dupes: {new_dupes}")
+            console.log(f"[cyan]Final dupes on {tracker_name}: {new_dupes}")
 
         return new_dupes
 
