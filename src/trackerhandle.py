@@ -63,10 +63,6 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                     console.print(f"(draft: {draft})")
                 console.print(f"Uploading to {tracker_class.tracker}")
                 await tracker_class.upload(meta, disctype)
-                perm = config['DEFAULT'].get('get_permalink', False)
-                if perm:
-                    await asyncio.sleep(5)  # Avoid racing the API
-                    await tracker_class.search_torrent_page(meta, disctype)
                 await client.add_to_client(meta, tracker_class.tracker)
 
         elif tracker in other_api_trackers:

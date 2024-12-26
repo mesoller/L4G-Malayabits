@@ -5,7 +5,6 @@ import requests
 from str2bool import str2bool
 import platform
 import re
-import bencodepy
 import os
 import glob
 import httpx
@@ -116,38 +115,17 @@ class AITHER():
             data['episode_number'] = meta.get('episode_int', '0')
         if meta['debug'] is False:
             response = requests.post(url=self.upload_url, files=files, data=data, headers=headers, params=params)
-            torrent_link = None
             try:
-                response_data = response.json()
-                if 'data' in response_data:
-                    match = re.search(r"(https://[a-zA-Z0-9.-]+/torrent/download/(\d+))", response_data['data'])
-                    if match:
-                        original_url = match.group(1)  # noqa #F841
-                        torrent_id = match.group(2)
-                        torrent_link = f"https://{match.group(0).split('/')[2]}/torrents/{torrent_id}"
-                    else:
-                        console.print("No matching URL found in the response.")
-                else:
-                    console.print("No 'data' key in the response.")
-            except Exception as e:
-                console.print(f"Error: {e}")
+                console.print(response.json())
+                # adding torrent link to comment of torrent file
+                t_id = response.json()['data'].split(".")[1].split("/")[3]
+                await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS'][self.tracker].get('announce_url'), "https://aither.cc/torrents/" + t_id)
+            except Exception:
+                console.print("It may have uploaded, go check")
+                return
         else:
             console.print("[cyan]Request Data:")
             console.print(data)
-
-        if torrent_link:
-            try:
-                open_torrent.seek(0)
-                torrent_data = open_torrent.read()
-                torrent = bencodepy.decode(torrent_data)
-                torrent[b'comment'] = torrent_link.encode('utf-8')
-                with open(torrent_file_path, 'wb') as updated_torrent_file:
-                    updated_torrent_file.write(bencodepy.encode(torrent))
-
-                console.print(f"Torrent file updated with comment: {torrent_link}")
-            except Exception as e:
-                console.print(f"Error while editing the torrent file: {e}")
-
         open_torrent.close()
 
     async def get_flag(self, meta, flag_name):
@@ -286,42 +264,3 @@ class AITHER():
             await asyncio.sleep(5)
 
         return dupes
-
-    async def search_torrent_page(self, meta, disctype):
-        torrent_file_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
-        Name = meta['name']
-        quoted_name = f'"{Name}"'
-
-        params = {
-            'api_token': self.config['TRACKERS'][self.tracker]['api_key'].strip(),
-            'name': quoted_name
-        }
-
-        try:
-            response = requests.get(url=self.search_url, params=params)
-            response.raise_for_status()
-            response_data = response.json()
-
-            if response_data['data'] and isinstance(response_data['data'], list):
-                details_link = response_data['data'][0]['attributes'].get('details_link')
-
-                if details_link:
-                    with open(torrent_file_path, 'rb') as open_torrent:
-                        torrent_data = open_torrent.read()
-
-                    torrent = bencodepy.decode(torrent_data)
-                    torrent[b'comment'] = details_link.encode('utf-8')
-                    updated_torrent_data = bencodepy.encode(torrent)
-
-                    with open(torrent_file_path, 'wb') as updated_torrent_file:
-                        updated_torrent_file.write(updated_torrent_data)
-
-                    return details_link
-                else:
-                    return None
-            else:
-                return None
-
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred during the request: {e}")
-            return None

@@ -6,10 +6,10 @@ from difflib import SequenceMatcher
 from str2bool import str2bool
 import os
 import platform
-import hashlib
 import bencodepy
 import glob
 import httpx
+import re
 from urllib.parse import urlparse
 from src.trackers.COMMON import COMMON
 from src.console import console
@@ -124,7 +124,6 @@ class BHD():
         if os.path.exists(torrent_file):
             open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
             files['file'] = open_torrent.read()
-            open_torrent.close()
 
         data = {
             'name': bhd_name,
@@ -178,13 +177,38 @@ class BHD():
                         response = response.json()
                     elif response['status_message'].startswith('Invalid name value'):
                         console.print(f"[bold yellow]Submitted Name: {bhd_name}")
+
+                if 'status_message' in response:
+                    match = re.search(r"https://beyond-hd\.me/torrent/download/.*\.(\d+)\.", response['status_message'])
+                    if match:
+                        torrent_id = match.group(1)
+                        details_link = f"https://beyond-hd.me/details/{torrent_id}"
+                    else:
+                        console.print("[yellow]No valid details link found in status_message.")
+
                 console.print(response)
-            except Exception:
+            except Exception as e:
                 console.print("It may have uploaded, go check")
+                console.print(f"Error: {e}")
                 return
         else:
             console.print("[cyan]Request Data:")
             console.print(data)
+
+        if details_link:
+            try:
+                open_torrent.seek(0)
+                torrent_data = open_torrent.read()
+                torrent = bencodepy.decode(torrent_data)
+                torrent[b'comment'] = details_link.encode('utf-8')
+                with open(torrent_file, 'wb') as updated_torrent_file:
+                    updated_torrent_file.write(bencodepy.encode(torrent))
+
+                console.print(f"Torrent file updated with comment: {details_link}")
+            except Exception as e:
+                console.print(f"Error while editing the torrent file: {e}")
+
+        open_torrent.close()
 
     async def handle_image_upload(self, meta, img_host_index=1, approved_image_hosts=None, file=None):
         if approved_image_hosts is None:
@@ -551,48 +575,3 @@ class BHD():
         if meta['category'] == "TV" and meta.get('tv_pack', 0) == 0 and meta.get('episode_title_storage', '').strip() != '' and meta['episode'].strip() != '':
             name = name.replace(meta['episode'], f"{meta['episode']} {meta['episode_title_storage']}", 1)
         return name
-
-    async def search_torrent_page(self, meta, disctype):
-        torrent_file_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
-        with open(torrent_file_path, 'rb') as open_torrent:
-            torrent_data = open_torrent.read()
-        torrent = bencodepy.decode(torrent_data)
-        info_dict = torrent[b'info']
-        bencoded_info = bencodepy.encode(info_dict)
-        info_hash = hashlib.sha1(bencoded_info).hexdigest()
-        # console.print(f"Info Hash: {info_hash}")
-
-        params = {
-            'action': 'search',
-            'info_hash': info_hash
-        }
-        url = f"https://beyond-hd.me/api/torrents/{self.config['TRACKERS']['BHD']['api_key'].strip()}"
-        try:
-            response = requests.post(url=url, json=params)
-            response_data = response.json()
-            # console.print(f"[yellow]Response Data: {response_data}")
-
-            if response_data.get('total_results') == 1:
-                for each in response_data['results']:
-                    details_link = f"https://beyond-hd.me/details/{each['id']}"
-
-                if details_link:
-                    with open(torrent_file_path, 'rb') as open_torrent:
-                        torrent_data = open_torrent.read()
-
-                    torrent = bencodepy.decode(torrent_data)
-                    torrent[b'comment'] = details_link.encode('utf-8')
-                    updated_torrent_data = bencodepy.encode(torrent)
-
-                    with open(torrent_file_path, 'wb') as updated_torrent_file:
-                        updated_torrent_file.write(updated_torrent_data)
-
-                    return details_link
-                else:
-                    return None
-            else:
-                return None
-
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred during the request: {e}")
-            return None
