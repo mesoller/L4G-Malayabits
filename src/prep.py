@@ -373,7 +373,12 @@ class Prep():
             meta['name_notag'], meta['name'], meta['clean_name'], meta['potential_missing'] = await self.get_name(meta)
             confirm = await helper.get_confirmation(meta)
 
+        if meta['debug']:
+            dupe_start_time = time.time()
         successful_trackers = await process_all_trackers(meta)
+        if meta['debug']:
+            dupe_finish_time = time.time()
+            console.print(f"Dupe checking processed in {dupe_finish_time - dupe_start_time:.2f} seconds")
 
         meta['skip_uploading'] = int(self.config['DEFAULT'].get('tracker_pass_checks', 1))
         if not meta['debug']:

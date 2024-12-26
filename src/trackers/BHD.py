@@ -9,8 +9,8 @@ import platform
 import hashlib
 import bencodepy
 import glob
+import httpx
 from urllib.parse import urlparse
-
 from src.trackers.COMMON import COMMON
 from src.console import console
 from src.takescreens import disc_screenshots, dvd_screenshots, screenshots
@@ -418,29 +418,34 @@ class BHD():
 
     async def search_existing(self, meta, disctype):
         bhd_name = await self.edit_name(meta)
-        if any(phrase in bhd_name.lower() for phrase in ("-framestor", "-bhdstudio", "-bmf", "-decibel", "-d-zone", "-hifi", "-ncmt", "-tdd", "-flux", "-crfw", "-sonny", "-zr-", "-mkvultra", "-rpg", "-w4nk3r", "-irobot", "-beyondhd")):
+        if any(phrase in bhd_name.lower() for phrase in (
+            "-framestor", "-bhdstudio", "-bmf", "-decibel", "-d-zone", "-hifi",
+            "-ncmt", "-tdd", "-flux", "-crfw", "-sonny", "-zr-", "-mkvultra",
+            "-rpg", "-w4nk3r", "-irobot", "-beyondhd"
+        )):
             console.print("[bold red]This is an internal BHD release, skipping upload[/bold red]")
             meta['skipping'] = "BHD"
-            return
+            return []
         if meta['type'] == "DVDRIP":
             console.print("[bold red]No DVDRIP at BHD, skipping upload[/bold red]")
             meta['skipping'] = "BHD"
-            return
+            return []
+
         dupes = []
         console.print("[yellow]Searching for existing torrents on BHD...")
         category = meta['category']
+        tmdbID = "movie" if category == 'MOVIE' else "tv"
         if category == 'MOVIE':
-            tmdbID = "movie"
             category = "Movies"
-        if category == "TV":
-            tmdbID = "tv"
+        elif category == "TV":
+            category = "TV"
+
         data = {
             'action': 'search',
             'tmdb_id': f"{tmdbID}/{meta['tmdb']}",
             'categories': category,
-            'types': await self.get_type(meta),
+            'types': await self.get_type(meta)
         }
-        # Search all releases if SD
         if meta['sd'] == 1:
             data['categories'] = None
             data['types'] = None
@@ -448,21 +453,29 @@ class BHD():
             if meta.get('tv_pack', 0) == 1:
                 data['pack'] = 1
             data['search'] = f"{meta.get('season', '')}{meta.get('episode', '')}"
+
         url = f"https://beyond-hd.me/api/torrents/{self.config['TRACKERS']['BHD']['api_key'].strip()}"
         try:
-            response = requests.post(url=url, data=data)
-            response = response.json()
-            if response.get('status_code') == 1:
-                for each in response['results']:
-                    result = each['name']
-                    difference = SequenceMatcher(None, meta['clean_name'].replace('DD+', 'DDP'), result).ratio()
-                    if difference >= 0.05:
-                        dupes.append(result)
-            else:
-                console.print(f"[yellow]{response.get('status_message')}")
-                await asyncio.sleep(5)
-        except Exception:
-            console.print('[bold red]Unable to search for existing torrents on site. Most likely the site is down.')
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url, params=data)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('status_code') == 1:
+                        for each in data['results']:
+                            result = each['name']
+                            difference = SequenceMatcher(None, meta['clean_name'].replace('DD+', 'DDP'), result).ratio()
+                            if difference >= 0.05:
+                                dupes.append(result)
+                    else:
+                        console.print(f"[bold red]Failed to search torrents. API Error: {data.get('message', 'Unknown Error')}")
+                else:
+                    console.print(f"[bold red]HTTP request failed. Status: {response.status_code}")
+        except httpx.TimeoutException:
+            console.print("[bold red]Request timed out after 5 seconds")
+        except httpx.RequestError as e:
+            console.print(f"[bold red]Unable to search for existing torrents: {e}")
+        except Exception as e:
+            console.print(f"[bold red]Unexpected error: {e}")
             await asyncio.sleep(5)
 
         return dupes

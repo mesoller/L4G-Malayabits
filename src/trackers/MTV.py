@@ -3,7 +3,8 @@ import asyncio
 from src.console import console
 import traceback
 from torf import Torrent
-import xml.etree.ElementTree
+import httpx
+import xml.etree.ElementTree as ET
 import os
 import cli_ui
 import pickle
@@ -13,9 +14,10 @@ from str2bool import str2bool
 from src.trackers.COMMON import COMMON
 from datetime import datetime
 import glob
-import multiprocessing
 from urllib.parse import urlparse
 from src.torrentcreate import CustomTorrent, torf_cb
+from src.takescreens import disc_screenshots, dvd_screenshots, screenshots
+from src.uploadscreens import upload_screens
 
 
 class MTV():
@@ -234,8 +236,6 @@ class MTV():
         multi_screens = int(self.config['DEFAULT'].get('screens', 6))
         base_dir = meta['base_dir']
         folder_id = meta['uuid']
-        from src.prep import Prep
-        prep = Prep(screens=meta['screens'], img_host=meta['imghost'], config=self.config)
         meta[new_images_key] = []
 
         screenshots_dir = os.path.join(base_dir, 'tmp', folder_id)
@@ -253,28 +253,24 @@ class MTV():
                 if meta.get('debug'):
                     console.print("[yellow]The image host of existing images is not supported.")
                     console.print(f"[yellow]Insufficient screenshots found: generating {multi_screens} screenshots.")
-
                 if meta['is_disc'] == "BDMV":
-                    s = multiprocessing.Process(
-                        target=prep.disc_screenshots,
-                        args=(f"FILE_{img_host_index}", meta['bdinfo'], folder_id, base_dir,
-                              meta.get('vapoursynth', False), [], meta.get('ffdebug', False), img_host_index)
-                    )
+                    try:
+                        disc_screenshots(meta, filename, meta['bdinfo'], folder_id, base_dir, meta.get('vapoursynth', False), [], meta.get('ffdebug', False), multi_screens, True)
+                    except Exception as e:
+                        print(f"Error during BDMV screenshot capture: {e}")
                 elif meta['is_disc'] == "DVD":
-                    s = multiprocessing.Process(
-                        target=prep.dvd_screenshots,
-                        args=(meta, 0, None, True)
-                    )
+                    try:
+                        dvd_screenshots(
+                            meta, 0, None, True
+                        )
+                    except Exception as e:
+                        print(f"Error during DVD screenshot capture: {e}")
                 else:
-                    s = multiprocessing.Process(
-                        target=prep.screenshots,
-                        args=(path, f"{filename}", meta['uuid'], base_dir,
-                              meta, multi_screens + 1, True, None)
-                    )
-
-                s.start()
-                while s.is_alive():
-                    await asyncio.sleep(1)
+                    try:
+                        screenshots(
+                            path, filename, meta['uuid'], base_dir, meta, multi_screens, True, None)
+                    except Exception as e:
+                        print(f"Error during generic screenshot capture: {e}")
 
                 if meta['is_disc'] == "DVD":
                     existing_screens = glob.glob(f"{meta['base_dir']}/tmp/{meta['uuid']}/{meta['discs'][0]['name']}-*.png")
@@ -307,7 +303,7 @@ class MTV():
                 console.print(f"[green]Uploading to approved host '{current_img_host}'.")
                 break
 
-        uploaded_images, _ = prep.upload_screens(
+        uploaded_images, _ = upload_screens(
             meta, multi_screens, img_host_index, 0, multi_screens,
             all_screenshots, {new_images_key: meta[new_images_key]}, retry_mode
         )
@@ -674,11 +670,14 @@ class MTV():
     async def search_existing(self, meta, disctype):
         dupes = []
         console.print("[yellow]Searching for existing torrents on MTV...")
+
+        # Build request parameters
         params = {
             't': 'search',
             'apikey': self.config['TRACKERS'][self.tracker]['api_key'].strip(),
             'q': ""
         }
+
         if meta['imdb_id'] not in ("0", "", None):
             params['imdbid'] = "tt" + meta['imdb_id']
         elif meta['tmdb'] != "0":
@@ -689,19 +688,31 @@ class MTV():
             params['q'] = meta['title'].replace(': ', ' ').replace('’', '').replace("'", '')
 
         try:
-            rr = requests.get(url=self.search_url, params=params)
-            if rr is not None:
-                # process search results
-                response_xml = xml.etree.ElementTree.fromstring(rr.text)
-                for each in response_xml.find('channel').findall('item'):
-                    result = each.find('title').text
-                    dupes.append(result)
-            else:
-                if 'status_message' in rr:
-                    console.print(f"[yellow]{rr.get('status_message')}")
-                    await asyncio.sleep(5)
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url=self.search_url, params=params)
+
+                if response.status_code == 200 and response.text:
+                    # Parse XML response
+                    try:
+                        response_xml = ET.fromstring(response.text)
+                        for each in response_xml.find('channel').findall('item'):
+                            result = each.find('title').text
+                            dupes.append(result)
+                    except ET.ParseError:
+                        console.print("[red]Failed to parse XML response from MTV API")
                 else:
-                    console.print("[red]Site Seems to be down or not responding to API")
+                    # Handle potential error messages
+                    if response.status_code != 200:
+                        console.print(f"[red]HTTP request failed. Status: {response.status_code}")
+                    elif 'status_message' in response.json():
+                        console.print(f"[yellow]{response.json().get('status_message')}")
+                        await asyncio.sleep(5)
+                    else:
+                        console.print("[red]Site Seems to be down or not responding to API")
+        except httpx.TimeoutException:
+            console.print("[red]Request timed out after 5 seconds")
+        except httpx.RequestError as e:
+            console.print(f"[red]Unable to search for existing torrents: {e}")
         except Exception:
             console.print("[red]Unable to search for existing torrents on site. Most likely the site is down.")
             dupes.append("FAILED SEARCH")
