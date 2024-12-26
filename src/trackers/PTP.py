@@ -10,6 +10,7 @@ import glob
 import platform
 import pickle
 import click
+import httpx
 from pymediainfo import MediaInfo
 from src.trackers.COMMON import COMMON
 from src.bbcode import BBCODE
@@ -327,6 +328,7 @@ class PTP():
         elif meta['resolution'] in ["2160p", "4320p", "8640p"]:
             quality = "Ultra High Definition"
 
+        # Prepare request parameters and headers
         params = {
             'id': groupID,
         }
@@ -336,19 +338,33 @@ class PTP():
             'User-Agent': self.user_agent
         }
         url = 'https://passthepopcorn.me/torrents.php'
-        response = requests.get(url=url, headers=headers, params=params)
-        await asyncio.sleep(1)
-        existing = []
+
         try:
-            response = response.json()
-            torrents = response.get('Torrents', [])
-            if len(torrents) != 0:
-                for torrent in torrents:
-                    if torrent.get('Quality') == quality and quality is not None:
-                        existing.append(f"[{torrent.get('Resolution')}] {torrent.get('ReleaseName', 'RELEASE NAME NOT FOUND')}")
-        except Exception:
-            console.print("[red]An error has occured trying to find existing releases")
-        return existing
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=headers, params=params)
+                await asyncio.sleep(1)  # Mimic server-friendly delay
+                if response.status_code == 200:
+                    existing = []
+                    try:
+                        data = response.json()
+                        torrents = data.get('Torrents', [])
+                        for torrent in torrents:
+                            if torrent.get('Quality') == quality and quality is not None:
+                                existing.append(f"[{torrent.get('Resolution')}] {torrent.get('ReleaseName', 'RELEASE NAME NOT FOUND')}")
+                    except ValueError:
+                        console.print("[red]Failed to parse JSON response from API.")
+                    return existing
+                else:
+                    console.print(f"[bold red]HTTP request failed with status code {response.status_code}")
+        except httpx.TimeoutException:
+            console.print("[bold red]Request timed out while trying to find existing releases.")
+        except httpx.RequestError as e:
+            console.print(f"[bold red]An error occurred while making the request: {e}")
+        except Exception as e:
+            console.print(f"[bold red]Unexpected error: {e}")
+            console.print_exception()
+
+        return []
 
     async def ptpimg_url_rehost(self, image_url):
         payload = {
