@@ -59,7 +59,8 @@ class AITHER():
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO.txt", 'r', encoding='utf-8').read()
             bd_dump = None
         desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r', encoding='utf-8').read()
-        open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
+        torrent_file_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
+        open_torrent = open(torrent_file_path, 'rb')
         files = {'torrent': open_torrent}
         base_dir = meta['base_dir']
         uuid = meta['uuid']
@@ -115,14 +116,38 @@ class AITHER():
             data['episode_number'] = meta.get('episode_int', '0')
         if meta['debug'] is False:
             response = requests.post(url=self.upload_url, files=files, data=data, headers=headers, params=params)
+            torrent_link = None
             try:
-                console.print(response.json())
-            except Exception:
-                console.print("It may have uploaded, go check")
-                return
+                response_data = response.json()
+                if 'data' in response_data:
+                    match = re.search(r"(https://[a-zA-Z0-9.-]+/torrent/download/(\d+))", response_data['data'])
+                    if match:
+                        original_url = match.group(1)  # noqa #F841
+                        torrent_id = match.group(2)
+                        torrent_link = f"https://{match.group(0).split('/')[2]}/torrents/{torrent_id}"
+                    else:
+                        console.print("No matching URL found in the response.")
+                else:
+                    console.print("No 'data' key in the response.")
+            except Exception as e:
+                console.print(f"Error: {e}")
         else:
             console.print("[cyan]Request Data:")
             console.print(data)
+
+        if torrent_link:
+            try:
+                open_torrent.seek(0)
+                torrent_data = open_torrent.read()
+                torrent = bencodepy.decode(torrent_data)
+                torrent[b'comment'] = torrent_link.encode('utf-8')
+                with open(torrent_file_path, 'wb') as updated_torrent_file:
+                    updated_torrent_file.write(bencodepy.encode(torrent))
+
+                console.print(f"Torrent file updated with comment: {torrent_link}")
+            except Exception as e:
+                console.print(f"Error while editing the torrent file: {e}")
+
         open_torrent.close()
 
     async def get_flag(self, meta, flag_name):
