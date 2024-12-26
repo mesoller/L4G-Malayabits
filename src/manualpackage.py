@@ -7,6 +7,7 @@ import re
 from torf import Torrent
 from glob import glob
 from src.console import console
+from src.uploadscreens import upload_screens
 
 
 async def package(self, meta):
@@ -40,7 +41,7 @@ async def package(self, meta):
                     r.raw.decode_content = True
                     with open(poster_img, 'wb') as f:
                         shutil.copyfileobj(r.raw, f)
-                    poster, dummy = await self.upload_screens(meta, 1, 1, 0, 1, [poster_img], {})
+                    poster, dummy = await upload_screens(meta, 1, 1, 0, 1, [poster_img], {})
                     poster = poster[0]
                     generic.write(f"TMDB Poster: {poster.get('raw_url', poster.get('img_url'))}\n")
                     meta['rehosted_poster'] = poster.get('raw_url', poster.get('img_url'))

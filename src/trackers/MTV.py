@@ -43,7 +43,7 @@ class MTV():
         ]
         pass
 
-    def match_host(self, hostname, approved_hosts):
+    async def match_host(self, hostname, approved_hosts):
         for approved_host in approved_hosts:
             if hostname == approved_host or hostname.endswith(f".{approved_host}"):
                 return approved_host
@@ -110,7 +110,7 @@ class MTV():
             raw_url = image['raw_url']
             parsed_url = urlparse(raw_url)
             hostname = parsed_url.netloc
-            mapped_host = self.match_host(hostname, url_host_mapping.keys())
+            mapped_host = await self.match_host(hostname, url_host_mapping.keys())
             mapped_host = url_host_mapping.get(mapped_host, mapped_host)
             if meta['debug']:
                 if mapped_host in approved_image_hosts:
@@ -120,8 +120,8 @@ class MTV():
 
         if all(
             url_host_mapping.get(
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                await self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                await self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
             ) in approved_image_hosts
             for image in meta['image_list']
         ):
@@ -319,7 +319,7 @@ class MTV():
             raw_url = image['raw_url']
             parsed_url = urlparse(raw_url)
             hostname = parsed_url.netloc
-            mapped_host = self.match_host(hostname, url_host_mapping.keys())
+            mapped_host = await self.match_host(hostname, url_host_mapping.keys())
             mapped_host = url_host_mapping.get(mapped_host, mapped_host)
 
             if mapped_host not in approved_image_hosts:
@@ -328,8 +328,8 @@ class MTV():
 
         if all(
             url_host_mapping.get(
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                await self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                await self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
             ) in approved_image_hosts
             for image in meta[new_images_key]
         ):
