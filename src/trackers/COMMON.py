@@ -751,8 +751,7 @@ class COMMON():
             if not await process_exclusion(each):
                 new_dupes.append(each)
 
-        if meta['debug']:
-            console.log(f"[cyan]Final dupes on {tracker_name}: {new_dupes}")
+        console.log(f"[cyan]Final dupes on {tracker_name}: {new_dupes}")
 
         return new_dupes
 

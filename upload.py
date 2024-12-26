@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from src.args import Args
 from src.clients import Clients
 from src.uploadscreens import upload_screens

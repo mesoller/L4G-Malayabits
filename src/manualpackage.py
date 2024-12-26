@@ -4,7 +4,7 @@ import os
 import json
 import urllib.parse
 import re
-from torrentool.torrent import Torrent
+from torf import Torrent
 from glob import glob
 from src.console import console
 
