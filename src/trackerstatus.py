@@ -38,7 +38,7 @@ async def process_all_trackers(meta):
             if tracker_name in {"THR", "PTP"}:
                 if local_meta.get('imdb_id', '0') == '0':
                     imdb_id = "0000000" if local_meta['unattended'] else cli_ui.ask_string("Unable to find IMDB id, please enter e.g.(tt1234567)")
-                    local_meta['imdb_id'] = imdb_id.replace('tt', '').zfill(7)
+                    meta['imdb_id'] = imdb_id.replace('tt', '').zfill(7)
 
             if tracker_name == "PTP":
                 console.print("[yellow]Searching for Group ID")
@@ -48,8 +48,8 @@ async def process_all_trackers(meta):
                     console.print("[yellow]No Existing Group found")
                     if local_meta.get('youtube', None) is None or "youtube" not in str(local_meta.get('youtube', '')):
                         youtube = "" if local_meta['unattended'] else cli_ui.ask_string("Unable to find youtube trailer, please link one e.g.(https://www.youtube.com/watch?v=dQw4w9WgXcQ)", default="")
-                        local_meta['youtube'] = youtube
-                    local_meta['ptp_groupID'] = groupID
+                        meta['youtube'] = youtube
+                    meta['ptp_groupID'] = groupID
 
             if tracker_setup.check_banned_group(tracker_class.tracker, tracker_class.banned_groups, local_meta):
                 console.print(f"[red]Tracker '{tracker_name}' is banned. Skipping.[/red]")
@@ -95,7 +95,7 @@ async def process_all_trackers(meta):
 
             if local_meta.get('skipping') is None and not local_tracker_status['dupe'] and tracker_name == "PTP":
                 if local_meta.get('imdb_info', {}) == {}:
-                    local_meta['imdb_info'] = await get_imdb_info_api(local_meta['imdb_id'], local_meta)
+                    meta['imdb_info'] = await get_imdb_info_api(local_meta['imdb_id'], local_meta)
 
             if not local_meta['debug']:
                 if not local_tracker_status['banned'] and not local_tracker_status['skipped'] and not local_tracker_status['dupe']:

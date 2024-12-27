@@ -715,7 +715,7 @@ class PTP():
                                         disc_screenshots(meta, f"FILE_{i}", each['bdinfo'], meta['uuid'], meta['base_dir'], meta.get('vapoursynth', False), [], meta.get('ffdebug', False), multi_screens, True)
                                     except Exception as e:
                                         print(f"Error during BDMV screenshot capture: {e}")
-                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
+                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                                 if new_screens and not meta.get('skip_imghost_upload', False):
                                     uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                     for img in uploaded_images:
@@ -769,7 +769,7 @@ class PTP():
                                         )
                                     except Exception as e:
                                         print(f"Error during DVD screenshot capture: {e}")
-                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
+                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
                                 if new_screens and not meta.get('skip_imghost_upload', False):
                                     uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                     for img in uploaded_images:
@@ -836,7 +836,7 @@ class PTP():
                                         file, f"FILE_{i}", meta['uuid'], meta['base_dir'], meta, multi_screens, True, None)
                                 except Exception as e:
                                     print(f"Error during generic screenshot capture: {e}")
-                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
+                            new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
                             if new_screens and not meta.get('skip_imghost_upload', False):
                                 uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
                                 for img in uploaded_images:

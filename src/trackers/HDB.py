@@ -226,7 +226,7 @@ class HDB():
         if torrent.piece_size > 16777216:  # 16 MiB in bytes
             console.print("[red]Piece size is OVER 16M and does not work on HDB. Generating a new .torrent")
 
-            if meta['is_disc'] == 1:
+            if meta['is_disc']:
                 include = []
                 exclude = []
             else:

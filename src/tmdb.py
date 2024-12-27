@@ -94,7 +94,6 @@ async def get_tmdb_id(filename, search_year, meta, category, untouched_filename=
 
 
 async def tmdb_other_meta(meta):
-
     if meta['tmdb'] == "0":
         try:
             title = guessit(meta['path'], {"excludes": ["country", "language"]})['title'].lower()
