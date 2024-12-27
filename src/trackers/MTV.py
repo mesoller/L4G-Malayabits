@@ -283,57 +283,60 @@ class MTV():
             console.print("[red]No screenshots were generated or found. Please check the screenshot generation process.")
             return [], True, images_reuploaded
 
-        uploaded_images = []
-        while True:
-            current_img_host_key = f'img_host_{img_host_index}'
-            current_img_host = self.config.get('DEFAULT', {}).get(current_img_host_key)
+        if not meta.get('skip_imghost_upload', False):
+            uploaded_images = []
+            while True:
+                current_img_host_key = f'img_host_{img_host_index}'
+                current_img_host = self.config.get('DEFAULT', {}).get(current_img_host_key)
 
-            if not current_img_host:
-                console.print("[red]No more image hosts left to try.")
-                raise Exception("No valid image host found in the config.")
+                if not current_img_host:
+                    console.print("[red]No more image hosts left to try.")
+                    raise Exception("No valid image host found in the config.")
 
-            if current_img_host not in approved_image_hosts:
-                console.print(f"[red]Your preferred image host '{current_img_host}' is not supported at MTV, trying next host.")
-                retry_mode = True
-                images_reuploaded = True
-                img_host_index += 1
-                continue
-            else:
-                meta['imghost'] = current_img_host
-                console.print(f"[green]Uploading to approved host '{current_img_host}'.")
-                break
+                if current_img_host not in approved_image_hosts:
+                    console.print(f"[red]Your preferred image host '{current_img_host}' is not supported at MTV, trying next host.")
+                    retry_mode = True
+                    images_reuploaded = True
+                    img_host_index += 1
+                    continue
+                else:
+                    meta['imghost'] = current_img_host
+                    console.print(f"[green]Uploading to approved host '{current_img_host}'.")
+                    break
 
-        uploaded_images, _ = upload_screens(
-            meta, multi_screens, img_host_index, 0, multi_screens,
-            all_screenshots, {new_images_key: meta[new_images_key]}, retry_mode
-        )
+            uploaded_images, _ = upload_screens(
+                meta, multi_screens, img_host_index, 0, multi_screens,
+                all_screenshots, {new_images_key: meta[new_images_key]}, retry_mode
+            )
 
-        if uploaded_images:
-            meta[new_images_key] = uploaded_images
+            if uploaded_images:
+                meta[new_images_key] = uploaded_images
 
-        if meta['debug']:
-            for image in uploaded_images:
-                console.print(f"[debug] Response in upload_image_task: {image['img_url']}, {image['raw_url']}, {image['web_url']}")
+            if meta['debug']:
+                for image in uploaded_images:
+                    console.print(f"[debug] Response in upload_image_task: {image['img_url']}, {image['raw_url']}, {image['web_url']}")
 
-        for image in meta.get(new_images_key, []):
-            raw_url = image['raw_url']
-            parsed_url = urlparse(raw_url)
-            hostname = parsed_url.netloc
-            mapped_host = self.match_host(hostname, url_host_mapping.keys())
-            mapped_host = url_host_mapping.get(mapped_host, mapped_host)
+            for image in meta.get(new_images_key, []):
+                raw_url = image['raw_url']
+                parsed_url = urlparse(raw_url)
+                hostname = parsed_url.netloc
+                mapped_host = self.match_host(hostname, url_host_mapping.keys())
+                mapped_host = url_host_mapping.get(mapped_host, mapped_host)
 
-            if mapped_host not in approved_image_hosts:
-                console.print(f"[red]Unsupported image host detected in URL '{raw_url}'. Please use one of the approved image hosts.")
-                return meta[new_images_key], True, images_reuploaded  # Trigger retry_mode if switching hosts
+                if mapped_host not in approved_image_hosts:
+                    console.print(f"[red]Unsupported image host detected in URL '{raw_url}'. Please use one of the approved image hosts.")
+                    return meta[new_images_key], True, images_reuploaded  # Trigger retry_mode if switching hosts
 
-        if all(
-            url_host_mapping.get(
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
-                self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
-            ) in approved_image_hosts
-            for image in meta[new_images_key]
-        ):
+            if all(
+                url_host_mapping.get(
+                    self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                    self.match_host(urlparse(image['raw_url']).netloc, url_host_mapping.keys()),
+                ) in approved_image_hosts
+                for image in meta[new_images_key]
+            ):
 
+                return meta[new_images_key], False, images_reuploaded
+        else:
             return meta[new_images_key], False, images_reuploaded
 
     async def edit_desc(self, meta):
