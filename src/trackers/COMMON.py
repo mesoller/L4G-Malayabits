@@ -111,85 +111,86 @@ class COMMON():
                             descfile.write(image_str)
                         descfile.write("[/center]\n\n")
                     else:
-                        # Check if screenshots exist for the current disc key
-                        if new_images_key in meta and meta[new_images_key]:
-                            if meta['debug']:
-                                console.print(f"[yellow]Found needed image URLs for {new_images_key}")
-                            descfile.write("[center]")
-                            if each['type'] == "BDMV":
-                                descfile.write(f"[spoiler={each.get('name', 'BDINFO')}][code]{each['summary']}[/code][/spoiler]\n\n")
-                            elif each['type'] == "DVD":
-                                descfile.write(f"{each['name']}:\n")
-                                descfile.write(f"[spoiler={os.path.basename(each['vob'])}][code]{each['vob_mi']}[/code][/spoiler] ")
-                                descfile.write(f"[spoiler={os.path.basename(each['ifo'])}][code]{each['ifo_mi']}[/code][/spoiler]\n\n")
-                            descfile.write("[/center]\n\n")
-                            # Use existing URLs from meta to write to descfile
-                            descfile.write("[center]")
-                            for img in meta[new_images_key]:
-                                web_url = img['web_url']
-                                raw_url = img['raw_url']
-                                image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
-                                descfile.write(image_str)
-                            descfile.write("[/center]\n\n")
-                        else:
-                            # Increment retry_count for tracking but use unique disc keys for each disc
-                            meta['retry_count'] += 1
-                            meta[new_images_key] = []
-                            descfile.write("[center]")
-                            if each['type'] == "BDMV":
-                                descfile.write(f"[spoiler={each.get('name', 'BDINFO')}][code]{each['summary']}[/code][/spoiler]\n\n")
-                            elif each['type'] == "DVD":
-                                descfile.write(f"{each['name']}:\n")
-                                descfile.write(f"[spoiler={os.path.basename(each['vob'])}][code]{each['vob_mi']}[/code][/spoiler] ")
-                                descfile.write(f"[spoiler={os.path.basename(each['ifo'])}][code]{each['ifo_mi']}[/code][/spoiler]\n\n")
-                            descfile.write("[/center]\n\n")
-                            # Check if new screenshots already exist before running prep.screenshots
-                            if each['type'] == "BDMV":
-                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
-                            elif each['type'] == "DVD":
-                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
-                            if not new_screens:
+                        if multi_screens != 0:
+                            # Check if screenshots exist for the current disc key
+                            if new_images_key in meta and meta[new_images_key]:
                                 if meta['debug']:
-                                    console.print(f"[yellow]No new screens for {new_images_key}; creating new screenshots")
-                                # Run prep.screenshots if no screenshots are present
-                                if each['type'] == "BDMV":
-                                    use_vs = meta.get('vapoursynth', False)
-                                    try:
-                                        disc_screenshots(meta, f"FILE_{i}", each['bdinfo'], meta['uuid'], meta['base_dir'], use_vs, [], meta.get('ffdebug', False), multi_screens, True)
-                                    except Exception as e:
-                                        print(f"Error during BDMV screenshot capture: {e}")
-                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
-                                elif each['type'] == "DVD":
-                                    try:
-                                        dvd_screenshots(meta, i, multi_screens, True)
-                                    except Exception as e:
-                                        print(f"Error during DVD screenshot capture: {e}")
-                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
-
-                            if new_screens and not meta.get('skip_imghost_upload', False):
-                                uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
-
-                                # Append each uploaded image's data to `meta[new_images_key]`
-                                for img in uploaded_images:
-                                    meta[new_images_key].append({
-                                        'img_url': img['img_url'],
-                                        'raw_url': img['raw_url'],
-                                        'web_url': img['web_url']
-                                    })
-
-                                # Write new URLs to descfile
+                                    console.print(f"[yellow]Found needed image URLs for {new_images_key}")
                                 descfile.write("[center]")
-                                for img in uploaded_images:
+                                if each['type'] == "BDMV":
+                                    descfile.write(f"[spoiler={each.get('name', 'BDINFO')}][code]{each['summary']}[/code][/spoiler]\n\n")
+                                elif each['type'] == "DVD":
+                                    descfile.write(f"{each['name']}:\n")
+                                    descfile.write(f"[spoiler={os.path.basename(each['vob'])}][code]{each['vob_mi']}[/code][/spoiler] ")
+                                    descfile.write(f"[spoiler={os.path.basename(each['ifo'])}][code]{each['ifo_mi']}[/code][/spoiler]\n\n")
+                                descfile.write("[/center]\n\n")
+                                # Use existing URLs from meta to write to descfile
+                                descfile.write("[center]")
+                                for img in meta[new_images_key]:
                                     web_url = img['web_url']
                                     raw_url = img['raw_url']
                                     image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
                                     descfile.write(image_str)
                                 descfile.write("[/center]\n\n")
+                            else:
+                                # Increment retry_count for tracking but use unique disc keys for each disc
+                                meta['retry_count'] += 1
+                                meta[new_images_key] = []
+                                descfile.write("[center]")
+                                if each['type'] == "BDMV":
+                                    descfile.write(f"[spoiler={each.get('name', 'BDINFO')}][code]{each['summary']}[/code][/spoiler]\n\n")
+                                elif each['type'] == "DVD":
+                                    descfile.write(f"{each['name']}:\n")
+                                    descfile.write(f"[spoiler={os.path.basename(each['vob'])}][code]{each['vob_mi']}[/code][/spoiler] ")
+                                    descfile.write(f"[spoiler={os.path.basename(each['ifo'])}][code]{each['ifo_mi']}[/code][/spoiler]\n\n")
+                                descfile.write("[/center]\n\n")
+                                # Check if new screenshots already exist before running prep.screenshots
+                                if each['type'] == "BDMV":
+                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
+                                elif each['type'] == "DVD":
+                                    new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
+                                if not new_screens:
+                                    if meta['debug']:
+                                        console.print(f"[yellow]No new screens for {new_images_key}; creating new screenshots")
+                                    # Run prep.screenshots if no screenshots are present
+                                    if each['type'] == "BDMV":
+                                        use_vs = meta.get('vapoursynth', False)
+                                        try:
+                                            disc_screenshots(meta, f"FILE_{i}", each['bdinfo'], meta['uuid'], meta['base_dir'], use_vs, [], meta.get('ffdebug', False), multi_screens, True)
+                                        except Exception as e:
+                                            print(f"Error during BDMV screenshot capture: {e}")
+                                        new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
+                                    if each['type'] == "DVD":
+                                        try:
+                                            dvd_screenshots(meta, i, multi_screens, True)
+                                        except Exception as e:
+                                            print(f"Error during DVD screenshot capture: {e}")
+                                        new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"{meta['discs'][i]['name']}-*.png")
 
-                            # Save the updated meta to `meta.json` after upload
-                            meta_filename = f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json"
-                            with open(meta_filename, 'w') as f:
-                                json.dump(meta, f, indent=4)
+                                if new_screens and not meta.get('skip_imghost_upload', False):
+                                    uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
+
+                                    # Append each uploaded image's data to `meta[new_images_key]`
+                                    for img in uploaded_images:
+                                        meta[new_images_key].append({
+                                            'img_url': img['img_url'],
+                                            'raw_url': img['raw_url'],
+                                            'web_url': img['web_url']
+                                        })
+
+                                    # Write new URLs to descfile
+                                    descfile.write("[center]")
+                                    for img in uploaded_images:
+                                        web_url = img['web_url']
+                                        raw_url = img['raw_url']
+                                        image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
+                                        descfile.write(image_str)
+                                    descfile.write("[/center]\n\n")
+
+                                # Save the updated meta to `meta.json` after upload
+                                meta_filename = f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json"
+                                with open(meta_filename, 'w') as f:
+                                    json.dump(meta, f, indent=4)
 
             # Handle single file case
             if len(filelist) == 1:
@@ -227,8 +228,8 @@ class COMMON():
                     if i > 0:
                         new_images_key = f'new_images_file_{i}'
                         if new_images_key not in meta or not meta[new_images_key]:
-                            # Proceed with image generation if not already present
                             meta[new_images_key] = []
+                            # Proceed with image generation if not already present
                             new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
 
                             # If no screenshots exist, create them
@@ -240,12 +241,11 @@ class COMMON():
                             except Exception as e:
                                 print(f"Error during generic screenshot capture: {e}")
 
-                                new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
+                            new_screens = glob.glob1(f"{meta['base_dir']}/tmp/{meta['uuid']}", f"FILE_{i}-*.png")
 
                             # Upload generated screenshots
                             if new_screens and not meta.get('skip_imghost_upload', False):
                                 uploaded_images, _ = upload_screens(meta, multi_screens, 1, 0, 2, new_screens, {new_images_key: meta[new_images_key]})
-                                meta[new_images_key] = []
                                 for img in uploaded_images:
                                     meta[new_images_key].append({
                                         'img_url': img['img_url'],
