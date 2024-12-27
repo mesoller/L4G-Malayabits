@@ -49,7 +49,7 @@ async def process_all_trackers(meta):
                     if local_meta.get('youtube', None) is None or "youtube" not in str(local_meta.get('youtube', '')):
                         youtube = "" if local_meta['unattended'] else cli_ui.ask_string("Unable to find youtube trailer, please link one e.g.(https://www.youtube.com/watch?v=dQw4w9WgXcQ)", default="")
                         meta['youtube'] = youtube
-                    meta['ptp_groupID'] = groupID
+                meta['ptp_groupID'] = groupID
 
             if tracker_setup.check_banned_group(tracker_class.tracker, tracker_class.banned_groups, local_meta):
                 console.print(f"[red]Tracker '{tracker_name}' is banned. Skipping.[/red]")
