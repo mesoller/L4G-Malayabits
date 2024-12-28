@@ -69,7 +69,8 @@ class ULCX():
         type_id = await self.get_type_id(meta['type'])
         resolution_id = await self.get_res_id(meta['resolution'], meta['type'])
         if resolution_id is None:
-            console.print("Resolution is below 720p; skipping.")
+            console.print("[red]Resolutions below 720p are not supported at ULCX.")
+            meta['not_uploading'] = True
             return
         await common.unit3d_edit_desc(meta, self.tracker, self.signature, comparison=True)
         region_id = await common.unit3d_region_ids(meta.get('region'))
@@ -149,6 +150,7 @@ class ULCX():
                 t_id = response.json()['data'].split(".")[1].split("/")[3]
                 await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS'][self.tracker].get('announce_url'), "https://upload.cx/torrents/" + t_id)
             except Exception:
+                meta['not_uploading'] = True
                 console.print("It may have uploaded, go check")
                 return
         else:
