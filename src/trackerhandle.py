@@ -149,9 +149,11 @@ async def process_trackers(meta, config, client, console, api_trackers, tracker_
                 ptpUrl, ptpData = await ptp.fill_upload_form(groupID, meta)
                 await ptp.upload(meta, ptpUrl, ptpData, disctype)
                 if 'not_uploading' not in meta or meta.get("not_uploading", False) is False:
+                    await asyncio.sleep(5)
                     await client.add_to_client(meta, "PTP")
                 else:
                     meta['not_uploading'] = False
+
 
     # Process all trackers concurrently
     tasks = [process_single_tracker(tracker) for tracker in enabled_trackers]

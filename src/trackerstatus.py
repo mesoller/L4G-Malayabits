@@ -37,11 +37,14 @@ async def process_all_trackers(meta):
             tracker_class = tracker_class_map[tracker_name](config=config)
             if tracker_name in {"THR", "PTP"}:
                 if local_meta.get('imdb_id', '0') == '0':
-                    imdb_id = "0000000" if local_meta['unattended'] else cli_ui.ask_string("Unable to find IMDB id, please enter e.g.(tt1234567)")
-                    meta['imdb_id'] = imdb_id.replace('tt', '').zfill(7)
+                    imdb_id = "0" if local_meta['unattended'] else cli_ui.ask_string("Unable to find IMDB id, please enter e.g.(tt1234567)")
+                    if imdb_id == "":
+                        meta['imdb_id'] = "0"
+                    else:
+                        meta['imdb_id'] = imdb_id.replace('tt', '').zfill(7)
 
             if tracker_name == "PTP":
-                console.print("[yellow]Searching for Group ID")
+                console.print("[yellow]Searching for Group ID on PTP")
                 ptp = PTP(config=config)
                 groupID = await ptp.get_group_by_imdb(local_meta['imdb_id'])
                 if groupID is None:
