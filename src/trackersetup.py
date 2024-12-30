@@ -40,6 +40,7 @@ from src.trackers.ULCX import ULCX
 from src.trackers.SPD import SPD
 from src.trackers.YOINK import YOINK
 from src.trackers.HHD import HHD
+from src.trackers.AR import AR
 import cli_ui
 from src.console import console
 
@@ -91,7 +92,7 @@ class TRACKER_SETUP:
 
 
 tracker_class_map = {
-    'ACM': ACM, 'AITHER': AITHER, 'AL': AL, 'ANT': ANT, 'BHD': BHD, 'BHDTV': BHDTV, 'BLU': BLU, 'CBR': CBR,
+    'ACM': ACM, 'AITHER': AITHER, 'AL': AL, 'ANT': ANT, 'AR': AR, 'BHD': BHD, 'BHDTV': BHDTV, 'BLU': BLU, 'CBR': CBR,
     'FNP': FNP, 'FL': FL, 'HDB': HDB, 'HDT': HDT, 'HHD': HHD, 'HP': HP, 'HUNO': HUNO, 'JPTV': JPTV, 'LCD': LCD,
     'LST': LST, 'LT': LT, 'MTV': MTV, 'NBL': NBL, 'OE': OE, 'OTW': OTW, 'PSS': PSS, 'PTP': PTP, 'PTER': PTER,
     'R4E': R4E, 'RF': RF, 'RTF': RTF, 'SHRI': SHRI, 'SN': SN, 'SPD': SPD, 'STC': STC, 'STT': STT, 'THR': THR,
@@ -108,5 +109,5 @@ other_api_trackers = {
 }
 
 http_trackers = {
-    'FL', 'HDB', 'HDT', 'MTV', 'PTER', 'TTG'
+    'AR', 'FL', 'HDB', 'HDT', 'MTV', 'PTER', 'TTG'
 }
