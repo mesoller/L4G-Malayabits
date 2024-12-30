@@ -40,6 +40,7 @@ from src.trackers.ULCX import ULCX
 from src.trackers.SPD import SPD
 from src.trackers.YOINK import YOINK
 from src.trackers.HHD import HHD
+from src.trackers.AR import AR
 import cli_ui
 from src.console import console
 
