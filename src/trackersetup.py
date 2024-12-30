@@ -108,5 +108,5 @@ other_api_trackers = {
 }
 
 http_trackers = {
-    'FL', 'HDB', 'HDT', 'MTV', 'PTER', 'TTG'
+    'AR','FL', 'HDB', 'HDT', 'MTV', 'PTER', 'TTG'
 }
