@@ -1093,11 +1093,11 @@ class PTP():
                     if match is not None:
                         errorMessage = match.group(1)
 
-                    raise UploadException(f"Upload to PTP failed: {errorMessage} ({response.status_code}). (We are still on the upload page.)")  # noqa F405
+                    raise UploadException(f"Upload to PTP failed: {errorMessage} ({response.status_code}). (We are still on the upload page.)")
 
                 # URL format in case of successful upload: https://passthepopcorn.me/torrents.php?id=9329&torrentid=91868
                 match = re.match(r".*?passthepopcorn\.me/torrents\.php\?id=(\d+)&torrentid=(\d+)", response.url)
                 if match is None:
                     console.print(url)
                     console.print(data)
-                    raise UploadException(f"Upload to PTP failed: result URL {response.url} ({response.status_code}) is not the expected one.")  # noqa F405
+                    raise UploadException(f"Upload to PTP failed: result URL {response.url} ({response.status_code}) is not the expected one.")
