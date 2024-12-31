@@ -1101,7 +1101,7 @@ class PTP():
                     console.print(url)
                     console.print(data)
                     raise UploadException(f"Upload to PTP failed: result URL {response.url} ({response.status_code}) is not the expected one.")  # noqa F405
-                
+
                 # having UA add the torrent link as a comment.
                 if match:
                     common = COMMON(config=self.config)
