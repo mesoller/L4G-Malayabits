@@ -435,7 +435,7 @@ config = {
             "watch_folder": "/Path/To/Watch/Folder"
         },
 
-    },
+    }, 
 
     "DISCORD": {
         "discord_bot_token": "discord bot token",
