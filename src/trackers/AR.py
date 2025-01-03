@@ -524,7 +524,8 @@ class AR():
                         try:
                             async with session.post(self.upload_url, data=form, headers=headers) as response:
                                 if response.status == 200:
-                                    # URL format in case of successful upload: https://passthepopcorn.me/torrents.php?id=9329&torrentid=91868
+                                    # URL format in case of successful upload: https://alpharatio.cc/torrents.php?id=2989202
+                                    print(response.url)
                                     match = re.match(r".*?alpharatio\.cc/torrents\.php\?id=(\d+)", response.url)
                                     if match is None:
                                         console.print(response.url)
@@ -538,7 +539,7 @@ class AR():
                                         await common.add_tracker_torrent(meta, self.tracker, self.source_flag,
                                                                          self.config['TRACKERS'][self.tracker].get(
                                                                              'announce_url'), response.url)
-                                                                      
+
                                 else:
                                     print("Upload failed. Response was not 200.")
                         except Exception:
