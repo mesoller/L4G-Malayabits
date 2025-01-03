@@ -531,7 +531,7 @@ class AR():
                                         console.print(response.url)
                                         console.print(data)
                                         raise UploadException(
-                                            f"Upload to {self.tracker} failed: result URL {response.url} ({response.status_code}) is not the expected one.")  # noqa F405
+                                            f"Upload to {self.tracker} failed: result URL {response.url} ({response.status}) is not the expected one.")  # noqa F405
 
                                     # having UA add the torrent link as a comment.
                                     if match:
