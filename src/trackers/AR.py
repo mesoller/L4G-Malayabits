@@ -525,8 +525,8 @@ class AR():
                             async with session.post(self.upload_url, data=form, headers=headers) as response:
                                 if response.status == 200:
                                     # URL format in case of successful upload: https://alpharatio.cc/torrents.php?id=2989202
-                                    print(response.url)
-                                    match = re.match(r".*?alpharatio\.cc/torrents\.php\?id=(\d+)", response.url)
+                                    print(f"printing url {response.url}")
+                                    match = re.match(r".*?alpharatio\.cc/torrents\.php\?id=(\d+)", str(response.url))
                                     if match is None:
                                         console.print(response.url)
                                         console.print(data)
