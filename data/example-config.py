@@ -286,7 +286,7 @@ config = {
             "api_key": "SN",
             "announce_url": "https://tracker.swarmazon.club:8443/<YOUR_PASSKEY>/announce",
         },
-        "SD": {
+        "SP": {
             "api_key": "SeedPool API KEY",
             "announce_url": "https://seedpool.org/announce/<PASSKEY>",
         },
@@ -435,7 +435,7 @@ config = {
             "watch_folder": "/Path/To/Watch/Folder"
         },
 
-    }, 
+    },
 
     "DISCORD": {
         "discord_bot_token": "discord bot token",

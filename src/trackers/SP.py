@@ -19,13 +19,6 @@ class SP():
         Upload
     """
 
-    ###############################################################
-    ########                    SeedPool                   ########
-    ###############################################################
-
-    # ALSO EDIT CLASS NAME ABOVE
-
-    
     def __init__(self, config):
         self.config = config
         self.tracker = 'SP'
@@ -38,7 +31,7 @@ class SP():
         pass
 
     async def get_cat_id(self, meta_or_category):
-    # Determine if we received the full meta dictionary or just the category string
+        # Determine if we received the full meta dictionary or just the category string
         if isinstance(meta_or_category, dict):
             category_name = meta_or_category.get('category', '').upper()
             release_title = meta_or_category.get('name', '')
@@ -51,25 +44,23 @@ class SP():
             tv_pack = 0
         else:
             raise TypeError("Expected 'meta_or_category' to be a dictionary or string.")
-    
+
         # Custom SEEDPOOL category logic
         if mal_id != 0:
             return '6'  # Anime
-    
+
         if category_name == 'TV':
             if tv_pack != 0:
                 return '13'  # Boxset
             if self.contains_sports_patterns(release_title):
                 return '8'  # Sports
-    
+
         # Default category logic
         category_id = {
             'MOVIE': '1',
             'TV': '2',
         }.get(category_name, '0')
         return category_id
-
-
 
     # New function to check for sports releases in a title
     def contains_sports_patterns(self, release_title):
@@ -111,10 +102,6 @@ class SP():
             '480i': '9'
         }.get(resolution, '10')
         return resolution_id
-
-    ###############################################################
-    ######   STOP HERE UNLESS EXTRA MODIFICATION IS NEEDED   ###### noqa E266
-    ###############################################################
 
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
