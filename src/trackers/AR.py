@@ -9,6 +9,7 @@ import re
 import rich.prompt as Prompt
 import urllib.parse
 import httpx
+from src.exceptions import *  # noqa F403
 from bs4 import BeautifulSoup
 from src.console import console
 from src.trackers.COMMON import COMMON
@@ -523,10 +524,21 @@ class AR():
                         try:
                             async with session.post(self.upload_url, data=form, headers=headers) as response:
                                 if response.status == 200:
-                                    comment = response.url
-                                    print(response.url)
-                                    # updates the torrent file comment before adding to the client with the URL of torrent on AR.
-                                    await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS'][self.tracker].get('announce_url'), str(comment))
+                                    # URL format in case of successful upload: https://passthepopcorn.me/torrents.php?id=9329&torrentid=91868
+                                    match = re.match(r".*?alpharatio\.cc/torrents\.php\?id=(\d+)", response.url)
+                                    if match is None:
+                                        console.print(response.url)
+                                        console.print(data)
+                                        raise UploadException(
+                                            f"Upload to {self.tracker} failed: result URL {response.url} ({response.status_code}) is not the expected one.")  # noqa F405
+
+                                    # having UA add the torrent link as a comment.
+                                    if match:
+                                        common = COMMON(config=self.config)
+                                        await common.add_tracker_torrent(meta, self.tracker, self.source_flag,
+                                                                         self.config['TRACKERS'][self.tracker].get(
+                                                                             'announce_url'), response.url)
+                                                                      
                                 else:
                                     print("Upload failed. Response was not 200.")
                         except Exception:
