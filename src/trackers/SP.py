@@ -44,11 +44,11 @@ class SP():
         if mal_id != 0:
             return '6'  # Anime
 
-        if category_name == 'TV':
-            if tv_pack != 0:
-                return '13'  # Boxset
-            if self.contains_sports_patterns(release_title):
-                return '8'  # Sports
+        if tv_pack != 0:
+            return '13'  # Boxset
+
+        if self.contains_sports_patterns(release_title):
+            return '8'  # Sports
 
         # Default category logic
         category_id = {
