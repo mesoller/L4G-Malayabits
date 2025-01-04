@@ -30,7 +30,7 @@ class SP():
         self.banned_groups = [""]
         pass
 
-   # Change from base: Requires the full meta dictionary to determine category
+    # Change from base: Requires the full meta dictionary to determine category
     async def get_cat_id(self, meta):
         if not isinstance(meta, dict):
             raise TypeError('meta must be a dict when passed to Seedpool get_cat_id')
@@ -41,14 +41,17 @@ class SP():
         tv_pack = meta.get('tv_pack', 0)
 
         # Custom SEEDPOOL category logic
+        # Anime
         if mal_id != 0:
-            return '6'  # Anime
+            return '6'
 
+        # Boxset
         if tv_pack != 0:
-            return '13'  # Boxset
+            return '13'
 
+        # Sports
         if self.contains_sports_patterns(release_title):
-            return '8'  # Sports
+            return '8'
 
         # Default category logic
         category_id = {
