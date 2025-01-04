@@ -413,6 +413,10 @@ class AR():
             # name must have . instead of spaces
             ar_name = meta['name'].replace(' ', ".").replace("'", '').replace(':', '')
 
+        if meta['tag'] == "":
+            # replacing spaces with . as per rules
+            ar_name += "-AR"
+
         data = {
             "submit": "true",
             "auth": auth_key,
