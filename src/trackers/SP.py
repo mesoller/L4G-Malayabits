@@ -22,7 +22,7 @@ class SP():
     def __init__(self, config):
         self.config = config
         self.tracker = 'SP'
-        self.source_flag = 'Seedpool.org'
+        self.source_flag = 'seedpool.org'
         self.upload_url = 'https://seedpool.org/api/torrents/upload'
         self.search_url = 'https://seedpool.org/api/torrents/filter'
         self.torrent_url = 'https://seedpool.org/torrents'
