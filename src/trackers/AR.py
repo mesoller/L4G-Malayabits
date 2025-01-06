@@ -427,7 +427,7 @@ class AR():
 
         if meta['tag'] == "":
             # replacing spaces with . as per rules
-            ar_name += "-AR"
+            ar_name += "-NoGRP"
 
         data = {
             "submit": "true",
