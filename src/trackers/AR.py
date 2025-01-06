@@ -261,7 +261,7 @@ class AR():
             if meta['genres']:
                 description += "\n\n" + subheading + "Genres" + heading_end + "\n" + str(meta['genres'])
 
-            if meta['image_list'] is not None:
+            if meta['image_list'] is not None and len(meta['image_list']) > 0:
                 description += "\n\n" + subheading + "Screenshots" + heading_end + "\n"
                 description += "[align=center]"
                 for image in meta['image_list']:
