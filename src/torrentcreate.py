@@ -126,7 +126,7 @@ def create_torrent(meta, path, output_filename):
             path = path
         else:
             os.chdir(path)
-            globs = glob.glob1(path, "*.mkv") + glob.glob1(path, "*.mp4") + glob.glob1(path, "*.ts")
+            globs = glob.glob1(path, "*.mkv") + glob.glob1(path, "*.mp4") + glob.glob1(path, "*.ts" + glob.glob1(path, "*.mk3d")
             no_sample_globs = []
             for file in globs:
                 if not file.lower().endswith('sample.mkv') or "!sample" in file.lower():
@@ -137,7 +137,7 @@ def create_torrent(meta, path, output_filename):
         include, exclude = "", ""
     else:
         exclude = ["*.*", "*sample.mkv", "!sample*.*"]
-        include = ["*.mkv", "*.mp4", "*.ts"]
+        include = ["*.mkv", "*.mp4", "*.ts", "*.mk3d"]
 
     # Create and write the new torrent using the CustomTorrent class
     torrent = CustomTorrent(
