@@ -126,7 +126,7 @@ def create_torrent(meta, path, output_filename):
             path = path
         else:
             os.chdir(path)
-            globs = glob.glob1(path, "*.mkv") + glob.glob1(path, "*.mp4") + glob.glob1(path, "*.ts" + glob.glob1(path, "*.mk3d")
+            globs = glob.glob1(path, "*.mkv") + glob.glob1(path, "*.mp4") + glob.glob1(path, "*.ts") + glob.glob1(path, "*.mk3d")
             no_sample_globs = []
             for file in globs:
                 if not file.lower().endswith('sample.mkv') or "!sample" in file.lower():
