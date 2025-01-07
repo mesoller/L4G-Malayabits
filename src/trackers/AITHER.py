@@ -2,7 +2,6 @@
 # import discord
 import asyncio
 import requests
-from str2bool import str2bool
 import platform
 import re
 import os
@@ -29,11 +28,7 @@ class AITHER():
         self.upload_url = 'https://aither.cc/api/torrents/upload'
         self.torrent_url = 'https://aither.cc/api/torrents/'
         self.signature = "\n[center][url=https://github.com/Audionut/Upload-Assistant]Created by Audionut's Upload Assistant[/url][/center]"
-        self.banned_groups = [
-            '4K4U', 'afm72', 'AROMA', 'Bandi', 'BiTOR', 'Bluespots', 'Chivaman', 'd3g', 'edge2020', 'EMBER', 'EVO', 'FGT', 'FreetheFish', 'Garshasp', 'Ghost', 'Grym', 'Hi10', 'HiQVE', 'ImE', 'ION10',
-            'iVy', 'Judas', 'LAMA', 'Langbard', 'LION', 'MeGusta', 'MONOLITH', 'Natty', 'nikt0', 'noxxus', 'OEPlus', 'OFT', 'OsC', 'Panda', 'PYC', 'QxR', 'r00t', 'Ralphy', 'RARBG', 'RCVR', 'RetroPeeps',
-            'RZeroX', 'SAMPA', 'Sicario', 'Silence', 'SkipTT', 'SM737', 'SPDVD', 'STUTTERSHIT', 'SWTYBLZ', 't3nzin', 'TAoE', 'Telly', 'TGx', 'Tigole', 'TSP', 'TSPxL', 'VXT', 'Vyndros', 'Weasley[HONE]',
-            'Will1869', 'x0r', 'YIFY']
+        self.banned_groups = []
         pass
 
     async def upload(self, meta, disctype):
@@ -47,7 +42,7 @@ class AITHER():
         name = await self.edit_name(meta)
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
-        if meta['anon'] == 0 and bool(str2bool(str(self.config['TRACKERS'][self.tracker].get('anon', "False")))) is False:
+        if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', "False"):
             anon = 0
         else:
             anon = 1
@@ -145,12 +140,8 @@ class AITHER():
         source = meta.get('source', "")
 
         if name_type == "DVDRIP":
-            if meta.get('category') == "MOVIE":
-                aither_name = aither_name.replace(f"{meta['source']}{meta['video_encode']}", f"{resolution}", 1)
-                aither_name = aither_name.replace((meta['audio']), f"{meta['audio']} {video_encode}", 1)
-            else:
-                aither_name = aither_name.replace(f"{meta['source']}", f"{resolution}", 1)
-                aither_name = aither_name.replace(f"{meta['video_codec']}", f"{meta['audio']} {meta['video_codec']}", 1)
+            aither_name = aither_name.replace(f"{meta['source']}", f"{resolution} {meta['source']}", 1)
+            aither_name = aither_name.replace((meta['audio']), f"{meta['audio']}{video_encode}", 1)
 
         if not meta['is_disc']:
 
