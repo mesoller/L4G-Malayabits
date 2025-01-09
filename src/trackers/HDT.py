@@ -20,6 +20,7 @@ class HDT():
         self.username = config['TRACKERS'][self.tracker].get('username', '').strip()
         self.password = config['TRACKERS'][self.tracker].get('password', '').strip()
         self.signature = None
+        self.base_url = "https://hd-torrents.net"
         self.banned_groups = [""]
 
     async def get_category_id(self, meta):
@@ -167,7 +168,7 @@ class HDT():
                 anon = 1
 
             # Send
-            url = "https://hd-torrents.net/upload.php"
+            url = f"{self.base_url}upload.php"
             if meta['debug']:
                 console.print(url)
                 console.print(data)
@@ -182,9 +183,10 @@ class HDT():
                     # Match url to verify successful upload
                     search = re.search(r"download\.php\?id\=([a-z0-9]+)", up.text).group(1)
                     if search:
+                        id = search
                         # modding existing torrent for adding to client instead of downloading torrent from site.
-                        console.print(str(up.text))
-                        await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS']['HDT'].get('my_announce_url'), str(up.text))
+                        console.print(f"{self.base_url}/details.php?id=" + id)
+                        await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS']['HDT'].get('my_announce_url'), f"{self.base_url}/details.php?id=" + id)
                     else:
                         console.print(data)
                         console.print("\n\n")
@@ -199,7 +201,7 @@ class HDT():
             cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/HDT.txt")
             session.cookies.update(await common.parseCookieFile(cookiefile))
 
-            search_url = "https://hd-torrents.net/torrents.php"
+            search_url = f"{self.base_url}/torrents.php"
             csrfToken = await self.get_csrfToken(session, search_url)
             if int(meta['imdb_id'].replace('tt', '')) != 0:
                 params = {
@@ -237,7 +239,7 @@ class HDT():
 
     async def validate_cookies(self, meta, cookiefile):
         common = COMMON(config=self.config)
-        url = "https://hd-torrents.net/index.php"
+        url = f"{self.base_url}/index.php"
         cookiefile = f"{meta['base_dir']}/data/cookies/HDT.txt"
         if os.path.exists(cookiefile):
             with requests.Session() as session:
@@ -286,6 +288,8 @@ class HDT():
                 description += f"\n[URL=https://www.tvmaze.com/shows/{str(movie['tvmaze_id'])}"
             if movie['mal_id'] != 0:
                 description += f"\nhttps://myanimelist.net/anime/{str(movie['mal_id'])}"
+
+        description += "\n\n"
         return description
 
     async def edit_desc(self, meta):

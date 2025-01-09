@@ -190,6 +190,8 @@ config = {
             # "anon": False,
             "img_rehost": True,
         },
+        # for HDT to work you need to export cookies from https://hd-torrent.net/ using https://addons.mozilla.org/en-US/firefox/addon/export-cookies-txt/.
+        # cookies need to be in netscape format and need to be in data/cookies/HDT.txt
         "HDT": {
             "username": "username",
             "password": "password",
