@@ -168,7 +168,7 @@ class HDT():
                 anon = 1
 
             # Send
-            url = f"{self.base_url}upload.php"
+            url = f"{self.base_url}/upload.php"
             if meta['debug']:
                 console.print(url)
                 console.print(data)
