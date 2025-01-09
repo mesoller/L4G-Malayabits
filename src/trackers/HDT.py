@@ -3,7 +3,6 @@ import asyncio
 import re
 import os
 import cli_ui
-import httpx
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 from pymediainfo import MediaInfo
@@ -163,70 +162,45 @@ class HDT():
 
             # Anonymous check
             if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', "False"):
-                data['anonymous'] = 'false'
+                anon = 0
             else:
-                data['anonymous'] = 'true'
+                anon = 1
 
             # Send
             url = "https://hd-torrents.net/upload.php"
             if meta['debug']:
                 console.print(url)
-                console.print("Data to be sent:", style="bold blue")
                 console.print(data)
-                console.print("Files being sent:", style="bold blue")
-                console.print(files)
-            with requests.Session() as session:
-                cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/HDT.txt")
+            else:
+                with requests.Session() as session:
+                    cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/HDT.txt")
 
-                if meta['debug']:
-                    console.print(f"Cookie file path: {cookiefile}")
+                    session.cookies.update(await common.parseCookieFile(cookiefile))
+                    up = session.post(url=url, data=data, files=files)
+                    torrentFile.close()
 
-                session.cookies.update(await common.parseCookieFile(cookiefile))
-
-                if meta['debug']:
-                    console.print(f"Session cookies: {session.cookies}")
-
-                up = session.post(url=url, data=data, files=files)
-                torrentFile.close()
-
-                # Debug response
-                if meta['debug']:
-                    console.print(f"Response URL: {up.url}")
-                    console.print(f"Response Status Code: {up.status_code}")
-                    console.print("Response Headers:", style="bold blue")
-                    console.print(up.headers)
-                    console.print("Response Text (truncated):", style="dim")
-                    console.print(up.text[:500] + "...")
-
-                # Match url to verify successful upload
-                search = re.search(r"download\.php\?id\=([a-z0-9]+)", up.text)
-                if search:
-                    torrent_id = search.group(1)
-                    if meta['debug']:
-                        console.print(f"Upload Successful: Torrent ID {torrent_id}", style="bold green")
-
-                    # Modding existing torrent for adding to client instead of downloading torrent from site
-                    await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS']['HDT'].get('my_announce_url'), "")
-                else:
-                    console.print(data)
-                    console.print("Failed to find download link in response text.", style="bold red")
-                    console.print("Response Data (full):", style="dim")
-                    console.print(up.text)
-                    raise UploadException(f"Upload to HDT Failed: result URL {up.url} ({up.status_code}) was not expected", 'red')  # noqa F405
+                    # Match url to verify successful upload
+                    search = re.search(r"download\.php\?id\=([a-z0-9]+)", up.text).group(1)
+                    if search:
+                        # modding existing torrent for adding to client instead of downloading torrent from site.
+                        console.print(str(up.text))
+                        await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS']['HDT'].get('my_announce_url'), str(up.text))
+                    else:
+                        console.print(data)
+                        console.print("\n\n")
+                        console.print(up.text)
+                        raise UploadException(f"Upload to HDT Failed: result URL {up.url} ({up.status_code}) was not expected", 'red')  # noqa F405
         return
 
     async def search_existing(self, meta, disctype):
         dupes = []
-        console.print("[yellow]Searching for existing torrents on HDT...")
+        with requests.Session() as session:
+            common = COMMON(config=self.config)
+            cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/HDT.txt")
+            session.cookies.update(await common.parseCookieFile(cookiefile))
 
-        common = COMMON(config=self.config)
-        cookiefile = os.path.abspath(f"{meta['base_dir']}/data/cookies/HDT.txt")
-        cookies = await common.parseCookieFile(cookiefile)
-
-        search_url = "https://hd-torrents.net/torrents.php"
-
-        async with httpx.AsyncClient(cookies=cookies, timeout=10.0) as client:
-            csrfToken = await self.get_csrf_token(client, search_url)
+            search_url = "https://hd-torrents.net/torrents.php"
+            csrfToken = await self.get_csrfToken(session, search_url)
             if int(meta['imdb_id'].replace('tt', '')) != 0:
                 params = {
                     'csrfToken': csrfToken,
@@ -243,26 +217,13 @@ class HDT():
                     'options': '3'
                 }
 
-            try:
-                response = await client.get(search_url, params=params)
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    find = soup.find_all('a', href=True)
-                    for each in find:
-                        if each['href'].startswith('details.php?id='):
-                            dupes.append(each.text)
-                else:
-                    console.print(f"[bold red]HTTP request failed. Status: {response.status_code}")
-
-                await asyncio.sleep(0.5)
-
-            except httpx.TimeoutException:
-                console.print("[bold red]Request timed out while searching for existing torrents.")
-            except httpx.RequestError as e:
-                console.print(f"[bold red]An error occurred while making the request: {e}")
-            except Exception as e:
-                console.print(f"[bold red]Unexpected error: {e}")
-                await asyncio.sleep(0.5)
+            r = session.get(search_url, params=params)
+            await asyncio.sleep(0.5)
+            soup = BeautifulSoup(r.text, 'html.parser')
+            find = soup.find_all('a', href=True)
+            for each in find:
+                if each['href'].startswith('details.php?id='):
+                    dupes.append(each.text)
 
         return dupes
 
@@ -293,10 +254,10 @@ class HDT():
         else:
             return False
 
-    async def get_csrf_token(self, session: httpx.AsyncClient, url: str):
-        response = await session.get(url)  # Make an asynchronous GET request
-        html_content = response.text  # Get the response content (httpx handles it without extra await)
-        soup = BeautifulSoup(html_content, 'html.parser')
+    async def get_csrfToken(self, session, url):
+        r = session.get(url)
+        await asyncio.sleep(0.5)
+        soup = BeautifulSoup(r.text, 'html.parser')
         csrfToken = soup.find('input', {'name': 'csrfToken'}).get('value')
         return csrfToken
 
