@@ -289,6 +289,8 @@ class HDT():
         return description
 
     async def edit_desc(self, meta):
+        subheading = "[COLOR=RED][size=4]"
+        heading_end = "[/size][/COLOR]"
         # base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w', newline='', encoding='utf-8') as descfile:
             if meta['is_disc'] != 'BDMV':
