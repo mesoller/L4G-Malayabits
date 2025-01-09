@@ -140,6 +140,7 @@ config = {
             "username": "<USERNAME>",
             "password": "<PASSWORD>",
             "announce_url": "http://tracker.alpharatio.cc:2710/PASSKEY/announce",
+            # anon is not an option when uplaoding you need to change your privacy settings.
             # "anon" : "False"
         },
         "BHD": {
