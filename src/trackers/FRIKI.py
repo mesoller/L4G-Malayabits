@@ -3,14 +3,12 @@
 import asyncio
 import requests
 import platform
-import os
-import glob
 import httpx
 from src.trackers.COMMON import COMMON
 from src.console import console
 
 
-class PSS():
+class FRIKI():
     """
     Edit for Tracker:
         Edit BASE.torrent with announce and source
@@ -21,15 +19,13 @@ class PSS():
 
     def __init__(self, config):
         self.config = config
-        self.tracker = 'PSS'
-        self.source_flag = 'PSS'
-        self.upload_url = 'https://privatesilverscreen.cc/api/torrents/upload'
-        self.search_url = 'https://privatesilverscreen.cc/api/torrents/filter'
-        self.signature = '\n[center][url=https://privatesilverscreen.cc/pages/1]Please Seed[/url][/center]'
-        self.banned_groups = ['4K4U', 'AROMA', 'd3g', 'edge2020', 'EMBER', 'EVO', 'FGT', 'NeXus', 'ION10', 'iVy', 'Judas', 'LAMA', 'MeGusta', 'nikt0', 'OEPlus', 'OFT', 'OsC', 'PYC',
-                              'QxR', 'Ralphy', 'RARBG', 'SAMPA', 'Sicario', 'Silence', 'STUTTERSHIT', 'Tigole', 'TSP', 'TSPxL', 'Will1869', 'x0r', 'YIFY', 'core', 'ZMNT',
-                              'msd', 'nikt0', 'aXXo', 'BRrip', 'CM8', 'CrEwSaDe', 'DNL', 'FaNGDiNG0', 'FRDS', 'HD2DVD', 'HDTime', 'Leffe', 'mHD', 'mSD', 'nHD', 'nSD', 'NhaNc3', 'PRODJi',
-                              'RDN', 'SANTi', 'ViSION', 'WAF', 'YTS', 'FROZEN', 'UTR', 'Grym', 'GrymLegacy', 'CK4', 'ProRes', 'MezRips', 'GalaxyRG', 'RCDiVX', 'LycanHD']
+        self.tracker = 'FRIKI'
+        self.source_flag = 'frikibar.com'
+        self.upload_url = 'https://frikibar.com/api/torrents/upload'
+        self.search_url = 'https://frikibar.com/api/torrents/filter'
+        self.torrent_url = 'https://frikibar.com/torrents'
+        self.signature = None
+        self.banned_groups = [""]
         pass
 
     async def get_cat_id(self, category_name):
@@ -43,10 +39,10 @@ class PSS():
         type_id = {
             'DISC': '1',
             'REMUX': '2',
-            'ENCODE': '3',
             'WEBDL': '4',
             'WEBRIP': '5',
             'HDTV': '6',
+            'ENCODE': '3'
         }.get(type, '0')
         return type_id
 
@@ -55,6 +51,7 @@ class PSS():
             '8640p': '10',
             '4320p': '1',
             '2160p': '2',
+            '1440p': '3',
             '1080p': '3',
             '1080i': '4',
             '720p': '5',
@@ -71,7 +68,7 @@ class PSS():
         cat_id = await self.get_cat_id(meta['category'])
         type_id = await self.get_type_id(meta['type'])
         resolution_id = await self.get_res_id(meta['resolution'])
-        await common.unit3d_edit_desc(meta, self.tracker, self.signature, comparison=True)
+        await common.unit3d_edit_desc(meta, self.tracker, self.signature)
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
         if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', "False"):
@@ -88,15 +85,6 @@ class PSS():
         desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r', encoding='utf-8').read()
         open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
         files = {'torrent': open_torrent}
-        base_dir = meta['base_dir']
-        uuid = meta['uuid']
-        specified_dir_path = os.path.join(base_dir, "tmp", uuid, "*.nfo")
-        nfo_files = glob.glob(specified_dir_path)
-        nfo_file = None
-        if nfo_files:
-            nfo_file = open(nfo_files[0], 'rb')
-        if nfo_file:
-            files['nfo'] = ("nfo_file.nfo", nfo_file, "text/plain")
         data = {
             'name': meta['name'],
             'description': desc,
@@ -146,7 +134,7 @@ class PSS():
                 console.print(response.json())
                 # adding torrent link to comment of torrent file
                 t_id = response.json()['data'].split(".")[1].split("/")[3]
-                await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS'][self.tracker].get('announce_url'), "https://privatesilverscreen.cc/torrents/" + t_id)
+                await common.add_tracker_torrent(meta, self.tracker, self.source_flag, self.config['TRACKERS'][self.tracker].get('announce_url'), self.torrent_url + t_id)
             except Exception:
                 console.print("It may have uploaded, go check")
                 return
@@ -157,7 +145,7 @@ class PSS():
 
     async def search_existing(self, meta, disctype):
         dupes = []
-        console.print("[yellow]Searching for existing torrents on PSS...")
+        console.print(f"[yellow]Searching for existing torrents on {self.tracker}...")
         params = {
             'api_token': self.config['TRACKERS'][self.tracker]['api_key'].strip(),
             'tmdbId': meta['tmdb'],

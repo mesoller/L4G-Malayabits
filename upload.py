@@ -195,10 +195,13 @@ async def do_the_thing(base_dir):
 
         except Exception as e:
             console.print(f"[red]Failed to load metadata for path '{path}': {e}")
+
         if meta['debug']:
             start_time = time.time()
+
         console.print(f"[green]Gathering info for {os.path.basename(path)}")
         await process_meta(meta, base_dir)
+
         if 'we_are_uploading' not in meta:
             console.print("we are not uploading.......")
             if meta.get('queue') is not None:
@@ -216,6 +219,12 @@ async def do_the_thing(base_dir):
                 if not meta['debug']:
                     if log_file:
                         await save_processed_file(log_file, path)
+
+        if 'limit_queue' in meta and meta['limit_queue'] > 0:
+            if processed_files_count >= meta['limit_queue']:
+                console.print(f"[red]Processing limit of {meta['limit_queue']} files reached. Stopping queue processing.")
+                break
+
         if meta['debug']:
             finish_time = time.time()
             console.print(f"Uploads processed in {finish_time - start_time:.4f} seconds")
@@ -223,8 +232,8 @@ async def do_the_thing(base_dir):
 
 if __name__ == '__main__':
     pyver = platform.python_version_tuple()
-    if int(pyver[0]) != 3 or int(pyver[1]) < 12:
-        console.print("[bold red]Python version is too low. Please use Python 3.12 or higher.")
+    if int(pyver[0]) != 3 or int(pyver[1]) < 8:
+        console.print("[bold red]Python version is too low. Please use Python 3.8 or higher.")
         sys.exit(1)
 
     try:

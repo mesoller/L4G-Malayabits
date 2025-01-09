@@ -2,13 +2,11 @@
 # import discord
 import asyncio
 import requests
-from str2bool import str2bool
 import os
 import re
 import platform
 import cli_ui
 import httpx
-
 from src.trackers.COMMON import COMMON
 from src.console import console
 
@@ -38,7 +36,7 @@ class HUNO():
         cat_id = await self.get_cat_id(meta['category'])
         type_id = await self.get_type_id(meta)
         resolution_id = await self.get_res_id(meta['resolution'])
-        if meta['anon'] == 0 and bool(str2bool(self.config['TRACKERS']['HUNO'].get('anon', "False"))) is False:
+        if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', "False"):
             anon = 0
         else:
             anon = 1
@@ -297,7 +295,7 @@ class HUNO():
         return 0
 
     async def search_existing(self, meta, disctype):
-        if meta['video_codec'] != "HEVC" and (meta['type'] == "ENCODE" or meta['type'] == "WEBRIP" or meta['type'] == "DVDRIP"):
+        if meta['video_codec'] != "HEVC" and meta['type'] in {"ENCODE", "WEBRIP", "DVDRIP", "HDTV"}:
             console.print('[bold red]Only x265/HEVC encodes are allowed at HUNO')
             meta['skipping'] = "HUNO"
             return
