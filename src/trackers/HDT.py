@@ -163,9 +163,9 @@ class HDT():
 
             # Anonymous check
             if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', "False"):
-                anon = 0
+                data['anonymous'] = 'false'
             else:
-                anon = 1
+                data['anonymous'] = 'true'
 
             # Send
             url = f"{self.base_url}/upload.php"
@@ -315,7 +315,6 @@ class HDT():
                     descfile.write(f"""[left][font=consolas]\n{BD_SUMMARY.read()}\n[/font][/left]\n\n""")
 
             descfile.write(self.get_links(meta, subheading, heading_end))
-            
             # Add Screenshots
             images = meta['image_list']
             if len(images) > 0:
