@@ -261,6 +261,33 @@ class HDT():
         csrfToken = soup.find('input', {'name': 'csrfToken'}).get('value')
         return csrfToken
 
+    def get_links(self, movie, subheading, heading_end):
+        description = ""
+        description += "\n" + subheading + "Links" + heading_end + "\n"
+        if 'IMAGES' in self.config:
+            if movie['imdb_id'] != "0":
+                description += f"[URL=https://www.imdb.com/title/tt{movie['imdb_id']}][img]{self.config['IMAGES']['imdb_75']}[/img][/URL]"
+            if movie['tmdb'] != "0":
+                description += f" [URL=https://www.themoviedb.org/{str(movie['category'].lower())}/{str(movie['tmdb'])}][img]{self.config['IMAGES']['tmdb_75']}[/img][/URL]"
+            if movie['tvdb_id'] != "0":
+                description += f" [URL=https://www.thetvdb.com/?id={str(movie['tvdb_id'])}&tab=series][img]{self.config['IMAGES']['tvdb_75']}[/img][/URL]"
+            if movie['tvmaze_id'] != "0":
+                description += f" [URL=https://www.tvmaze.com/shows/{str(movie['tvmaze_id'])}][img]{self.config['IMAGES']['tvmaze_75']}[/img][/URL]"
+            if movie['mal_id'] != 0:
+                description += f" [URL=https://myanimelist.net/anime/{str(movie['mal_id'])}][img]{self.config['IMAGES']['mal_75']}[/img][/URL]"
+        else:
+            if movie['imdb_id'] != "0":
+                description += f"https://www.imdb.com/title/tt{movie['imdb_id']}"
+            if movie['tmdb'] != "0":
+                description += f"\nhttps://www.themoviedb.org/{str(movie['category'].lower())}/{str(movie['tmdb'])}"
+            if movie['tvdb_id'] != "0":
+                description += f"\nhttps://www.thetvdb.com/?id={str(movie['tvdb_id'])}&tab=series"
+            if movie['tvmaze_id'] != "0":
+                description += f"\n[URL=https://www.tvmaze.com/shows/{str(movie['tvmaze_id'])}"
+            if movie['mal_id'] != 0:
+                description += f"\nhttps://myanimelist.net/anime/{str(movie['mal_id'])}"
+        return description
+
     async def edit_desc(self, meta):
         # base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w', newline='', encoding='utf-8') as descfile:
@@ -281,6 +308,8 @@ class HDT():
                 with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8') as BD_SUMMARY:
                     descfile.write(f"""[left][font=consolas]\n{BD_SUMMARY.read()}\n[/font][/left]\n\n""")
 
+            descfile.write(self.get_links(meta, subheading, heading_end))
+            
             # Add Screenshots
             images = meta['image_list']
             if len(images) > 0:
