@@ -223,6 +223,39 @@ def upload_image_task(args):
                 raw_url = response_data['data']['image']['url']
                 web_url = response_data['data']['url_viewer']
 
+        elif img_host == "zipline":
+            url = config['DEFAULT']['zipline_url']
+            if not url:
+                return {
+                    'status': 'failed',
+                    'reason': "Zipline URL is missing in config."
+                }
+            api_key = config['DEFAULT']['zipline_api_key']
+            if not api_key:
+                console.print("[bold red]Zipline API key is missing in config.")
+                return {
+                    'status': 'failed',
+                    'reason': "Zipline API key is missing in config."
+                }
+            headers = {
+                "Authorization": f"Bearer {api_key}"
+            }
+            files = {
+                'file': open(image, 'rb')
+            }
+            response = requests.post(url, headers=headers, files=files)
+            files['file'].close()
+            if response.status_code == 200:
+                uploaded_url = response.json().get('url')
+                img_url = uploaded_url
+                raw_url = uploaded_url
+                web_url = uploaded_url
+            else:
+                return {
+                    'status': 'failed',
+                    'reason': f"Failed to upload image to {img_host}. No URLs received."
+                }
+
         if img_url and raw_url and web_url:
             return {
                 'status': 'success',
