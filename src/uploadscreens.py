@@ -232,7 +232,6 @@ def upload_image_task(args):
                 }
             api_key = config['DEFAULT']['zipline_api_key']
             if not api_key:
-                console.print("[bold red]Zipline API key is missing in config.")
                 return {
                     'status': 'failed',
                     'reason': "Zipline API key is missing in config."
