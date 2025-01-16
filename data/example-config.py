@@ -13,6 +13,7 @@ config = {
         "ptscreens_api": "ptscreens api key",
         "oeimg_api": "oeimg api key",
         "dalexni_api": "dalexni api key",
+        # custom zipline url
         "zipline_url": "zipline URL",
         "zipline_api_key": "zipline API KEY",
 
