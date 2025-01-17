@@ -32,9 +32,6 @@ class BHD():
 
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
-        await self.upload_with_retry(meta, common)
-
-    async def upload_with_retry(self, meta, common):
         url_host_mapping = {
             "ibb.co": "imgbb",
             "ptpimg.me": "ptpimg",
@@ -45,8 +42,7 @@ class BHD():
         }
 
         approved_image_hosts = ['ptpimg', 'imgbox', 'imgbb', 'pixhost', 'bhd', 'bam']
-        await check_hosts(meta, tracker=self.tracker, url_host_mapping=url_host_mapping, img_host_index=1, approved_image_hosts=approved_image_hosts)
-        common = COMMON(config=self.config)
+        await check_hosts(meta, self.tracker, url_host_mapping=url_host_mapping, img_host_index=1, approved_image_hosts=approved_image_hosts)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
         cat_id = await self.get_cat_id(meta['category'])
         source_id = await self.get_source(meta['source'])
