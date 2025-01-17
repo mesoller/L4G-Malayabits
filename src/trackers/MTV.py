@@ -178,8 +178,8 @@ class MTV():
             elif mi_dump:
                 desc.write("[mediainfo]" + mi_dump + "[/mediainfo]\n\n")
 
-            if 'mtv_images_key' in meta:
-                images = meta['mtv_images_key']
+            if f'{self.tracker}_images_key' in meta:
+                images = meta[f'{self.tracker}_images_key']
             else:
                 images = meta['image_list']
             if len(images) > 0:
