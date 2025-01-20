@@ -806,6 +806,8 @@ class Prep():
             "AAC LC": "AAC",
             "AC-3": "DD",
             "E-AC-3": "DD+",
+            "A_EAC3": "DD+",
+            "Enhanced AC-3": "DD+",
             "MLP FBA": "TrueHD",
             "FLAC": "FLAC",
             "Opus": "Opus",
@@ -814,6 +816,7 @@ class Prep():
             "LPCM Audio": "LPCM",
             "Dolby Digital Audio": "DD",
             "Dolby Digital Plus Audio": "DD+",
+            "Dolby Digital Plus" : "DD+",
             "Dolby TrueHD Audio": "TrueHD",
             "DTS Audio": "DTS",
             "DTS-HD Master Audio": "DTS-HD MA",
@@ -880,6 +883,10 @@ class Prep():
                 codec = "MP2"
             else:
                 codec = track.get('CodecID_Hint', '')
+
+        if codec == "DD" and chan == "7.1":
+            console.print("[warning] Detected codec is DD but channel count is 7.1, correcting to DD+")
+            codec = "DD+"
 
         audio = f"{dual} {codec or ''} {format_settings or ''} {chan or ''}{extra or ''}"
         audio = ' '.join(audio.split())
