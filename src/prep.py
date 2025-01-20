@@ -199,7 +199,8 @@ class Prep():
         if description_text is None:
             description_text = ""
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'w', newline="", encoding='utf8') as description:
-            description.write(description_text)
+            if len(description_text):
+                description.write(description_text)
 
         client = Clients(config=config)
         if meta.get('infohash') is not None:
@@ -1384,7 +1385,8 @@ class Prep():
                         template = Template(f.read())
                         template_desc = template.render(meta)
                         if clean_text(template_desc):
-                            description.write(template_desc + "\n")
+                            if len(template_desc) > 0:
+                                description.write(template_desc + "\n")
                             content_written = True
                 except FileNotFoundError:
                     console.print(f"[ERROR] Template '{meta['desc_template']}' not found.")
@@ -1456,17 +1458,20 @@ class Prep():
                 content_written = True
 
             if not content_written:
-                description_text = meta.get('description', '') or ''
-                description.write(description_text + "\n")
+                description_text = meta.get('description', '').strip()
+                if description_text:
+                    description.write(description_text + "\n")
 
-            description.write("\n")
+            if description.tell() != 0:
+                description.write("\n")
             return meta
 
         # Fallback if no description is provided
         if not meta.get('skip_gen_desc', False):
             description_text = meta['description'] if meta['description'] else ""
             with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'w', newline="", encoding='utf8') as description:
-                description.write(description_text + "\n")
+                if len(description_text) > 0:
+                    description.write(description_text + "\n")
 
             return meta
 
