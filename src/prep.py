@@ -448,7 +448,7 @@ class Prep():
         bd_summary = None  # noqa: F841
         discs = []
         parse = DiscParse()
-        for path, directories, files in os. walk(meta['path']):
+        for path, directories, files in sorted(os.walk(meta['path'])):
             for each in directories:
                 if each.upper() == "BDMV":  # BDMVs
                     is_disc = "BDMV"
