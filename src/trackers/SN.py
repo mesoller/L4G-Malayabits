@@ -60,7 +60,7 @@ class SN():
 
             demographic = meta.get('demographic', 'Mina')
             sub_cat_id = demographics_map.get(demographic, sub_cat_id)
-                
+
         elif meta['category'] == 'MOVIE':
             cat_id = 1
             # sub cat is source so using source to get
