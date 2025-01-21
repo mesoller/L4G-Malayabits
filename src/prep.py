@@ -817,7 +817,7 @@ class Prep():
             "LPCM Audio": "LPCM",
             "Dolby Digital Audio": "DD",
             "Dolby Digital Plus Audio": "DD+",
-            "Dolby Digital Plus" : "DD+",
+            "Dolby Digital Plus": "DD+",
             "Dolby TrueHD Audio": "TrueHD",
             "DTS Audio": "DTS",
             "DTS-HD Master Audio": "DTS-HD MA",
