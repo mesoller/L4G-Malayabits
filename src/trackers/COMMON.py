@@ -162,7 +162,6 @@ class COMMON():
                     new_images_key = f'new_images_disc_{i}'
 
                     if i == 0:
-                        descfile.write("[center]")
                         if each['type'] == "BDMV":
                             descfile.write(f"{each.get('name', 'BDINFO')}\n\n")
                         elif each['type'] == "DVD":
