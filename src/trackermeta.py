@@ -8,6 +8,7 @@ from PIL import Image
 import io
 from io import BytesIO
 
+expected_images = int(config['DEFAULT']['screens'])
 
 async def prompt_user_for_confirmation(message: str) -> bool:
     try:
@@ -90,11 +91,6 @@ async def check_images_concurrently(imagelist, meta):
                                 )
                                 return None
 
-                            meta['image_sizes'][img_url] = len(image_content)
-                            console.print(
-                                f"Valid image {img_url} with resolution {image.width}x{image.height} "
-                                f"and size {len(image_content) / 1024:.2f} KiB"
-                            )
                         except Exception as e:
                             console.print(f"[red]Failed to process image {img_url}: {e}")
                             return None
@@ -109,8 +105,10 @@ async def check_images_concurrently(imagelist, meta):
     tasks = [check_and_collect(image_dict) for image_dict in imagelist]
     results = await asyncio.gather(*tasks)
 
-    # Collect valid images
+    # Collect valid images and limit to amount set in config
     valid_images = [image for image in results if image is not None]
+    if expected_images < len(valid_images):
+        valid_images = valid_images[:expected_images]
 
     # Convert default_trackers string into a list
     default_trackers = config['TRACKERS'].get('default_trackers', '')
@@ -145,7 +143,6 @@ async def check_image_link(url):
                         try:
                             image = Image.open(io.BytesIO(image_data))
                             image.verify()  # This will check if the image is broken
-                            console.print(f"[green]Image verified successfully: {url}[/green]")
                             return True
                         except (IOError, SyntaxError) as e:  # noqa #F841
                             console.print(f"[red]Image verification failed (corrupt image): {url}[/red]")
@@ -343,9 +340,9 @@ async def update_metadata_from_tracker(tracker_name, tracker_instance, meta, sea
 
 async def handle_image_list(meta, tracker_name):
     if meta.get('image_list'):
-        console.print(f"[cyan]Found the following images from {tracker_name}:")
+        console.print(f"[cyan]Selected the following {expected_images} valid images from {tracker_name}:")
         for img in meta['image_list']:
-            console.print(f"[blue]{img}[/blue]")
+            console.print(f"Image:[green]'{img.get('img_url')}'[/green]")
 
         if meta['unattended']:
             keep_images = True
