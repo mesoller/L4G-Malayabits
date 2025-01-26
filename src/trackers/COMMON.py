@@ -174,7 +174,6 @@ class COMMON():
                             console.print("[yellow]Using original uploaded images for first disc")
                         if screenheader is not None:
                             descfile.write(screenheader + '\n')
-                        descfile.write("[center]")
                         for img_index in range(len(images[:int(meta['screens'])])):
                             web_url = images[img_index]['web_url']
                             raw_url = images[img_index]['raw_url']

@@ -8,7 +8,6 @@ from PIL import Image
 import io
 from io import BytesIO
 
-expected_images = int(config['DEFAULT']['screens'])
 
 async def prompt_user_for_confirmation(message: str) -> bool:
     try:
@@ -21,6 +20,7 @@ async def prompt_user_for_confirmation(message: str) -> bool:
 
 
 async def check_images_concurrently(imagelist, meta):
+    expected_images = meta['screens']
     approved_image_hosts = ['ptpimg', 'imgbox', 'imgbb']
     invalid_host_found = False  # Track if any image is on a non-approved host
 
@@ -340,7 +340,7 @@ async def update_metadata_from_tracker(tracker_name, tracker_instance, meta, sea
 
 async def handle_image_list(meta, tracker_name):
     if meta.get('image_list'):
-        console.print(f"[cyan]Selected the following {expected_images} valid images from {tracker_name}:")
+        console.print(f"[cyan]Selected the following {len(meta['screens'])} valid images from {tracker_name}:")
         for img in meta['image_list']:
             console.print(f"Image:[green]'{img.get('img_url')}'[/green]")
 
