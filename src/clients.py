@@ -370,7 +370,9 @@ class Clients():
             path = os.path.dirname(path)
 
         console.print("[bold yellow]Adding and starting torrent")
-        rtorrent.load.start_verbose('', fr_file, f"d.directory_base.set={path}")
+        with open(fr_file, 'rb') as f:
+            torrent_data = f.read()
+        rtorrent.load.start_verbose('', torrent_data, f"d.directory_base.set={path}")
         time.sleep(1)
         # Add labels
         if client.get('rtorrent_label', None) is not None:
