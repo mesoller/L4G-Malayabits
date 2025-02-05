@@ -318,6 +318,13 @@ class HDB():
         return
 
     async def search_existing(self, meta, disctype):
+        hdb_name = await self.edit_name(meta)
+        if any(phrase in hdb_name.lower() for phrase in (
+            "-reborn", "-3l"
+        )):
+            console.print("[bold red]This is an exclusive HDB release, skipping upload[/bold red]")
+            meta['skipping'] = "HDB"
+            return []
         dupes = []
         console.print("[yellow]Searching for existing torrents on HDB...")
 
