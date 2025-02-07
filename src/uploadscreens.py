@@ -362,7 +362,7 @@ def upload_screens(meta, screens, img_host_num, i, total_screens, custom_img_lis
     default_pool_size = int(meta.get('task_limit', os.cpu_count()))
     host_limits = {"oeimg": 6, "ptscreens": 1, "lensdump": 1}
     pool_size = host_limits.get(img_host, default_pool_size)
-    max_workers = min(len(upload_tasks), pool_size)
+    max_workers = max(1, min(len(upload_tasks), pool_size))
     results = []
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
 
