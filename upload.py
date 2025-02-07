@@ -93,7 +93,7 @@ async def process_meta(meta, base_dir):
         trackers = config['TRACKERS']['default_trackers']
     if "," in trackers:
         trackers = trackers.split(',')
-    else:  #convert string to list so iteration works even with one tracker
+    elif isinstance(trackers, str):  #convert string to list so iteration works even with one tracker
         trackers = [trackers]
     meta['trackers'] = trackers
     with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/meta.json", 'w') as f:
