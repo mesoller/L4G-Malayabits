@@ -220,8 +220,8 @@ class AR():
         heading = "[COLOR=GREEN][size=6]"
         subheading = "[COLOR=RED][size=4]"
         heading_end = "[/size][/COLOR]"
-        base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r').read()
-        with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w') as descfile:
+        base = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt", 'r', encoding='utf-8').read()
+        with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w', encoding='utf-8') as descfile:
             description = ""
             if meta['is_disc'] == "BDMV":
                 description += heading + str(meta['name']) + heading_end + "\n" + self.get_links(meta, subheading, heading_end) + "\n\n" + subheading + "BDINFO" + heading_end + "\n"
@@ -391,7 +391,7 @@ class AR():
         # Read the description
         desc_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt"
         try:
-            async with aiofiles.open(desc_path, 'r') as desc_file:
+            async with aiofiles.open(desc_path, 'r', encoding="utf-8", errors="replace") as desc_file:
                 desc = await desc_file.read()
         except FileNotFoundError:
             raise Exception(f"Description file not found at {desc_path} ")
