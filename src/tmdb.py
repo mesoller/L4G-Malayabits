@@ -161,6 +161,8 @@ async def tmdb_other_meta(meta):
             console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
             meta['year'] = meta['search_year']
         external = movie.external_ids()
+        
+        # IMDb ID Handling for Movies
         if meta.get('imdb_id', 0) == 0:
             imdb_id = external.get('imdb_id', None)
 
@@ -170,11 +172,10 @@ async def tmdb_other_meta(meta):
             else:
                 imdb_id_clean = imdb_id.lstrip('t')  # Remove 'tt' prefix safely
                 if imdb_id_clean.isdigit():  # Ensure it's a valid numeric string
-                    meta['imdb_id'] = int(f'{imdb_id_clean}', 0)
+                    meta['imdb_id'] = int(imdb_id_clean)
                 else:
                     console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
-                    meta['imdb_id'] = 0  # Default to 0 if invalid
-
+                    meta['imdb_id'] = 0
         else:
             meta['imdb_id'] = int(meta.get('imdb_id', 0))
 
@@ -226,6 +227,8 @@ async def tmdb_other_meta(meta):
             console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
             meta['year'] = meta['search_year']
         external = tv.external_ids()
+        
+        # IMDb ID Handling for TV Shows
         if meta.get('imdb_id', 0) == 0:
             imdb_id = external.get('imdb_id', None)
 
@@ -235,11 +238,10 @@ async def tmdb_other_meta(meta):
             else:
                 imdb_id_clean = imdb_id.lstrip('t')  # Remove 'tt' prefix safely
                 if imdb_id_clean.isdigit():  # Ensure it's a valid numeric string
-                    meta['imdb_id'] = int(f'{imdb_id_clean}', 0)
+                    meta['imdb_id'] = int(imdb_id_clean)
                 else:
                     console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
-                    meta['imdb_id'] = 0  # Default to 0 if invalid
-
+                    meta['imdb_id'] = 0  #  Default to 0 if invalid
         else:
             meta['imdb_id'] = int(meta.get('imdb_id', 0))
 
