@@ -146,6 +146,7 @@ async def tmdb_other_meta(meta):
             else:
                 console.print("[bold red]Unable to find tmdb entry")
                 return meta
+
     if meta['category'] == "MOVIE":
         movie = tmdb.Movies(meta['tmdb_id'])
         response = movie.info()
@@ -155,63 +156,42 @@ async def tmdb_other_meta(meta):
         if meta['debug']:
             console.print(f"[cyan]TMDB Response: {json.dumps(response, indent=2)[:600]}...")
         meta['title'] = response['title']
-        if response['release_date']:
+        if response.get('release_date'):
             meta['year'] = datetime.strptime(response['release_date'], '%Y-%m-%d').year
         else:
             console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
             meta['year'] = meta['search_year']
+
+        # Retrieve external IDs
         external = movie.external_ids()
 
-        # IMDb ID Handling for Movies
-        if meta.get('imdb_id', 0) == 0:
-            imdb_id = external.get('imdb_id', None)
-
-            # Ensure imdb_id is a valid string and strip 'tt' prefix if present
-            if not imdb_id or imdb_id in ["", " ", "None", None]:
-                meta['imdb_id'] = 0
+        # IMDb ID Validation
+        imdb_id = external.get('imdb_id', None)
+        if imdb_id:
+            console.print(f"[cyan]Retrieved IMDb ID from TMDb: {imdb_id}[/cyan]")
+            imdb_id_clean = imdb_id.lstrip('t')  # Safe removal of 'tt' prefix
+            if imdb_id_clean.isdigit():
+                meta['imdb_id'] = int(imdb_id_clean)
             else:
-                imdb_id_clean = imdb_id.lstrip('t')  # Remove 'tt' prefix safely
-                if imdb_id_clean.isdigit():  # Ensure it's a valid numeric string
-                    meta['imdb_id'] = int(imdb_id_clean)
-                else:
-                    console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
-                    meta['imdb_id'] = 0
+                console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
+                meta['imdb_id'] = 0
         else:
-            meta['imdb_id'] = int(meta.get('imdb_id', 0))
+            meta['imdb_id'] = 0
+
+        console.print(f"[bold cyan]Final IMDb ID: {meta['imdb_id']}[/bold cyan]")
 
         # TVDB ID Handling
-        if meta.get('tvdb_id') == 0:
-            meta['tvdb_id'] = external.get('tvdb_id', None)
-            if meta['tvdb_id'] in ["", " ", "None", None]:
-                meta['tvdb_id'] = 0
+        meta['tvdb_id'] = external.get('tvdb_id', 0) or 0
+
         try:
             videos = movie.videos()
             for each in videos.get('results', []):
-                if each.get('site', "") == 'YouTube' and each.get('type', "") == "Trailer":
+                if each.get('site') == 'YouTube' and each.get('type') == "Trailer":
                     meta['youtube'] = f"https://www.youtube.com/watch?v={each.get('key')}"
                     break
         except Exception:
             console.print('[yellow]Unable to grab videos from TMDb.')
 
-        meta['aka'], original_language = await get_imdb_aka_api(meta['imdb_id'], meta)
-        if original_language is not None:
-            meta['original_language'] = original_language
-        else:
-            meta['original_language'] = response['original_language']
-
-        meta['original_title'] = response.get('original_title', meta['title'])
-        meta['keywords'] = await get_keywords(movie)
-        meta['genres'] = await get_genres(response)
-        meta['tmdb_directors'] = await get_directors(movie)
-        if meta.get('anime', False) is False:
-            meta['mal_id'], meta['aka'], meta['anime'], meta['demographic'] = await get_anime(response, meta)
-        if meta.get('mal_manual') != 0:
-            meta['mal_id'] = meta['mal_manual']
-        meta['poster'] = response.get('poster_path', "")
-        meta['tmdb_poster'] = response.get('poster_path', "")
-        meta['overview'] = response['overview']
-        meta['tmdb_type'] = 'Movie'
-        meta['runtime'] = response.get('episode_run_time', 60)
     elif meta['category'] == "TV":
         tv = tmdb.TV(meta['tmdb_id'])
         response = tv.info()
@@ -221,71 +201,73 @@ async def tmdb_other_meta(meta):
         if meta['debug']:
             console.print(f"[cyan]TMDB Response: {json.dumps(response, indent=2)[:600]}...")
         meta['title'] = response['name']
-        if response['first_air_date']:
+        if response.get('first_air_date'):
             meta['year'] = datetime.strptime(response['first_air_date'], '%Y-%m-%d').year
         else:
             console.print('[yellow]TMDB does not have a release date, using year from filename instead (if it exists)')
             meta['year'] = meta['search_year']
+
+        # Retrieve external IDs
         external = tv.external_ids()
 
-        # IMDb ID Handling for TV Shows
-        if meta.get('imdb_id', 0) == 0:
-            imdb_id = external.get('imdb_id', None)
-
-            # Ensure imdb_id is a valid string and strip 'tt' prefix if present
-            if not imdb_id or imdb_id in ["", " ", "None", None]:
-                meta['imdb_id'] = 0
+        # IMDb ID Validation
+        imdb_id = external.get('imdb_id', None)
+        if imdb_id:
+            console.print(f"[cyan]Retrieved IMDb ID from TMDb: {imdb_id}[/cyan]")
+            imdb_id_clean = imdb_id.lstrip('t')  # Safe removal of 'tt' prefix
+            if imdb_id_clean.isdigit():
+                meta['imdb_id'] = int(imdb_id_clean)
             else:
-                imdb_id_clean = imdb_id.lstrip('t')  # Remove 'tt' prefix safely
-                if imdb_id_clean.isdigit():  # Ensure it's a valid numeric string
-                    meta['imdb_id'] = int(imdb_id_clean)
-                else:
-                    console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
-                    meta['imdb_id'] = 0  #Default to 0 if invalid
+                console.print(f"[bold red]Invalid IMDb ID returned: {imdb_id}[/bold red]")
+                meta['imdb_id'] = 0
         else:
-            meta['imdb_id'] = int(meta.get('imdb_id', 0))
+            meta['imdb_id'] = 0
+
+        console.print(f"[bold cyan]Final IMDb ID: {meta['imdb_id']}[/bold cyan]")
 
         # TVDB ID Handling
-        if meta.get('tvdb_id') == 0:
-            meta['tvdb_id'] = external.get('tvdb_id', None)
-            if meta['tvdb_id'] in ["", " ", "None", None]:
-                meta['tvdb_id'] = 0
+        meta['tvdb_id'] = external.get('tvdb_id', 0) or 0
+
         try:
             videos = tv.videos()
             for each in videos.get('results', []):
-                if each.get('site', "") == 'YouTube' and each.get('type', "") == "Trailer":
+                if each.get('site') == 'YouTube' and each.get('type') == "Trailer":
                     meta['youtube'] = f"https://www.youtube.com/watch?v={each.get('key')}"
                     break
         except Exception:
             console.print('[yellow]Unable to grab videos from TMDb.')
 
-        # meta['aka'] = f" AKA {response['original_name']}"
+        # Original Language and Alternative Names
         meta['aka'], original_language = await get_imdb_aka_api(meta['imdb_id'], meta)
-        if original_language is not None:
-            meta['original_language'] = original_language
-        else:
-            meta['original_language'] = response['original_language']
+        meta['original_language'] = original_language or response.get('original_language', '')
+
+        # Metadata Assignments
         meta['original_title'] = response.get('original_name', meta['title'])
         meta['keywords'] = await get_keywords(tv)
         meta['genres'] = await get_genres(response)
         meta['tmdb_directors'] = await get_directors(tv)
         meta['mal_id'], meta['aka'], meta['anime'], meta['demographic'] = await get_anime(response, meta)
-        if meta.get('mal_manual') != 0:
-            meta['mal_id'] = meta['mal_manual']
-        meta['poster'] = response.get('poster_path', '')
-        meta['overview'] = response['overview']
 
-        meta['tmdb_type'] = response.get('type', 'Scripted')
-        runtime = response.get('episode_run_time', [60])
-        if runtime == []:
-            runtime = [60]
-        meta['runtime'] = runtime[0]
-    if meta.get('poster') not in (None, ''):
+        # Manual MAL ID Overwrite
+        if meta.get('mal_manual', 0):
+            meta['mal_id'] = meta['mal_manual']
+
+        meta['poster'] = response.get('poster_path', '')
+        meta['overview'] = response.get('overview', '')
+
+        # Runtime Handling
+        runtime = response.get('episode_run_time', [60])  # Defaults to [60]
+        meta['runtime'] = runtime[0] if runtime else 60  # Ensures runtime is always valid
+
+    # Poster Formatting
+    if meta.get('poster'):
         meta['poster'] = f"https://image.tmdb.org/t/p/original{meta['poster']}"
 
+    # AKA Cleanup
     difference = SequenceMatcher(None, meta['title'].lower(), meta['aka'][5:].lower()).ratio()
-    if difference >= 0.9 or meta['aka'][5:].strip() == "" or meta['aka'][5:].strip().lower() in meta['title'].lower():
+    if difference >= 0.9 or not meta['aka'][5:].strip() or meta['aka'][5:].strip().lower() in meta['title'].lower():
         meta['aka'] = ""
+
     if f"({meta['year']})" in meta['aka']:
         meta['aka'] = meta['aka'].replace(f"({meta['year']})", "").strip()
 
