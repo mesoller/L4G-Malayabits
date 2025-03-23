@@ -246,7 +246,7 @@ class HUNO():
         edition = meta.get('edition', "")
         hybrid = "Hybrid" if "HYBRID" in basename.upper() else ""
         scale = "DS4K" if "DS4K" in basename.upper() else "RM4K" if "RM4K" in basename.upper() else ""
-        
+
         # YAY NAMING FUN
         if meta['category'] == "MOVIE":  # MOVIE SPECIFIC
             if type == "DISC":  # Disk
