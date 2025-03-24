@@ -6,7 +6,6 @@ import platform
 import os
 import glob
 import httpx
-
 from src.trackers.COMMON import COMMON
 from src.console import console
 
@@ -26,6 +25,7 @@ class PTT():
         self.source_flag = 'PTT'
         self.upload_url = 'https://polishtorrent.top/api/torrents/upload'
         self.search_url = 'https://polishtorrent.top/api/torrents/filter'
+        self.torrent_url = 'https://polishtorrent.top/api/torrents/'
         self.signature = "\n[center][url=https://github.com/Audionut/Upload-Assistant]Created by Audionut's Upload Assistant[/url][/center]"
         self.banned_groups = ['ViP', 'BiRD', 'M@RTiNU$', 'inTGrity', 'CiNEMAET', 'MusicET', 'TeamET', 'R2D2']
         pass
@@ -44,7 +44,8 @@ class PTT():
             'WEBDL': '4',
             'WEBRIP': '5',
             'HDTV': '6',
-            'ENCODE': '3'
+            'ENCODE': '3',
+            'DVDRIP': '3'
         }.get(type, '0')
         return type_id
 
@@ -70,7 +71,10 @@ class PTT():
         cat_id = await self.get_cat_id(meta['category'])
         type_id = await self.get_type_id(meta['type'])
         resolution_id = await self.get_res_id(meta['resolution'])
-        await common.unit3d_edit_desc(meta, self.tracker, self.signature)
+        modq = await self.get_flag(meta, 'modq')
+        draft = await self.get_flag(meta, 'draft')
+        name = await self.edit_name(meta)
+        await common.unit3d_edit_desc(meta, self.tracker, self.signature, comparison=True)
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
         if meta['anon'] == 0 and not self.config['TRACKERS'][self.tracker].get('anon', False):
@@ -84,8 +88,13 @@ class PTT():
         else:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO.txt", 'r', encoding='utf-8').read()
             bd_dump = None
+
         desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r', encoding='utf-8').read()
-        open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent", 'rb')
+        if meta.get('service') == "hentai":
+            desc = "[center]" + "[img]" + str(meta['poster']) + "[/img][/center]" + "\n[center]" + "https://www.themoviedb.org/tv/" + str(meta['tmdb']) + "\nhttps://myanimelist.net/anime/" + str(meta['mal']) + "[/center]" + desc
+
+        torrent_file_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
+        open_torrent = open(torrent_file_path, 'rb')
         files = {'torrent': open_torrent}
         base_dir = meta['base_dir']
         uuid = meta['uuid']
@@ -97,7 +106,7 @@ class PTT():
         if nfo_file:
             files['nfo'] = ("nfo_file.nfo", nfo_file, "text/plain")
         data = {
-            'name': meta['name'],
+            'name': name,
             'description': desc,
             'mediainfo': mi_dump,
             'bdinfo': bd_dump,
@@ -119,7 +128,10 @@ class PTT():
             'free': 0,
             'doubleup': 0,
             'sticky': 0,
+            'mod_queue_opt_in': modq,
+            'draft_queue_opt_in': draft,
         }
+
         # Internal
         if self.config['TRACKERS'][self.tracker].get('internal', False) is True:
             if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
@@ -154,6 +166,29 @@ class PTT():
             console.print(data)
         open_torrent.close()
 
+    async def edit_name(self, meta):
+        ptt_name = meta['name']
+        resolution = meta.get('resolution')
+        video_encode = meta.get('video_encode')
+        name_type = meta.get('type', "")
+
+        if name_type == "DVDRIP":
+            if meta.get('category') == "MOVIE":
+                ptt_name = ptt_name.replace(f"{meta['source']}{meta['video_encode']}", f"{resolution}", 1)
+                ptt_name = ptt_name.replace((meta['audio']), f"{meta['audio']}{video_encode}", 1)
+            else:
+                ptt_name = ptt_name.replace(f"{meta['source']}", f"{resolution}", 1)
+                ptt_name = ptt_name.replace(f"{meta['video_codec']}", f"{meta['audio']} {meta['video_codec']}", 1)
+
+        return ptt_name
+
+    async def get_flag(self, meta, flag_name):
+        config_flag = self.config['TRACKERS'][self.tracker].get(flag_name)
+        if config_flag is not None:
+            return 1 if config_flag else 0
+
+        return 1 if meta.get(flag_name, False) else 0
+
     async def search_existing(self, meta, disctype):
         dupes = []
         console.print("[yellow]Searching for existing torrents on PTT...")
@@ -170,7 +205,7 @@ class PTT():
         if meta.get('edition', "") != "":
             params['name'] = params['name'] + f" {meta['edition']}"
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(url=self.search_url, params=params)
                 if response.status_code == 200:
                     data = response.json()
