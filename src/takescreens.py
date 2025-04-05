@@ -1057,9 +1057,9 @@ async def capture_screenshot(args):
             base_text = base_text.filter('drawtext',
                                          text=f"Frame Number: {frame_number}",
                                          fontcolor='white',
-                                         fontsize={font_size},
-                                         x={x_all},
-                                         y={y_number},
+                                         fontsize=font_size,
+                                         x=x_all,
+                                         y=y_number,
                                          box=1,
                                          boxcolor='black@0.5'
                                          )
@@ -1068,9 +1068,9 @@ async def capture_screenshot(args):
             base_text = base_text.filter('drawtext',
                                          text=f"Frame Type: {frame_type}",
                                          fontcolor='white',
-                                         fontsize={font_size},
-                                         x={x_all},
-                                         y={y_type},
+                                         fontsize=font_size,
+                                         x=x_all,
+                                         y=y_type,
                                          box=1,
                                          boxcolor='black@0.5'
                                          )
@@ -1080,9 +1080,9 @@ async def capture_screenshot(args):
                 base_text = base_text.filter('drawtext',
                                              text="Tonemapped HDR",
                                              fontcolor='white',
-                                             fontsize={font_size},
-                                             x={x_all},
-                                             y={y_hdr},
+                                             fontsize=font_size,
+                                             x=x_all,
+                                             y=y_hdr,
                                              box=1,
                                              boxcolor='black@0.5'
                                              )
