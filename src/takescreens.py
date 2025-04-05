@@ -1042,7 +1042,7 @@ async def capture_screenshot(args):
             frame_type = frame_info.get('frame_type', 'Unknown')
 
             # Get the resolution and convert it to integer
-            resol = int(''.join(filter(str.isdigit, meta.get('resolution','1080p'))))
+            resol = int(''.join(filter(str.isdigit, meta.get('resolution', '1080p'))))
             # Assess the font size from the resolution
             font_size = round(24*resol/1080)
             x_all = round(10*resol/1080)
