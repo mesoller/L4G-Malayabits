@@ -1058,8 +1058,8 @@ async def capture_screenshot(args):
                                          text=f"Frame Number: {frame_number}",
                                          fontcolor='white',
                                          fontsize={font_size},
-                                         x=10,
-                                         y=10,
+                                         x={x_all},
+                                         y={y_number},
                                          box=1,
                                          boxcolor='black@0.5'
                                          )
@@ -1069,8 +1069,8 @@ async def capture_screenshot(args):
                                          text=f"Frame Type: {frame_type}",
                                          fontcolor='white',
                                          fontsize={font_size},
-                                         x=10,
-                                         y=40,
+                                         x={x_all},
+                                         y={y_type},
                                          box=1,
                                          boxcolor='black@0.5'
                                          )
@@ -1081,8 +1081,8 @@ async def capture_screenshot(args):
                                              text="Tonemapped HDR",
                                              fontcolor='white',
                                              fontsize={font_size},
-                                             x=10,
-                                             y=70,
+                                             x={x_all},
+                                             y={y_hdr},
                                              box=1,
                                              boxcolor='black@0.5'
                                              )
