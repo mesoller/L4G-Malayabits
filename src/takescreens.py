@@ -1045,6 +1045,10 @@ async def capture_screenshot(args):
             resol = int(''.join(filter(str.isdigit, meta.get('resolution','1080p'))))
             # Assess the font size from the resolution
             font_size = round(24*resol/1080)
+            x_all = round(10*resol/1080)
+            y_number = round(10*resol/1080)
+            y_type = round(40*resol/1080)
+            y_hdr = round(70*resol/1080)
 
             # Use the filtered output with frame info
             base_text = ff
@@ -1053,7 +1057,7 @@ async def capture_screenshot(args):
             base_text = base_text.filter('drawtext',
                                          text=f"Frame Number: {frame_number}",
                                          fontcolor='white',
-                                         fontsize=24,
+                                         fontsize={font_size},
                                          x=10,
                                          y=10,
                                          box=1,
@@ -1064,7 +1068,7 @@ async def capture_screenshot(args):
             base_text = base_text.filter('drawtext',
                                          text=f"Frame Type: {frame_type}",
                                          fontcolor='white',
-                                         fontsize=24,
+                                         fontsize={font_size},
                                          x=10,
                                          y=40,
                                          box=1,
@@ -1076,7 +1080,7 @@ async def capture_screenshot(args):
                 base_text = base_text.filter('drawtext',
                                              text="Tonemapped HDR",
                                              fontcolor='white',
-                                             fontsize=24,
+                                             fontsize={font_size},
                                              x=10,
                                              y=70,
                                              box=1,
