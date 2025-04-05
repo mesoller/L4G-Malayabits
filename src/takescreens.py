@@ -702,7 +702,8 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
     meta['frame_overlay'] = config['DEFAULT'].get('frame_overlay', False)
     if meta['frame_overlay']:
         console.print("[yellow]Getting frame information for overlays...")
-        resolution_pb = meta.get('resolution')
+        # resolution_pb = meta.get('resolution','1080p')
+        resolution_pb = int(''.join(filter(str.isdigit, meta.get('resolution','1080p'))))
         console.print(f"[yellow]RESOLUTION: {resolution_pb}")
         frame_info_tasks = [
             get_frame_info(path, ss_times[i], meta)
