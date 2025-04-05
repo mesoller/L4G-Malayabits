@@ -702,9 +702,6 @@ async def screenshots(path, filename, folder_id, base_dir, meta, num_screens=Non
     meta['frame_overlay'] = config['DEFAULT'].get('frame_overlay', False)
     if meta['frame_overlay']:
         console.print("[yellow]Getting frame information for overlays...")
-        # resolution_pb = meta.get('resolution','1080p')
-        resolution_pb = int(''.join(filter(str.isdigit, meta.get('resolution','1080p'))))
-        console.print(f"[yellow]RESOLUTION: {resolution_pb}")
         frame_info_tasks = [
             get_frame_info(path, ss_times[i], meta)
             for i in range(num_screens + 1)
@@ -1043,6 +1040,11 @@ async def capture_screenshot(args):
                     frame_number = int(pts_time * frame_rate)
 
             frame_type = frame_info.get('frame_type', 'Unknown')
+
+            # Get the resolution and convert it to integer
+            resol = int(''.join(filter(str.isdigit, meta.get('resolution','1080p'))))
+            # Assess the font size from the resolution
+            font_size = round(24*resol/1080)
 
             # Use the filtered output with frame info
             base_text = ff
