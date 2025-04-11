@@ -995,6 +995,10 @@ class Clients():
             qbt_client.torrents_add_tags(tags=tag_to_add, torrent_hashes=torrent.infohash)
 
         if meta['debug']:
+            info = qbt_client.torrents_info(torrent_hashes=torrent.infohash)
+            console.print(f"[cyan]Actual qBittorrent save path: {info[0].save_path}")
+
+        if meta['debug']:
             console.print(f"Added to: {save_path}")
 
     def deluge(self, path, torrent_path, torrent, local_path, remote_path, client, meta):
