@@ -1307,7 +1307,10 @@ async def kill_all_child_processes():
     gone, still_alive = psutil.wait_procs(children, timeout=3)  # Wait for termination
     for process in still_alive:
         console.print(f"[red]Force killing stubborn process: {process.pid}[/red]")
-        process.kill()
+        if sys.platform.startswith('win32'):
+            process.kill()
+        else:
+            os.killpg(process.pid, signal.SIGTERM)
 
 
 def optimize_image_task(image):
