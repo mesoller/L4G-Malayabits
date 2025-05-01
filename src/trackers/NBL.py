@@ -5,6 +5,7 @@ import httpx
 
 from src.trackers.COMMON import COMMON
 from src.console import console
+from src.tvmaze import get_tvmaze_show_data
 
 
 class NBL():
@@ -42,9 +43,117 @@ class NBL():
         # Leave this in so manual works
         return
 
+    genre_abbreviations = {
+        "science-fiction": "sci.fi"
+    }
+
+    async def get_tags(self, meta):
+        tvmaze_data = await get_tvmaze_show_data(meta.get('tvmaze_id'), debug=meta['debug'])
+        if tvmaze_data is not None:
+            meta['tvmaze_genres'] = ', '.join(tvmaze_data.get('genres', []))
+
+        tags = []
+        if 'tvmaze_genres' in meta:
+            for genre in meta['tvmaze_genres'].split(','):
+                genre = genre.strip(', ').lower()
+                # Check for special case genres
+                if genre in self.genre_abbreviations:
+                    tags.append(self.genre_abbreviations[genre])
+                else:
+                    tags.append(genre.replace(' ', '.'))
+
+        # Resolution
+        tags.append(meta['resolution'].lower())
+        if meta['sd'] == 1:
+            tags.append('sd')
+        elif meta['resolution'] in ['2160p']:
+            tags.append('4k')
+
+        # Streaming Service
+        if str(meta['service_longname']) != "":
+            service_name = meta['service_longname'].lower()
+            tags.append(f"{service_name}")
+
+        # Release Type/Source
+        for each in ['remux', 'WEB.DL', 'WEBRip', 'HDTV', 'BluRay', 'DVD', 'HDDVD']:
+            if (each.lower().replace('.', '') in meta['type'].lower()) or (each.lower().replace('-', '') in meta['source'].lower()):
+                tags.append(each.lower().replace('.', ''))
+
+        if meta['category'] == "TV":
+            if meta.get('tv_pack', 0) == 0:
+                tags.extend(['episode'])
+            else:
+                tags.append('season')
+
+        # Audio tags
+        if 'atmos' in meta['audio'].lower():
+            tags.append('atmos')
+
+        # Video tags
+        video_codec = meta.get('video_codec', '').lower().replace('-', '')
+        if video_codec and video_codec not in tags:
+            tags.append(video_codec)
+
+        # Add alternate codec tags without duplicates
+        if 'hevc' in video_codec or 'h265' in video_codec:
+            if 'hevc' not in tags:
+                tags.append('hevc')
+            if 'h265' not in tags:
+                tags.append('h265')
+        elif 'avc' in video_codec or 'h264' in video_codec:
+            if 'avc' not in tags:
+                tags.append('avc')
+            if 'h264' not in tags:
+                tags.append('h264')
+
+        # Group Tags
+        if meta['tag'] != "":
+            tags.append(f"{meta['tag'][1:].replace('-', '').lower()}.release")
+        else:
+            tags.append('nogrp.release')
+
+        # Scene/P2P
+        if meta['scene']:
+            tags.append('scene')
+        else:
+            tags.append('p2p')
+
+        # Has subtitles
+        if meta.get('is_disc', '') != "BDMV":
+            if any(track.get('@type', '') == "Text" for track in meta['mediainfo']['media']['track']):
+                tags.append('subtitles')
+        else:
+            if len(meta['bdinfo']['subtitles']) >= 1:
+                tags.append('subtitles')
+
+        # HDR
+        if 'HDR' in meta['hdr']:
+            tags.append('hdr')
+        if 'DV' in meta['hdr']:
+            tags.append('dovi')
+        if 'HLG' in meta['hdr']:
+            tags.append('hlg')
+
+        # File extensions (for non-disc releases)
+        if not meta.get('is_disc') and meta.get('filelist'):
+            extensions = set()
+            for file_path in meta['filelist']:
+                if '.' in file_path:
+                    ext = file_path.split('.')[-1].lower()
+                    if ext:
+                        extensions.add(ext)
+
+            for ext in extensions:
+                if ext not in tags:
+                    tags.append(ext)
+
+        tags = ' '.join(tags)
+        return tags
+
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
+        tags = await self.get_tags(meta)
 
         if meta['bdinfo'] is not None:
             mi_dump = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/BD_SUMMARY_00.txt", 'r', encoding='utf-8').read()
@@ -57,6 +166,7 @@ class NBL():
             'tvmazeid': int(meta.get('tvmaze_id', 0)),
             'mediainfo': mi_dump,
             'category': await self.get_cat_id(meta),
+            'tags[]': tags,
             'ignoredupes': 'on'
         }
 
