@@ -231,6 +231,7 @@ async def get_tvmaze_show_data(tvmaze_id, debug=False):
                     "image": data.get("image", {}).get("original", None) if data.get("image") else None,
                     "externals": data.get("externals", {}),
                     "rating": data.get("rating", {}).get("average", 0),
+                    "webChannel": data.get("webChannel", {}).get("name", "") if data.get("webChannel") else "",
                 }
 
                 if debug:

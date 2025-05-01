@@ -50,21 +50,34 @@ class NBL():
     async def get_tags(self, meta):
         if 'tvmaze_show_data' not in meta:
             tvmaze_data = await get_tvmaze_show_data(meta.get('tvmaze_id'), debug=meta['debug'])
-            if tvmaze_data is not None:
-                meta['tvmaze_genres'] = ', '.join(tvmaze_data.get('genres', []))
         else:
             tvmaze_data = meta['tvmaze_show_data']
-            meta['tvmaze_genres'] = ', '.join(tvmaze_data.get('genres', []))
 
         tags = []
-        if 'tvmaze_genres' in meta:
-            for genre in meta['tvmaze_genres'].split(','):
-                genre = genre.strip(', ').lower()
-                # Check for special case genres
-                if genre in self.genre_abbreviations:
-                    tags.append(self.genre_abbreviations[genre])
-                else:
-                    tags.append(genre.replace(' ', '.'))
+        genres = ', '.join(tvmaze_data.get('genres', []))
+        for genre in genres.split(','):
+            genre = genre.strip(', ').lower()
+            # Check for special case genres
+            if genre in self.genre_abbreviations:
+                tags.append(self.genre_abbreviations[genre])
+            else:
+                tags.append(genre.replace(' ', '.'))
+
+        if tvmaze_data is not None:
+            if 'type' in tvmaze_data and tvmaze_data['type'] != 'Scripted':
+                tags.append(tvmaze_data['type'].lower().replace(' ', '.'))
+            if 'network' in tvmaze_data:
+                if isinstance(tvmaze_data['network'], dict):
+                    if tvmaze_data['network'].get('name', '') != '':
+                        tags.append(tvmaze_data['network'].get('name', '').lower().replace(' ', '.'))
+                elif isinstance(tvmaze_data['network'], str) and tvmaze_data['network'] != '':
+                    tags.append(tvmaze_data['network'].lower().replace(' ', '.'))
+            if 'webChannel' in tvmaze_data:
+                if isinstance(tvmaze_data['webChannel'], dict):
+                    if tvmaze_data['webChannel'].get('name', '') != '':
+                        tags.append(tvmaze_data['webChannel'].get('name', '').lower().replace(' ', '.'))
+                elif isinstance(tvmaze_data['webChannel'], str) and tvmaze_data['webChannel'] != '':
+                    tags.append(tvmaze_data['webChannel'].lower().replace(' ', '.'))
 
         # Resolution
         tags.append(meta['resolution'].lower())
