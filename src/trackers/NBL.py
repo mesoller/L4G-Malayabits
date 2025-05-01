@@ -48,8 +48,12 @@ class NBL():
     }
 
     async def get_tags(self, meta):
-        tvmaze_data = await get_tvmaze_show_data(meta.get('tvmaze_id'), debug=meta['debug'])
-        if tvmaze_data is not None:
+        if 'tvmaze_show_data' not in meta:
+            tvmaze_data = await get_tvmaze_show_data(meta.get('tvmaze_id'), debug=meta['debug'])
+            if tvmaze_data is not None:
+                meta['tvmaze_genres'] = ', '.join(tvmaze_data.get('genres', []))
+        else:
+            tvmaze_data = meta['tvmaze_show_data']
             meta['tvmaze_genres'] = ', '.join(tvmaze_data.get('genres', []))
 
         tags = []
