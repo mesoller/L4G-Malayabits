@@ -627,7 +627,10 @@ class Prep():
                     )
                 )
 
-            if meta.get('category') == 'TV' and 'nbl' in meta.get('trackers', []).lower():
+            if meta.get('category') == 'TV' and (
+                isinstance(meta.get('trackers', ''), str) and 'nbl' in meta.get('trackers', '').lower() or
+                isinstance(meta.get('trackers', []), list) and any('nbl' in t.lower() for t in meta.get('trackers', []) if isinstance(t, str))
+            ):
                 all_tasks.append(
                     get_tvmaze_show_data(
                         meta.get('tvmaze_id'),
@@ -770,7 +773,10 @@ class Prep():
                 elif isinstance(tmdb_episode_data, Exception):
                     console.print(f"[yellow]TMDb episode data retrieval failed: {tmdb_episode_data}")
 
-            if meta.get('category') == 'TV' and 'nbl' in meta.get('trackers', []).lower():
+            if meta.get('category') == 'TV' and (
+                isinstance(meta.get('trackers', ''), str) and 'nbl' in meta.get('trackers', '').lower() or
+                isinstance(meta.get('trackers', []), list) and any('nbl' in t.lower() for t in meta.get('trackers', []) if isinstance(t, str))
+            ):
                 tvmaze_show_data = results[-1]
                 if not isinstance(tvmaze_show_data, Exception) and tvmaze_show_data:
                     meta['tvmaze_show_data'] = tvmaze_show_data
