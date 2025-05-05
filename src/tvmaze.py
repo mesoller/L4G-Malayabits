@@ -201,3 +201,55 @@ async def get_tvmaze_episode_data(tvmaze_id, season, episode):
     except Exception as e:
         console.print(f"[red]Error fetching TVMaze episode data: {e}[/red]")
         return None
+
+
+async def get_tvmaze_show_data(tvmaze_id, debug=False):
+    console.print(f"[cyan]Fetching TVMaze show data for ID: {tvmaze_id}...[/cyan]")
+    url = f"https://api.tvmaze.com/shows/{tvmaze_id}"
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(url, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+
+            if data:
+
+                # Format the response in a consistent structure
+                result = {
+                    "id": data.get("id", tvmaze_id),
+                    "name": data.get("name", ""),
+                    "premiered": data.get("premiered", ""),
+                    "ended": data.get("ended", ""),
+                    "status": data.get("status", ""),
+                    "type": data.get("type", ""),
+                    "language": data.get("language", ""),
+                    "genres": data.get("genres", []),
+                    "network": data.get("network", {}).get("name", "") if data.get("network") else "",
+                    "country": data.get("network", {}).get("country", {}).get("name", "") if data.get("network") else "",
+                    "runtime": data.get("runtime", 0),
+                    "image": data.get("image", {}).get("original", None) if data.get("image") else None,
+                    "externals": data.get("externals", {}),
+                    "rating": data.get("rating", {}).get("average", 0),
+                    "webChannel": data.get("webChannel", {}).get("name", "") if data.get("webChannel") else "",
+                }
+
+                if debug:
+                    console.print(f"[green]Found show: {result['name']} ({result['premiered']})[/green]")
+                    if result["genres"]:
+                        console.print(f"[yellow]Genres: {', '.join(result['genres'])}[/yellow]")
+
+                return result
+            else:
+                console.print(f"[yellow]No show data found for TVMaze ID {tvmaze_id}[/yellow]")
+                return None
+
+    except httpx.HTTPStatusError as e:
+        console.print(f"[red]HTTP error occurred: {e.response.status_code} - {e.response.text}[/red]")
+        return None
+    except httpx.RequestError as e:
+        console.print(f"[red]Request error occurred: {e}[/red]")
+        return None
+    except Exception as e:
+        console.print(f"[red]Error fetching TVMaze show data: {e}[/red]")
+        return None

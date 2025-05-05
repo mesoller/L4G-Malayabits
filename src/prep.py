@@ -4,7 +4,7 @@ from src.exceptions import *  # noqa: F403
 from src.clients import Clients
 from data.config import config
 from src.trackersetup import tracker_class_map
-from src.tvmaze import search_tvmaze, get_tvmaze_episode_data
+from src.tvmaze import search_tvmaze, get_tvmaze_episode_data, get_tvmaze_show_data
 from src.imdb import get_imdb_info_api, search_imdb
 from src.trackermeta import update_metadata_from_tracker, check_images_concurrently
 from src.tmdb import tmdb_other_meta, get_tmdb_imdb_from_mediainfo, get_tmdb_from_imdb, get_tmdb_id, get_episode_details
@@ -634,6 +634,17 @@ class Prep():
                     )
                 )
 
+            if meta.get('category') == 'TV' and (
+                isinstance(meta.get('trackers', ''), str) and 'nbl' in meta.get('trackers', '').lower() or
+                isinstance(meta.get('trackers', []), list) and any('nbl' in t.lower() for t in meta.get('trackers', []) if isinstance(t, str))
+            ):
+                all_tasks.append(
+                    get_tvmaze_show_data(
+                        meta.get('tvmaze_id'),
+                        meta.get('debug', False)
+                    )
+                )
+
             # Execute all tasks in parallel
             results = await asyncio.gather(*all_tasks, return_exceptions=True)
 
@@ -768,6 +779,16 @@ class Prep():
                         meta['overview_meta'] = tmdb_episode_data.get('overview', None)
                 elif isinstance(tmdb_episode_data, Exception):
                     console.print(f"[yellow]TMDb episode data retrieval failed: {tmdb_episode_data}")
+
+            if meta.get('category') == 'TV' and (
+                isinstance(meta.get('trackers', ''), str) and 'nbl' in meta.get('trackers', '').lower() or
+                isinstance(meta.get('trackers', []), list) and any('nbl' in t.lower() for t in meta.get('trackers', []) if isinstance(t, str))
+            ):
+                tvmaze_show_data = results[-1]
+                if not isinstance(tvmaze_show_data, Exception) and tvmaze_show_data:
+                    meta['tvmaze_show_data'] = tvmaze_show_data
+                elif isinstance(tvmaze_show_data, Exception):
+                    console.print(f"[yellow]TVMaze show data retrieval failed: {tvmaze_show_data}")
 
         # Check if both IMDb and TVDB IDs are present first
         elif int(meta['imdb_id']) != 0 and int(meta['tvdb_id']) != 0:
