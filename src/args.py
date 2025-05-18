@@ -36,6 +36,7 @@ Common options:
   -t, --type                 Type (disc, remux, encode, webdl, etc.)
   --source                   Source (Blu-ray, BluRay, DVD, WEBDL, etc.)
   -comps, --comparison       Use comparison images from a folder (input folder path): see -comps_index
+  --include-extensions       Comma-separated list of additional file extensions to include in torrent (e.g., 'srt,sub,idx')
   -debug, --debug            Prints more information, runs everything without actually uploading
 
 Use --help for a full list of options.
@@ -167,6 +168,7 @@ class Args():
         parser.add_argument('-cleanup', '--cleanup', action='store_true', required=False, help="Clean up tmp directory")
         parser.add_argument('-fl', '--freeleech', nargs=1, required=False, help="Freeleech Percentage. Any value 1-100 works, but site search is limited to certain values", default=0, dest="freeleech")
         parser.add_argument('--infohash', nargs=1, required=False, help="V1 Info Hash")
+        parser.add_argument('--include-extensions', dest='include_extensions', nargs=1, required=False, help="Comma-separated list of additional file extensions to include in the torrent (e.g., 'srt,sub,idx')")
         args, before_args = parser.parse_known_args(input)
         args = vars(args)
         # console.print(args)

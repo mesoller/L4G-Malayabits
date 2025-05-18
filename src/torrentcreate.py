@@ -114,16 +114,46 @@ def create_torrent(meta, path, output_filename, tracker_url=None):
             path = path
         else:
             os.chdir(path)
-            globs = glob.glob1(path, "*.mkv") + glob.glob1(path, "*.mp4") + glob.glob1(path, "*.ts")
+
+            # Initialize default extension list
+            extensions = ["*.mkv", "*.mp4", "*.ts"]
+
+            # Include additional extensions if specified
+            if meta.get('include_extensions'):
+                custom_exts = [f"*.{ext.strip()}" for ext in meta['include_extensions'].split(',')]
+                extensions.extend(custom_exts)
+
+            # Get file list based on extensions
+            globs = []
+            for ext in extensions:
+                globs.extend(glob.glob1(path, ext))
+
+            # Filter out sample files
             no_sample_globs = [
                 os.path.abspath(f"{path}{os.sep}{file}") for file in globs
                 if not file.lower().endswith('sample.mkv') or "!sample" in file.lower()
             ]
+
             if len(no_sample_globs) == 1:
                 path = meta['filelist'][0]
 
+    # Set default exclusions
     exclude = ["*.*", "*sample.mkv", "!sample*.*"] if not meta['is_disc'] else ""
-    include = ["*.mkv", "*.mp4", "*.ts"] if not meta['is_disc'] else ""
+
+    # Initialize default includes
+    default_extensions = ["*.mkv", "*.mp4", "*.ts"]
+
+    # Handle custom extensions
+    if meta.get('include_extensions'):
+        custom_extensions = [f"*.{ext.strip()}" for ext in meta['include_extensions'].split(',')]
+        include = default_extensions + custom_extensions if not meta['is_disc'] else ""
+    # Use default extensions only
+    else:
+        include = default_extensions if not meta['is_disc'] else ""
+
+    if meta.get('debug'):
+        console.print(f"[cyan]Include patterns: {include}")
+        console.print(f"[cyan]Exclude patterns: {exclude}")
 
     # If using mkbrr, run the external application
     if meta.get('mkbrr'):
