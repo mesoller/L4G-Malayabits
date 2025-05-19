@@ -272,6 +272,12 @@ config = {
             "announce_url": "https://blutopia.cc/announce/customannounceurl",
             "anon": False,
         },
+        "BS": {
+            "useAPI": False,
+            "api_key": "",
+            "announce_url": "https://bitsexy.cc/announce/customannounceurl",
+            "anon": False,
+        },
         "CBR": {
             "api_key": "",
             "announce_url": "https://capybarabr.com/announce/customannounceurl",
