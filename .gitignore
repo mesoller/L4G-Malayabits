@@ -12,3 +12,5 @@ tmp/*
 .wdm/
 .DS_Store
 user-args.json
+venv/
+.venv/
