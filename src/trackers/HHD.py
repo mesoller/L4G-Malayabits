@@ -29,6 +29,7 @@ class HHD():
         category_id = {
             'MOVIE': '1',
             'TV': '2',
+            'XXX': '12',
             }.get(category_name, '0')
         return category_id
 
