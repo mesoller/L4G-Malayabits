@@ -33,6 +33,7 @@ class AL():
         category_id = {
             'MOVIE': '1',
             'TV': '2',
+            'XXX': '8'
         }.get(category_name, '0')
         return category_id
 
