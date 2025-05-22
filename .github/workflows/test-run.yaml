@@ -120,7 +120,7 @@ jobs:
           OUTPUT_FILE="upload_output.txt"
           
           # Run the script, redirecting both stdout and stderr to the console and to a file
-          python upload.py tears.of.steel.2012.mkv -ua -ns --debug 2>&1 | tee $OUTPUT_FILE
+          python upload.py tears.of.steel.2012.mkv -ua -ns -siu --tmdb movie/133701 --imdb tt2285752 --tvdb 37711 --debug 2>&1 | tee $OUTPUT_FILE
           
           # The 'python' command above will cause the script to exit if 'upload.py' itself exits non-zero,
           # due to 'set -e' and 'set -o pipefail'.
@@ -218,12 +218,25 @@ jobs:
           # Replace the file
           mv README.md.new README.md
           
-          # Commit and push
+          # First commit change to the current detached HEAD
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
           git commit -m "Update badge for tag ${TAG_NAME} [skip ci]" || echo "No changes to commit"
-          git push
+          
+          # Now fetch master branch and apply the same changes there
+          git fetch origin master:master
+          git checkout master
+          
+          # Create badges with the same content for master branch
+          echo "$DOCKER_BADGE $MASTER_BADGE $TAG_BADGE" > README.md.new
+          tail -n +2 README.md >> README.md.new
+          mv README.md.new README.md
+          
+          # Commit and push to master
+          git add README.md
+          git commit -m "Update badge for tag ${TAG_NAME} [skip ci]" || echo "No changes to commit"
+          git push origin master
 
       - name: Cleanup config.py
         if: always()
