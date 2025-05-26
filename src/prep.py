@@ -170,12 +170,9 @@ class Prep():
 
         else:
             # handle some specific cases that trouble guessit and then id grabbing
-            def extract_title_and_year(meta, filename):
+            def extract_title_and_year(filename):
                 basename = os.path.basename(filename)
                 basename = os.path.splitext(basename)[0]
-
-                if meta['no_meta']:
-                    return meta['uuid'],"", ""
 
                 secondary_title = None
                 year = None
@@ -248,7 +245,7 @@ class Prep():
 
             video, meta['scene'], meta['imdb_id'] = await is_scene(videopath, meta, meta.get('imdb_id', 0))
 
-            title, secondary_title, extracted_year = extract_title_and_year(meta, video)
+            title, secondary_title, extracted_year = extract_title_and_year(video)
             if meta['debug']:
                 console.print(f"Title: {title}, Secondary Title: {secondary_title}, Year: {extracted_year}")
             if secondary_title:
@@ -519,15 +516,14 @@ class Prep():
             meta = await imdb_tmdb(meta, filename)
 
         # Get TMDB and IMDb metadata only if IDs are still missing, first checking mediainfo
-        # Only get if no_meta flag is false
-        if not meta.get('no_meta',False) and meta.get('tmdb_id') == 0 and meta.get('imdb_id') == 0:
+        if meta.get('tmdb_id') == 0 and meta.get('imdb_id') == 0:
             console.print("Fetching TMDB ID...")
             meta['category'], meta['tmdb_id'], meta['imdb_id'] = await get_tmdb_imdb_from_mediainfo(
                 mi, meta['category'], meta['is_disc'], meta['tmdb_id'], meta['imdb_id']
             )
 
         # if we're still missing both ids, lets search with the filename
-        if not meta.get('no_meta',False) and meta.get('tmdb_id') == 0 and meta.get('imdb_id') == 0:
+        if meta.get('tmdb_id') == 0 and meta.get('imdb_id') == 0:
             console.print("Fetching TMDB ID from filename...")
             meta = await get_tmdb_id(filename, meta['search_year'], meta, meta['category'], untouched_filename)
 
@@ -607,7 +603,7 @@ class Prep():
 
         # If we got to here and still no IMDb ID, search for it
         # bad filenames are bad
-        if not meta.get('no_meta',False) and meta.get('imdb_id') == 0:
+        if meta.get('imdb_id') == 0:
             meta['imdb_id'] = await search_imdb(filename, meta['search_year'])
 
         # Ensure IMDb info is retrieved if it wasn't already fetched
@@ -775,14 +771,6 @@ class Prep():
         meta['mal'] = meta.get('mal_id')
         meta['tvdb'] = meta.get('tvdb_id')
         meta['tvmaze'] = meta.get('tvmaze_id')
-
-        # Use filename as info
-        if meta['no_meta']:
-            meta['title'] = title
-            meta['year'] = ''
-            meta['overview'] = "No Overview"
-            meta['genres'] = 'NA'
-            meta['source'] = ''
 
         # we finished the metadata, time it
         if meta['debug']:
