@@ -164,6 +164,10 @@ class TRACKER_SETUP:
 
         if meta['debug']:
             console.print("Total banned groups retrieved:", len(all_data))
+
+        if not all_data:
+            return "empty"
+
         await self.write_banned_groups_to_file(file_path, all_data, debug=meta['debug'])
 
         return file_path
@@ -220,6 +224,9 @@ class TRACKER_SETUP:
 
         if tracker.upper() in ("AITHER", "LST"):
             file_path = await self.get_banned_groups(meta, tracker)
+            if file_path == "empty":
+                console.print(f"[bold red]No banned groups found for '{tracker}'.")
+                return False
             if not file_path:
                 console.print(f"[bold red]Failed to load banned groups for '{tracker}'.")
                 return False
@@ -359,6 +366,10 @@ class TRACKER_SETUP:
 
         if meta['debug']:
             console.print("Total claims retrieved:", len(all_data))
+
+        if not all_data:
+            return False
+
         await self.write_internal_claims_to_file(file_path, all_data, debug=meta['debug'])
 
         return await self.check_tracker_claims(meta, tracker)

@@ -256,10 +256,10 @@ class Clients():
 
                     # Piece size and count validations
                     if not meta.get('prefer_small_pieces', False):
-                        if reuse_torrent.pieces >= 8000 and reuse_torrent.piece_size < 8388608:
+                        if reuse_torrent.pieces >= 8000 and reuse_torrent.piece_size < 8488608:
                             console.print("[bold red]Torrent needs to have less than 8000 pieces with a 8 MiB piece size, regenerating")
                             valid = False
-                        elif reuse_torrent.pieces >= 5000 and reuse_torrent.piece_size < 4194304:
+                        elif reuse_torrent.pieces >= 5000 and reuse_torrent.piece_size < 4294304:
                             console.print("[bold red]Torrent needs to have less than 5000 pieces with a 4 MiB piece size, regenerating")
                             valid = False
                     elif 'max_piece_size' not in meta and reuse_torrent.pieces >= 12000:
@@ -394,6 +394,8 @@ class Clients():
 
                 if valid:
                     if prefer_small_pieces:
+                        if meta['debug']:
+                            console.print("prefersmallpieces", prefer_small_pieces)
                         # **Track best match based on piece size**
                         torrent_data = Torrent.read(torrent_file_path)
                         piece_size = torrent_data.piece_size
@@ -507,7 +509,10 @@ class Clients():
 
             # Create tracker-specific directory inside linked folder
             if use_symlink or use_hardlink:
-                tracker_dir = os.path.join(link_target, tracker)
+                # allow overridden folder name with link_dir_name config var
+                tracker_cfg = self.config["TRACKERS"].get(tracker.upper(), {})
+                link_dir_name = str(tracker_cfg.get("link_dir_name", "")).strip()
+                tracker_dir = os.path.join(link_target, link_dir_name or tracker)
                 os.makedirs(tracker_dir, exist_ok=True)
 
                 if meta.get('debug', False):
@@ -812,7 +817,10 @@ class Clients():
 
         # Create tracker-specific directory inside linked folder
         if use_symlink or use_hardlink:
-            tracker_dir = os.path.join(link_target, tracker)
+            # allow overridden folder name with link_dir_name config var
+            tracker_cfg = self.config["TRACKERS"].get(tracker.upper(), {})
+            link_dir_name = str(tracker_cfg.get("link_dir_name", "")).strip()
+            tracker_dir = os.path.join(link_target, link_dir_name or tracker)
             os.makedirs(tracker_dir, exist_ok=True)
 
             if meta['debug']:
@@ -828,14 +836,23 @@ class Clients():
                 if meta['debug']:
                     console.print(f"[yellow]Skipping linking, path already exists: {dst}")
             else:
+                allow_fallback = self.config['TRACKERS'].get('allow_fallback', True)
+                fallback_to_original = False
                 if use_hardlink:
                     try:
                         # Check if we're linking a file or directory
                         if os.path.isfile(src):
                             # For a single file, create a hardlink directly
-                            os.link(src, dst)
-                            if meta['debug']:
-                                console.print(f"[green]Hard link created: {dst} -> {src}")
+                            try:
+                                os.link(src, dst)
+                                if meta['debug']:
+                                    console.print(f"[green]Hard link created: {dst} -> {src}")
+                            except OSError as e:
+                                console.print(f"[yellow]Hard link failed: {e}")
+                                if allow_fallback:
+                                    console.print(f"[yellow]Using original path without linking: {src}")
+                                    use_hardlink = False
+                                    fallback_to_original = True
                         else:
                             # For directories, we need to link each file inside
                             console.print("[yellow]Cannot hardlink directories directly. Creating directory structure...")
@@ -859,17 +876,31 @@ class Clients():
                                         if meta['debug'] and files.index(file) == 0:
                                             console.print(f"[green]Hard link created for file: {dst_file} -> {src_file}")
                                     except OSError as e:
-                                        console.print(f"[red]Failed to create hard link for file {file}: {e}")
+                                        console.print(f"[yellow]Hard link failed for file {file}: {e}")
+                                        if allow_fallback:
+                                            console.print(f"[yellow]Using original path without linking: {src}")
+                                            fallback_to_original = True
+                                        break
 
-                            if meta['debug']:
-                                console.print(f"[green]Directory structure and files linked: {dst}")
+                        if fallback_to_original:
+                            use_hardlink = False
+                            link_target = None
+                            # Clean up the partially created directory
+                            try:
+                                shutil.rmtree(dst)
+                            except Exception as cleanup_error:
+                                console.print(f"[red]Warning: Failed to clean up partial directory {dst}: {cleanup_error}")
+
                     except OSError as e:
+                        # Global exception handler for any linking operation
                         error_msg = f"Failed to create hard link: {e}"
                         console.print(f"[bold red]{error_msg}")
-                        if meta['debug']:
-                            console.print(f"[yellow]Source: {src} (exists: {os.path.exists(src)})")
-                            console.print(f"[yellow]Destination: {dst}")
-                        raise OSError(error_msg)
+                        if allow_fallback:
+                            console.print(f"[yellow]Using original path without linking: {src}")
+                            use_hardlink = False
+                            if meta['debug']:
+                                console.print(f"[yellow]Source: {src} (exists: {os.path.exists(src)})")
+                                console.print(f"[yellow]Destination: {dst}")
 
                 elif use_symlink:
                     try:
@@ -884,7 +915,9 @@ class Clients():
                     except OSError as e:
                         error_msg = f"Failed to create symlink: {e}"
                         console.print(f"[bold red]{error_msg}")
-                        raise OSError(error_msg)
+                        if allow_fallback:
+                            console.print(f"[yellow]Using original path without linking: {src}")
+                            use_symlink = False
 
         # Initialize qBittorrent client
         qbt_client = qbittorrentapi.Client(
@@ -990,7 +1023,6 @@ class Clients():
         qbt_client.torrents_resume(torrent.infohash)
         if client.get("use_tracker_as_tag", False) and tracker:
             qbt_client.torrents_add_tags(tags=tracker, torrent_hashes=torrent.infohash)
-
         if client.get('qbit_tag'):
             qbt_client.torrents_add_tags(tags=client['qbit_tag'], torrent_hashes=torrent.infohash)
         if meta and meta.get('qbit_tag'):
@@ -1166,6 +1198,8 @@ class Clients():
                 exit(1)
 
             info_hash_v1 = meta.get('infohash')
+            if meta['debug']:
+                console.print(f"[cyan]Searching for infohash: {info_hash_v1}")
             torrents = qbt_client.torrents_info()
             found = False
 
@@ -1531,23 +1565,39 @@ class Clients():
 
                     if is_match:
                         try:
+                            torrent_trackers = await asyncio.to_thread(qbt_client.torrents_trackers, torrent_hash=torrent.hash)
                             display_trackers = []
 
                             # Filter out DHT, PEX, LSD "trackers"
-                            for tracker in torrents:
-                                if tracker.get('tracker', []).startswith(('** [DHT]', '** [PeX]', '** [LSD]')):
+                            for tracker in torrent_trackers:
+                                if tracker.get('url', []).startswith(('** [DHT]', '** [PeX]', '** [LSD]')):
                                     continue
                                 display_trackers.append(tracker)
-                                has_working_tracker = True
 
-                            if not has_working_tracker:
-                                if meta['debug']:
-                                    console.print(f"[yellow]Skipping torrent: {torrent.name} - No working trackers")
-                                continue
+                                for tracker in display_trackers:
+                                    url = tracker.get('url', 'Unknown URL')
+                                    status_code = tracker.get('status', 0)
+                                    status_text = {
+                                        0: "Disabled",
+                                        1: "Not contacted",
+                                        2: "Working",
+                                        3: "Updating",
+                                        4: "Error"
+                                    }.get(status_code, f"Unknown ({status_code})")
 
-                        except Exception as e:
+                                    if status_code == 2:
+                                        has_working_tracker = True
+                                        if meta['debug']:
+                                            console.print(f"[green]Tracker working: {url[:15]} - {status_text}")
+
+                                    elif meta['debug']:
+                                        msg = tracker.get('msg', '')
+                                        console.print(f"[yellow]Tracker not working: {url[:15]} - {status_text}{f' - {msg}' if msg else ''}")
+
+                        except qbittorrentapi.APIError as e:
                             if meta['debug']:
-                                console.print(f"[yellow]Error getting trackers for torrent {torrent.name}: {str(e)}")
+                                console.print(f"[red]Error fetching trackers for torrent {torrent.name}: {e}")
+                            continue
 
                         if 'torrent_comments' not in meta:
                             meta['torrent_comments'] = []
@@ -1560,7 +1610,7 @@ class Clients():
                             'size': torrent.size,
                             'category': torrent.category,
                             'seeders': torrent.num_complete,
-                            'trackers': torrent.tracker,
+                            'trackers': url,
                             'has_working_tracker': has_working_tracker,
                             'comment': torrent.comment,
                         }
@@ -1764,7 +1814,6 @@ class Clients():
                                             console.print(f"[yellow]Alternative torrent {alt_torrent_hash} also invalid")
                                             if os.path.exists(alt_torrent_file_path) and alt_torrent_file_path.startswith(extracted_torrent_dir):
                                                 os.remove(alt_torrent_file_path)
-                                            meta['we_checked_them_all'] = True
 
                                 if not found_valid_torrent:
                                     console.print("[bold red]No valid torrents found after checking all matches")
