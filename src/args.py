@@ -86,7 +86,6 @@ class Args():
         parser.add_argument('-t', '--type', nargs=1, required=False, help="Type [DISC, REMUX, ENCODE, WEBDL, WEBRIP, HDTV, DVDRIP]", choices=['disc', 'remux', 'encode', 'webdl', 'web-dl', 'webrip', 'hdtv', 'dvdrip'], dest="manual_type")
         parser.add_argument('--source', nargs=1, required=False, help="Source [Blu-ray, BluRay, DVD, HDDVD, WEB, HDTV, UHDTV, LaserDisc, DCP]", choices=['Blu-ray', 'BluRay', 'DVD', 'HDDVD', 'WEB', 'HDTV', 'UHDTV', 'LaserDisc', 'DCP'], dest="manual_source")
         parser.add_argument('-res', '--resolution', nargs=1, required=False, help="Resolution [2160p, 1080p, 1080i, 720p, 576p, 576i, 480p, 480i, 8640p, 4320p, OTHER]", choices=['2160p', '1080p', '1080i', '720p', '576p', '576i', '480p', '480i', '8640p', '4320p', 'other'])
-        parser.add_argument('--no-meta', dest='no_meta', action='store_true', required=False, help="Run with no metadata from provider")
         parser.add_argument('-tmdb', '--tmdb', nargs=1, required=False, help="TMDb ID (use movie/ or tv/ prefix)", type=str, dest='tmdb_manual')
         parser.add_argument('-imdb', '--imdb', nargs=1, required=False, help="IMDb ID", type=str, dest='imdb_manual')
         parser.add_argument('-mal', '--mal', nargs=1, required=False, help="MAL ID", type=str, dest='mal_manual')
