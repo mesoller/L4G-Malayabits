@@ -234,11 +234,15 @@ config = {
         "default_trackers": "",
 
         "ACM": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://eiga.moi/announce/customannounceurl",
             "anon": False,
         },
         "AITHER": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -246,22 +250,30 @@ config = {
             "anon": False,
         },
         "AL": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://animelovers.club/announce/customannounceurl",
             "anon": False,
         },
         "ANT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://anthelion.me/announce/customannounceurl",
             "anon": False,
         },
         "AR": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # anon is not an option when uplaoding you need to change your privacy settings.
             "username": "",
             "password": "",
             "announce_url": "http://tracker.alpharatio.cc:2710/PASSKEY/announce",
         },
         "BHD": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -272,6 +284,8 @@ config = {
             "anon": False,
         },
         "BHDTV": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "found under https://www.bit-hdtv.com/my.php",
             "announce_url": "https://trackerr.bit-hdtv.com/announce",
             # passkey found under https://www.bit-hdtv.com/my.php
@@ -279,6 +293,8 @@ config = {
             "anon": False,
         },
         "BLU": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -286,31 +302,43 @@ config = {
             "anon": False,
         },
         "CBR": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://capybarabr.com/announce/customannounceurl",
             "anon": False,
         },
         "DP": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://darkpeers.org/announce/customannounceurl",
             "anon": False,
         },
         "FL": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "username": "",
             "passkey": "",
             "uploader_name": "https://filelist.io/Custom_Announce_URL",
             "anon": False,
         },
         "FNP": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://fearnopeer.com/announce/customannounceurl",
             "anon": False,
         },
         "FRIKI": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://frikibar.com/announce/<PASSKEY>",
         },
         "HDB": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             # for HDB you **MUST** have been granted uploading approval via Offers, you've been warned
@@ -322,6 +350,8 @@ config = {
             "img_rehost": True,
         },
         "HDT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # for HDT to work you need to export cookies from https://hd-torrent.net/ using https://addons.mozilla.org/en-US/firefox/addon/export-cookies-txt/.
             # cookies need to be in netscape format and need to be in data/cookies/HDT.txt
             "username": "",
@@ -332,27 +362,37 @@ config = {
             "announce_url": "https://hdts-announce.ru/announce.php",
         },
         "HHD": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://homiehelpdesk.net/announce/customannounceurl",
             "anon": False,
         },
         "HUNO": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "useAPI": False,
             "api_key": "",
             "announce_url": "https://hawke.uno/announce/customannounceurl",
             "anon": False,
         },
         "ITT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://itatorrents.xyz/announce/customannounceurl",
             "anon": False,
         },
         "LCD": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://locadora.cc/announce/customannounceurl",
             "anon": False,
         },
         "LST": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -364,11 +404,15 @@ config = {
             "draft": False,
         },
         "LT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://lat-team.com/announce/customannounceurl",
             "anon": False,
         },
         "MTV": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             'api_key': 'get from security page',
             'username': '',
             'password': '',
@@ -382,10 +426,14 @@ config = {
             'prefer_mtv_torrent': False,
         },
         "NBL": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://tracker.nebulance.io/insertyourpasskeyhere/announce",
         },
         "OE": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -393,6 +441,8 @@ config = {
             "anon": False,
         },
         "OTW": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://oldtoons.world/announce/customannounceurl",
             # Send uploads to OTW modq for staff approval
@@ -400,16 +450,22 @@ config = {
             "anon": False,
         },
         "PT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://portugas.org/announce/customannounceurl",
             "anon": False,
         },
         "PSS": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://privatesilverscreen.cc/announce/customannounceurl",
             "anon": False,
         },
         "PTER": {  # Does not appear to be working at all
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "passkey": 'passkey',
             "img_rehost": False,
             "username": "",
@@ -418,6 +474,8 @@ config = {
             "anon": True,
         },
         "PTP": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "add_web_source_to_desc": True,
@@ -428,26 +486,36 @@ config = {
             "announce_url": "",
         },
         "PTT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://polishtorrent.top/announce/customannounceurl",
             "anon": False,
         },
         "R4E": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://racing4everyone.eu/announce/customannounceurl",
             "anon": False,
         },
         "RAS": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://rastastugan.org/announce/customannounceurl",
             "anon": False,
         },
         "RF": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://reelflix.xyz/announce/customannounceurl",
             "anon": False,
         },
         "RTF": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "username": "",
             "password": "",
             # get_it_by_running_/api/ login command from https://retroflix.club/api/doc
@@ -456,33 +524,47 @@ config = {
             "anon": True,
         },
         "SAM": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://samaritano.cc/announce/<PASSKEY>",
             "anon": False,
         },
         "SHRI": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://shareisland.org/announce/customannounceurl",
             "anon": False,
         },
         "SN": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://tracker.swarmazon.club:8443/<YOUR_PASSKEY>/announce",
         },
         "SP": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://seedpool.org/announce/<PASSKEY>",
         },
         "SPD": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://ramjet.speedapp.io/<PASSKEY>/announce",
         },
         "STC": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://skipthecommericals.xyz/announce/customannounceurl",
             "anon": False,
         },
         "THR": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "username": "",
             "password": "",
             "img_api": "get this from the forum post",
@@ -493,19 +575,27 @@ config = {
             "anon": False,
         },
         "TIK": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://cinematik.net/announce/",
             "anon": False,
         },
         "TL": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "announce_key": "TL announce key",
         },
         "TOCA": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://tocashare.biz/announce/customannounceurl",
             "anon": False,
         },
         "TTG": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "username": "",
             "password": "",
             "login_question": "",
@@ -515,16 +605,22 @@ config = {
             "anon": False,
         },
         "TVC": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://tvchaosuk.com/announce/<PASSKEY>",
             "anon": False,
         },
         "UHD": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://uhdshare.com/announce/<PASSKEY>",
             "anon": False,
         },
         "ULCX": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
             "useAPI": False,
             "api_key": "",
@@ -534,16 +630,22 @@ config = {
             "modq": False,
         },
         "UTP": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://UTP/announce/customannounceurl",
             "anon": False,
         },
         "YOINK": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://yoinked.org/announce/customannounceurl",
             "anon": False,
         },
         "YUS": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
             "api_key": "",
             "announce_url": "https://yu-scene.net/announce/customannounceurl",
             "anon": False,
@@ -579,6 +681,9 @@ config = {
             # use either "symlink" or "hardlink"
             # on windows, symlinks needs admin privs, both link types need ntfs/refs filesytem (and same drive)
             "linking": "",
+            # Allow fallback to inject torrent into qBitTorrent using the original path
+            # when linking error. eg: unsupported file system.
+            "allow_fallback": True,
             # A folder or list of folders that will contain the linked content
             # if using hardlinking, the linked folder must be on the same drive/volume as the original contnt,
             # with UA mapping the correct location if multiple paths are specified.
