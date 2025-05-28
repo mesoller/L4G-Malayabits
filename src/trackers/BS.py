@@ -9,14 +9,6 @@ from src.console import console
 
 
 class BS():
-    """
-    Edit for Tracker:
-        Edit BASE.torrent with announce and source
-        Check for duplicates
-        Set type/category IDs
-        Upload
-    """
-
     def __init__(self, config):
         self.config = config
         self.tracker = 'BS'
@@ -96,10 +88,6 @@ class BS():
             '480i': '9'
         }.get(resolution, '10')
         return resolution_id
-
-    ###############################################################
-    ######   STOP HERE UNLESS EXTRA MODIFICATION IS NEEDED   ###### noqa E266
-    ###############################################################
 
     async def upload(self, meta, disctype):
         common = COMMON(config=self.config)
