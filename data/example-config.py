@@ -427,6 +427,11 @@ config = {
             "announce_url": "https://lat-team.com/announce/customannounceurl",
             "anon": False,
         },
+        "MB": {
+            "api_key": "",
+            "announce_url": "https://malayabits.cc/announce/customannounceurl",
+            # "anon" : "False"
+        },
         "MTV": {
             # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
             "link_dir_name": "",
