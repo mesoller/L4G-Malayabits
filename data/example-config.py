@@ -32,7 +32,7 @@ config = {
 
         # Order of image hosts. primary host as first with others as backup
         # Available image hosts: imgbb, ptpimg, imgbox, pixhost, lensdump, ptscreens, onlyimage, dalexni, zipline, passtheimage, seedpool_cdn, sharex, utppm
-        "img_host_1": "",
+        "img_host_1": "zipline",
         "img_host_2": "",
         "img_host_3": "",
         "img_host_4": "",
@@ -48,7 +48,7 @@ config = {
         "dalexni_api": "",
         "passtheima_ge_api": "",
         # custom zipline url
-        "zipline_url": "",
+        "zipline_url": "https://img.malayabits.cc/api/upload",
         "zipline_api_key": "",
         # Seedpool CDN API key
         "seedpool_cdn_api": "",
