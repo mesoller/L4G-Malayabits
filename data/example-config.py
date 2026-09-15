@@ -560,6 +560,8 @@ config = {
             # Cookies must be in Netscape format and must be located in data/cookies/GPW.txt
             # You can find your announce URL at https://greatposterwall.com/upload.php
             "announce_url": "https://tracker.greatposterwall.com/<PASSKEY>/announce",
+            # Upload with Exclusive flag
+            "exclusive": False,
         },
         "HDB": {
             # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
@@ -674,16 +676,6 @@ config = {
             "api_key": "",
             "anon": False,
             # Send uploads to LUME modq for staff approval
-            "modq": False,
-        },
-        "MB": {
-            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
-            "link_dir_name": "",
-            # "useAPI": False,  Set to True if using this tracker for automatic ID searching or description parsing
-            "useAPI": False,
-            "api_key": "",
-            "anon": False,
-            # Send uploads to Malayabits modq for staff approval
             "modq": False,
         },
         "MTV": {
